@@ -1,0 +1,116 @@
+" Install plugins
+call plug#begin()
+Plug 'scrooloose/nerdtree'
+Plug 'scrooloose/syntastic'
+Plug 'tpope/vim-fugitive'
+Plug 'airblade/vim-gitgutter'
+Plug 'tpope/vim-surround'
+Plug 'kien/ctrlp.vim'
+Plug 'bling/vim-airline'
+Plug 'vim-airline/vim-airline-themes'
+Plug 'majutsushi/tagbar'
+Plug 'rust-lang/rust.vim'
+
+Plug 'valloric/youcompleteme'
+Plug 'mhartington/oceanic-next'
+Plug 'chriskempson/base16-vim'
+Plug 'tomtom/tcomment_vim'
+call plug#end()
+
+" Syntastic configuration
+set statusline+=%#warningmsg#
+set statusline+=%{SyntasticStatuslineFlag()}
+set statusline+=%*
+
+let g:syntastic_always_populate_loc_list = 1
+let g:syntastic_auto_loc_list = 1
+let g:syntastic_check_on_open = 1
+let g:syntastic_check_on_wq = 0
+
+" vim-airline configuration
+let g:airline#extensions#tabline#enabled = 2
+let g:airline#extensions#tabline#fnamemod = ':t'
+let g:airline#extensions#tabline#left_sep = ' '
+let g:airline#extensions#tabline#left_alt_sep = '|'
+let g:airline#extensions#tabline#right_sep = ' '
+let g:airline#extensions#tabline#right_alt_sep = '|'
+let g:airline_left_sep = ' '
+let g:airline_left_alt_sep = '|'
+let g:airline_right_sep = ' '
+let g:airline_right_alt_sep = '|'
+let g:airline_theme= 'oceanicnext'
+
+" Tagbar configuration
+nmap <F8> :TagbarToggle<CR>
+
+" Rust-vim configuration
+let g:rustfmt_autosave = 1
+
+" Map the leader key to SPACE
+let mapleader="\<SPACE>"
+
+" OceanicNext configuration
+let g:oceanic_next_terminal_italic = 1
+let g:oceanic_next_terminal_bold = 1
+if (has("termguicolors"))
+  set termguicolors
+endif
+
+" You Complete Me
+let g:ycm_rust_src_path = '/home/pedro/rust/rustc/src'
+
+" Theme
+syntax enable
+colorscheme OceanicNext
+" colorscheme base16-default-dark
+set background=dark
+" let base16colorspace=256
+
+"Map jk to <ESC>
+inoremap jk <Esc>
+
+set showmatch
+set number
+set ruler
+set formatoptions+=o
+set textwidth=0
+set expandtab
+set tabstop=2
+set shiftwidth=2
+
+" More natural splits
+set splitbelow          " Horizontal split below current.
+set splitright          " Vertical split to right of current.
+
+" Tell Vim which characters to show for expanded TABs,
+" trailing whitespace, and end-of-lines. VERY useful!
+if &listchars ==# 'eol:$'
+  set listchars=tab:>\ ,trail:-,extends:>,precedes:<,nbsp:+
+endif
+set list                " Show problematic characters.
+
+" Also highlight all tabs and trailing whitespace characters.
+highlight ExtraWhitespace ctermbg=darkgreen guibg=darkgreen
+match ExtraWhitespace /\s\+$\|\t/
+
+set hlsearch            " Highlight search results.
+set ignorecase          " Make searching case insensitive
+set smartcase           " ... unless the query has capital letters.
+set incsearch           " Incremental search.
+set gdefault            " Use 'g' flag by default with :s/foo/bar/.
+set magic               " Use 'magic' patterns (extended regular expressions).
+
+" Relative numbering
+function! NumberToggle()
+  if(&relativenumber == 1)
+    set nornu
+    set number
+  else
+    set rnu
+  endif
+endfunc
+call NumberToggle()
+
+" Toggle between normal and relative numbering.
+noremap <leader>r :call NumberToggle()<cr>
+
