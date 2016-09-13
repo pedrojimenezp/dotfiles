@@ -1,31 +1,56 @@
 " Install plugins
 call plug#begin()
 Plug 'scrooloose/nerdtree'
-Plug 'scrooloose/syntastic'
-Plug 'tpope/vim-fugitive'
-Plug 'airblade/vim-gitgutter'
+" Plug 'scrooloose/syntastic'
 Plug 'tpope/vim-surround'
 Plug 'kien/ctrlp.vim'
 Plug 'bling/vim-airline'
-Plug 'vim-airline/vim-airline-themes'
-Plug 'majutsushi/tagbar'
-Plug 'rust-lang/rust.vim'
-
+" Plug 'majutsushi/tagbar'
 Plug 'valloric/youcompleteme'
-Plug 'mhartington/oceanic-next'
-Plug 'chriskempson/base16-vim'
 Plug 'tomtom/tcomment_vim'
+Plug 'jiangmiao/auto-pairs'
+Plug 'alvan/vim-closetag'
+Plug 'godlygeek/tabular'
+Plug 'terryma/vim-multiple-cursors'
+
+" GIT
+Plug 'tpope/vim-fugitive'
+Plug 'airblade/vim-gitgutter'
+
+" Styles and themes
+Plug 'vim-airline/vim-airline-themes'
+Plug 'altercation/vim-colors-solarized'
+Plug 'chriskempson/base16'
+Plug 'chriskempson/base16-vim'
+Plug 'chriskempson/tomorrow-theme'
+Plug 'w0ng/vim-hybrid'
+
+" Language support
+Plug 'rust-lang/rust.vim'
+Plug 'pangloss/vim-javascript'
+Plug 'mxw/vim-jsx'
+Plug 'jelera/vim-javascript-syntax'
 call plug#end()
 
-" Syntastic configuration
-set statusline+=%#warningmsg#
-set statusline+=%{SyntasticStatuslineFlag()}
-set statusline+=%*
+" vim-closetag configurations
+let g:closetag_filenames = "*.html,*.xhtml,*.phtml,*.js,*.jsx"
 
-let g:syntastic_always_populate_loc_list = 1
-let g:syntastic_auto_loc_list = 1
-let g:syntastic_check_on_open = 1
-let g:syntastic_check_on_wq = 0
+" JSX configuration
+let g:jsx_ext_required = 0
+
+" NERD TREE configuration
+" map <C-n> :NERDTreeToggle<CR>
+map <C-t> :NERDTreeToggle<CR>
+
+" Syntastic configuration
+" set statusline+=%#warningmsg#
+" set statusline+=%{SyntasticStatuslineFlag()}
+" set statusline+=%*
+" let g:syntastic_always_populate_loc_list = 1
+" let g:syntastic_auto_loc_list = 1
+" let g:syntastic_check_on_open = 1
+" let g:syntastic_check_on_wq = 0
+" let g:syntastic_javascript_checkers = ['eslint']
 
 " vim-airline configuration
 let g:airline#extensions#tabline#enabled = 2
@@ -38,7 +63,7 @@ let g:airline_left_sep = ' '
 let g:airline_left_alt_sep = '|'
 let g:airline_right_sep = ' '
 let g:airline_right_alt_sep = '|'
-let g:airline_theme= 'oceanicnext'
+" let g:airline_theme= 'luna'
 
 " Tagbar configuration
 nmap <F8> :TagbarToggle<CR>
@@ -46,37 +71,75 @@ nmap <F8> :TagbarToggle<CR>
 " Rust-vim configuration
 let g:rustfmt_autosave = 1
 
-" Map the leader key to SPACE
-let mapleader="\<SPACE>"
-
-" OceanicNext configuration
-let g:oceanic_next_terminal_italic = 1
-let g:oceanic_next_terminal_bold = 1
-if (has("termguicolors"))
-  set termguicolors
-endif
-
-" You Complete Me
+" You Complete Me configuration
 let g:ycm_rust_src_path = '/home/pedro/rust/rustc/src'
 
-" Theme
-syntax enable
-colorscheme OceanicNext
-" colorscheme base16-default-dark
-set background=dark
-" let base16colorspace=256
+" Tabular configuration
+if exists(":Tabularize")
+  nmap <Leader>a= :Tabularize /=<CR>
+  vmap <Leader>a= :Tabularize /=<CR>
+  nmap <Leader>a: :Tabularize /:\zs<CR>
+  vmap <Leader>a: :Tabularize /:\zs<CR>
+endif
 
-"Map jk to <ESC>
-inoremap jk <Esc>
+inoremap <silent> <Bar>   <Bar><Esc>:call <SID>align()<CR>a
+
+function! s:align()
+  let p = '^\s*|\s.*\s|\s*$'
+  if exists(':Tabularize') && getline('.') =~# '^\s*|' && (getline(line('.')-1) =~# p || getline(line('.')+1) =~# p)
+    let column = strlen(substitute(getline('.')[0:col('.')],'[^|]','','g'))
+    let position = strlen(matchstr(getline('.')[0:col('.')],'.*|\s*\zs.*'))
+    Tabularize/|/l1
+    normal! 0
+    call search(repeat('[^|]*|',column).'\s\{-\}'.repeat('.',position),'ce',line('.'))
+  endif
+endfunction
 
 set showmatch
-set number
+set number              " Show number line
 set ruler
 set formatoptions+=o
 set textwidth=0
-set expandtab
+set wrap                " Wrap lines
+set hlsearch            " Highlight search results.
+set ignorecase          " Make searching case insensitive
+set smartcase           " ... unless the query has capital letters.
+set incsearch           " Incremental search.
+set gdefault            " Use 'g' flag by default with :s/foo/bar/.
+set magic               " Use 'magic' patterns (extended regular expressions).
+" set encoding=utf8
+set ffs=unix,dos,mac
+
+" Tabs configurations
+set expandtab           " Use spaces instead tabs
 set tabstop=2
-set shiftwidth=2
+set shiftwidth=2        " Tab width
+set smarttab            " Be smart when using tabs
+
+" Indent configuration
+set ai                  " Auto indent
+set si                  " Smart indent
+
+" Turn backup off
+set nobackup
+set nowb
+set noswapfile
+set wildignore+=*/tmp/*,*.so,*.swp,*.zip,*/node_modules
+" Theme
+syntax enable
+" set background=dark
+" let g:hybrid_custom_term_colors = 1
+" let g:hybrid_reduced_contrast = 1 " Remove this line if using the default palette.
+colorscheme base16-materia
+" let base16colorspace=256
+" call togglebg#map("<F5>")
+" let g:solarized_termcolors = 256
+" let g:solarized_degrade    = 1
+" let g:solarized_contrast   = "low"
+" let g:solarized_visibility = "low"
+if (has("termguicolors"))
+  set termguicolors
+endif
 
 " More natural splits
 set splitbelow          " Horizontal split below current.
@@ -93,13 +156,6 @@ set list                " Show problematic characters.
 highlight ExtraWhitespace ctermbg=darkgreen guibg=darkgreen
 match ExtraWhitespace /\s\+$\|\t/
 
-set hlsearch            " Highlight search results.
-set ignorecase          " Make searching case insensitive
-set smartcase           " ... unless the query has capital letters.
-set incsearch           " Incremental search.
-set gdefault            " Use 'g' flag by default with :s/foo/bar/.
-set magic               " Use 'magic' patterns (extended regular expressions).
-
 " Relative numbering
 function! NumberToggle()
   if(&relativenumber == 1)
@@ -114,3 +170,13 @@ call NumberToggle()
 " Toggle between normal and relative numbering.
 noremap <leader>r :call NumberToggle()<cr>
 
+set clipboard+=unnamedplus
+
+" Mapping
+" Map the leader key to SPACE
+let mapleader="\<SPACE>"
+
+" Map jk to <ESC>
+inoremap jk <Esc>
+nnoremap <Leader>w :w<CR>
+map <leader>h :set hlsearch!<cr>
