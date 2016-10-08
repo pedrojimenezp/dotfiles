@@ -90,7 +90,7 @@ BASE16_SHELL=$HOME/.config/base16-shell/
 #
 . ~/projects/github-projects/z/z.sh
 #
-alias vim="nvim"
+
 #
 # export RUST_SRC_PATH=/home/pedro/rust/rustc/src
 # export CARGO_PATH=/home/pedro/.cargo/bin
