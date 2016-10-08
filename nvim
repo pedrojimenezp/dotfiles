@@ -19,11 +19,8 @@ Plug 'airblade/vim-gitgutter'
 
 " Styles and themes
 Plug 'vim-airline/vim-airline-themes'
-Plug 'altercation/vim-colors-solarized'
 Plug 'chriskempson/base16'
 Plug 'chriskempson/base16-vim'
-Plug 'chriskempson/tomorrow-theme'
-Plug 'w0ng/vim-hybrid'
 
 " Language support
 Plug 'rust-lang/rust.vim'
@@ -127,19 +124,12 @@ set noswapfile
 set wildignore+=*/tmp/*,*.so,*.swp,*.zip,*/node_modules
 " Theme
 syntax enable
-" set background=dark
-" let g:hybrid_custom_term_colors = 1
-" let g:hybrid_reduced_contrast = 1 " Remove this line if using the default palette.
-colorscheme base16-materia
-" let base16colorspace=256
-" call togglebg#map("<F5>")
-" let g:solarized_termcolors = 256
-" let g:solarized_degrade    = 1
-" let g:solarized_contrast   = "low"
-" let g:solarized_visibility = "low"
+let base16colorspace=256
 if (has("termguicolors"))
   set termguicolors
 endif
+" set background=dark
+colorscheme base16-google-light
 
 " More natural splits
 set splitbelow          " Horizontal split below current.
@@ -179,4 +169,14 @@ let mapleader="\<SPACE>"
 " Map jk to <ESC>
 inoremap jk <Esc>
 nnoremap <Leader>w :w<CR>
+nnoremap <Leader>wq :wq<CR>
 map <leader>h :set hlsearch!<cr>
+
+autocmd BufWritePre * %s/\s\+$//e
+
+nnoremap <C-k> :m .-2<CR>==
+nnoremap <C-j> :m .+1<CR>==
+inoremap <C-j> <Esc>:m .+1<CR>==gi
+inoremap <C-k> <Esc>:m .-2<CR>==gi
+vnoremap <C-j> :m '>+1<CR>gv=gv
+vnoremap <C-k> :m '<-2<CR>gv=gv
