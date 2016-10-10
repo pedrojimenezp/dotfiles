@@ -72,7 +72,8 @@ set -g message-attr bright
 
 # Enable vi keys.
 setw -g mode-keys vi
-# set-window-option mode-keys vi
+setw -g mouse on
+#set-window-option mode-keys vi
 
 set-option -g history-limit 10000
 
