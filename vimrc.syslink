@@ -19,7 +19,7 @@ Plug 'airblade/vim-gitgutter'
 Plug 'vim-airline/vim-airline-themes'
 Plug 'chriskempson/base16'
 Plug 'chriskempson/base16-vim'
-
+Plug 'dracula/vim'
 " Language support
 Plug 'rust-lang/rust.vim'
 Plug 'pangloss/vim-javascript'
@@ -27,6 +27,17 @@ Plug 'mxw/vim-jsx'
 Plug 'jelera/vim-javascript-syntax'
 call plug#end()
 
+" vim-javascript configuration
+let g:javascript_conceal_function       = "ƒ"
+let g:javascript_conceal_null           = "ø"
+let g:javascript_conceal_this           = "@"
+let g:javascript_conceal_return         = "⇚"
+let g:javascript_conceal_undefined      = "¿"
+let g:javascript_conceal_NaN            = "ℕ"
+let g:javascript_conceal_prototype      = "¶"
+let g:javascript_conceal_static         = "•"
+let g:javascript_conceal_super          = "Ω"
+let g:javascript_conceal_arrow_function = "⇒"
 " vim-closetag configurations
 let g:closetag_filenames = "*.html,*.xhtml,*.phtml,*.js,*.jsx"
 
@@ -110,13 +121,14 @@ set nowb
 set noswapfile
 set wildignore+=*/tmp/*,*.so,*.swp,*.zip,*/node_modules
 " Theme
-syntax enable
-let base16colorspace=256
+syntax on
+" let base16colorspace=256
 if (has("termguicolors"))
   set termguicolors
 endif
 " set background=dark
-colorscheme base16-google-light
+" colorscheme base16-google-light
+colors dracula
 
 " More natural splits
 set splitbelow          " Horizontal split below current.
