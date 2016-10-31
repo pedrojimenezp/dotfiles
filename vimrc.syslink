@@ -27,17 +27,6 @@ Plug 'mxw/vim-jsx'
 Plug 'jelera/vim-javascript-syntax'
 call plug#end()
 
-" vim-javascript configuration
-let g:javascript_conceal_function       = "ƒ"
-let g:javascript_conceal_null           = "ø"
-let g:javascript_conceal_this           = "@"
-let g:javascript_conceal_return         = "⇚"
-let g:javascript_conceal_undefined      = "¿"
-let g:javascript_conceal_NaN            = "ℕ"
-let g:javascript_conceal_prototype      = "¶"
-let g:javascript_conceal_static         = "•"
-let g:javascript_conceal_super          = "Ω"
-let g:javascript_conceal_arrow_function = "⇒"
 " vim-closetag configurations
 let g:closetag_filenames = "*.html,*.xhtml,*.phtml,*.js,*.jsx"
 
@@ -62,12 +51,6 @@ let g:airline_right_alt_sep = '|'
 
 " Tagbar configuration
 nmap <F8> :TagbarToggle<CR>
-
-" Rust-vim configuration
-let g:rustfmt_autosave = 1
-
-" You Complete Me configuration
-let g:ycm_rust_src_path = '/home/pedro/rust/rustc/src'
 
 " Tabular configuration
 if exists(":Tabularize")
@@ -127,7 +110,6 @@ if (has("termguicolors"))
   set termguicolors
 endif
 " set background=dark
-" colorscheme base16-google-light
 colors dracula
 
 " More natural splits
