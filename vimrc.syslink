@@ -127,8 +127,8 @@ if (has("termguicolors"))
   set termguicolors
 endif
 " set background=dark
-" colorscheme base16-google-light
-colors dracula
+colorscheme base16-google-light
+" colors dracula
 
 " More natural splits
 set splitbelow          " Horizontal split below current.
@@ -159,7 +159,7 @@ call NumberToggle()
 " Toggle between normal and relative numbering.
 noremap <leader>r :call NumberToggle()<cr>
 
-set clipboard+=unnamedplus
+set clipboard=unnamedplus
 
 " Mapping
 " Map the leader key to SPACE
