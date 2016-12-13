@@ -4,7 +4,6 @@ Plug 'scrooloose/nerdtree'
 Plug 'tpope/vim-surround'
 Plug 'kien/ctrlp.vim'
 Plug 'bling/vim-airline'
-Plug 'valloric/youcompleteme'
 Plug 'tomtom/tcomment_vim'
 Plug 'jiangmiao/auto-pairs'
 Plug 'alvan/vim-closetag'
@@ -17,11 +16,9 @@ Plug 'airblade/vim-gitgutter'
 
 " Styles and themes
 Plug 'vim-airline/vim-airline-themes'
-Plug 'chriskempson/base16'
-Plug 'chriskempson/base16-vim'
-Plug 'dracula/vim'
+Plug 'flazz/vim-colorschemes'
+
 " Language support
-Plug 'rust-lang/rust.vim'
 Plug 'pangloss/vim-javascript'
 Plug 'mxw/vim-jsx'
 Plug 'jelera/vim-javascript-syntax'
@@ -103,15 +100,11 @@ set nobackup
 set nowb
 set noswapfile
 set wildignore+=*/tmp/*,*.so,*.swp,*.zip,*/node_modules
+
 " Theme
 syntax on
-" let base16colorspace=256
-if (has("termguicolors"))
-  set termguicolors
-endif
-" set background=dark
-colorscheme base16-google-light
-" colors dracula
+colorscheme PaperColor
+
 
 " More natural splits
 set splitbelow          " Horizontal split below current.
@@ -142,7 +135,7 @@ call NumberToggle()
 " Toggle between normal and relative numbering.
 noremap <leader>r :call NumberToggle()<cr>
 
-set clipboard+=unnamedplus
+set clipboard=unnamedplus
 
 " Mapping
 " Map the leader key to SPACE
@@ -163,3 +156,4 @@ inoremap <C-j> <Esc>:m .+1<CR>==gi
 inoremap <C-k> <Esc>:m .-2<CR>==gi
 vnoremap <C-j> :m '>+1<CR>gv=gv
 vnoremap <C-k> :m '<-2<CR>gv=gv
+
