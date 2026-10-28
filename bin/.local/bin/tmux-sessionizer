@@ -1,31 +1,87 @@
 #!/usr/bin/env bash
-# Pick a project directory with fzf and open (or switch to) a tmux session for it.
+# Pick a project directory or git worktree with fzf and open (or switch to) a tmux session for it.
 # Usage: tmux-sessionizer [dir]   (without an argument, pick from $SESSIONIZER_DIRS)
+#        tmux-sessionizer --list  (print the candidates as "label<TAB>path<TAB>repo" and exit)
+# Worktrees are named after their branch; other directories after their basename.
+# SESSIONIZER_TMUX_ARGS adds tmux options, e.g. "-L sock" for a separate server.
 set -euo pipefail # stop on errors, unset variables and failed pipes
 
 # Roots to search; override with e.g. SESSIONIZER_DIRS="$HOME/work $HOME/projects".
 read -r -a roots <<<"${SESSIONIZER_DIRS:-$HOME/projects}"
+read -r -a tmux_args <<<"${SESSIONIZER_TMUX_ARGS:-}" # extra tmux options (empty by default)
 
-if [[ $# -eq 1 ]]; then
+tm() { tmux ${tmux_args[@]+"${tmux_args[@]}"} "$@"; } # one place to add tmux options
+
+# Print "branch  [repo]<TAB>path<TAB>repo" for each linked worktree of a repo.
+worktrees_of() {
+  local repo="$1" repo_name line path="" branch="" skip=0 first=1
+  repo_name="$(basename "$repo")" # shown next to the branch to tell repos apart
+  while IFS= read -r line; do
+    case "$line" in
+      "worktree "*) path="${line#worktree }" ;;                # start of an entry
+      "branch "*) branch="${line#branch refs/heads/}" ;;       # detached entries have none
+      bare | prunable*) skip=1 ;;                              # nothing usable to open
+      "") # blank line ends an entry
+        if [[ -n "$path" ]]; then
+          if ((first)); then
+            first=0 # the first entry is the main checkout, already in the plain list
+          elif ((!skip)) && [[ -d "$path" ]]; then
+            printf '%s  [%s]\t%s\t%s\n' "${branch:-$(basename "$path")}" "$repo_name" "$path" "$repo_name"
+          fi
+        fi
+        path="" branch="" skip=0 ;; # reset for the next entry
+    esac
+  done < <(git -C "$repo" worktree list --porcelain 2>/dev/null || true; echo) # trailing echo closes the last entry
+}
+
+# Print all candidates: worktrees first (what you are usually working on), then plain dirs.
+list_candidates() {
+  local dirs d wts="" plain="" # wts and plain collect output so worktrees can print first
+  dirs="$(find "${roots[@]}" -mindepth 1 -maxdepth 3 -type d \
+    -not -path '*/.*' -not -path '*/node_modules*' -not -path '*/worktrees/*' 2>/dev/null || true)" # linked worktrees come from git instead
+  while IFS= read -r d; do
+    [[ -n "$d" ]] || continue # find printed nothing
+    plain+="$d"$'\t'"$d"$'\t\n' # label and path are the same for plain dirs
+    # Only main checkouts have a .git directory (linked ones have a file), so git runs once per repo.
+    if [[ -d "$d/.git" ]]; then wts+="$(worktrees_of "$d")"$'\n'; fi
+  done <<<"$dirs"
+  printf '%s\n' "$wts" | sed '/^$/d' # drop blank lines left by repos without worktrees
+  printf '%s' "$plain"
+}
+
+repo=""
+if [[ "${1:-}" == "--list" ]]; then
+  list_candidates
+  exit 0
+elif [[ $# -eq 1 ]]; then
   selected="$1" # directory given on the command line
 else
-  # List directories up to 3 levels deep, skipping hidden folders and worktrees.
-  selected="$(
-    find "${roots[@]}" -mindepth 1 -maxdepth 3 -type d \
-      -not -path '*/.*' -not -path '*/node_modules*' -not -path '*/worktrees/*' 2>/dev/null |
-      fzf --prompt='project> ' || true
-  )"
+  line="$(list_candidates | fzf --prompt='project> ' --delimiter=$'\t' --with-nth=1 || true)" # show only the label
+  [[ -n "$line" ]] || exit 0 # nothing chosen (Esc)
+  IFS=$'\t' read -r _ selected repo <<<"$line" # hidden columns: path and repo
 fi
 
-[[ -n "$selected" ]] || exit 0 # nothing chosen (Esc)
+[[ -n "$selected" ]] || exit 0 # empty argument
 
-name="$(basename "$selected" | tr '. ' '__')" # tmux names cannot contain dots or spaces
+if [[ -n "$repo" ]]; then
+  name="$(git -C "$selected" branch --show-current 2>/dev/null || true)" # worktree: named after its branch
+  name="${name:-$(basename "$selected")}" # detached HEAD falls back to the folder name
+else
+  name="$(basename "$selected")"
+fi
+name="$(printf '%s' "$name" | tr './: ' '____')" # tmux rejects dots and colons; slashes would read as paths
+
+# A same-named session for another directory would be switched to by mistake; add the repo to tell them apart.
+if [[ -n "$repo" ]] && tm has-session -t "=$name" 2>/dev/null; then
+  existing="$(tm list-sessions -F '#{session_name}'$'\t''#{session_path}' 2>/dev/null | awk -F'\t' -v n="$name" '$1 == n { print $2; exit }' || true)" # where that session was started
+  if [[ -n "$existing" && "$existing" != "$selected" ]]; then name="$name-$repo"; fi
+fi
 
 if [[ -z "${TMUX:-}" ]]; then
   # Outside tmux: attach to the session, creating it if needed.
-  tmux new-session -A -s "$name" -c "$selected"
+  tm new-session -A -s "$name" -c "$selected"
 else
   # Inside tmux: create the session detached if missing, then switch to it.
-  tmux has-session -t "=$name" 2>/dev/null || tmux new-session -ds "$name" -c "$selected"
-  tmux switch-client -t "=$name"
+  tm has-session -t "=$name" 2>/dev/null || tm new-session -ds "$name" -c "$selected"
+  tm switch-client -t "=$name"
 fi
