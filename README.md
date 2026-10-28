@@ -12,7 +12,7 @@ Each top-level folder is a **stow package**: its contents mirror `$HOME`. For ex
 xcode-select --install   # Git and compilers, if you do not have them yet
 git clone https://github.com/pedrojimenezp/dotfiles ~/projects/personal/dotfiles
 cd ~/projects/personal/dotfiles
-./install.sh             # brew bundle, back up old files, stow, clone TPM
+./install.sh             # brew bundle, back up old files, stow, clone TPM, mise install
 ```
 
 Install [Homebrew](https://brew.sh) first if `brew` is missing (`install.sh` prints the command and stops).
@@ -37,6 +37,7 @@ Install [Homebrew](https://brew.sh) first if `brew` is missing (`install.sh` pri
 ```sh
 ./install.sh --dry-run   # show what would happen, change nothing
 ./install.sh --server    # no Homebrew: only zsh, tmux, vim, git, bin
+./install.sh --with-claude  # also clone and install the private Claude config (needs GitHub SSH access)
 ```
 
 ## Packages
@@ -51,11 +52,28 @@ Install [Homebrew](https://brew.sh) first if `brew` is missing (`install.sh` pri
 | `starship` | `~/.config/starship.toml` | Prompt layout. |
 | `ghostty` | `~/.config/ghostty/config` | Ghostty terminal (optional; linked only if Ghostty is installed). Uses the Monaspice Nerd Font (Neon and Radon). |
 | `iterm` | `~/Library/Application Support/iTerm2/DynamicProfiles/dotfiles.plist` | iTerm2 Dynamic Profile "Dotfiles" (macOS only): Monaspace Neon font, Tokyo Night colors, Option as Esc+. |
+| `mise` | `~/.config/mise/config.toml` | Global mise defaults: node (LTS) and go (latest), `.nvmrc` support. Zig stays in Homebrew. |
 | `bin` | `~/.local/bin` | Scripts on PATH: `tmux-sessionizer`. |
 
 ### Server mode
 
 `./install.sh --server` skips Homebrew and Ghostty, and stows only `zsh`, `tmux`, `vim`, `git` and `bin`. The zsh config guards every tool, so it works with only the tools the server has. Over SSH, tmux (`set-clipboard on`) and nvim (OSC 52) copy to your local clipboard.
+
+## Runtimes (mise)
+
+Global defaults (node LTS, latest go) live in the `mise` package, so `mise use -g <tool>@<version>` edits the repo file through the symlink: commit the change. Zig stays in Homebrew because the zig and zls versions must match.
+
+- **Per project**: `mise use node@22 go@1.25` creates a `mise.toml` to commit. Versions switch on `cd`. It also supports `[env]`, `[tasks]` and an untracked `mise.local.toml` for secrets.
+- **New machine**: `./install.sh` runs `mise install` (or run it yourself).
+- **Updates**: `mise outdated` shows what is behind, `mise upgrade` updates it.
+- **Go**: the `toolchain` line in `go.mod` still works. `go install` tools land in `~/go/bin`.
+- **Old mise**: if an older mise sits in `~/.local/bin` (earlier on PATH), delete it so the Homebrew one is used.
+
+## Claude Code
+
+The Claude setup lives in a separate private repo (`claude-config`), because it changes every session and holds private rules and logs. `.zshrc` sources `~/.config/claude-shared/zsh/claude.zsh` only when it exists, so these dotfiles work without it.
+
+On a new machine run `./install.sh --with-claude` (needs GitHub SSH access). It clones the repo to `~/.config/claude-shared` (or `$CLAUDE_SHARED_DIR`) and runs its `install.sh`. An existing clone is left alone, not pulled. Not available with `--server`.
 
 ## iTerm settings
 

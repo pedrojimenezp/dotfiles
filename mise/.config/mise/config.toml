@@ -1,0 +1,9 @@
+# Global mise config. `mise use -g <tool>@<version>` edits this file through the symlink, so commit the change.
+# Zig stays in Homebrew (see Brewfile): the zig and zls versions must match.
+
+[tools]
+node = "lts"    # global default; projects pin their own in mise.toml
+go = "latest"   # global default; projects pin their own in mise.toml
+
+[settings]
+idiomatic_version_file_enable_tools = ["node"]  # also read .nvmrc and .node-version

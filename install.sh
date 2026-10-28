@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Install these dotfiles: back up conflicting files, then link packages with GNU Stow.
-# Usage: ./install.sh [--server] [--dry-run]
+# Usage: ./install.sh [--server] [--dry-run] [--with-claude]
 set -euo pipefail # stop on errors, unset variables and failed pipes
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" # absolute path of this repo
@@ -8,6 +8,9 @@ REPO_REAL="$(cd "$REPO" && pwd -P)"                  # physical path (no symlink
 STAMP="$(date +%Y%m%d-%H%M%S)"                       # suffix for backup files
 SERVER=0                                             # 1 = minimal mode without Homebrew
 DRY=0                                                # 1 = print actions, change nothing
+WITH_CLAUDE=0                                        # 1 = also set up the private Claude config repo
+CLAUDE_REPO_URL="git@github.com:pedrojimenezp/claude-config.git" # private repo: needs your GitHub SSH key
+CLAUDE_DIR="${CLAUDE_SHARED_DIR:-$HOME/.config/claude-shared}"   # where the Claude config repo lives
 NERD_FONT="Monaspace"                                # Nerd Fonts release archive name; change to switch fonts
 NERD_FONT_FAMILY="Monaspice"                         # family prefix fc-list reports (Nerd Fonts renames Monaspace)
 
@@ -15,8 +18,9 @@ for arg in "$@"; do # parse command-line flags
   case "$arg" in
     --server) SERVER=1 ;;
     --dry-run) DRY=1 ;;
+    --with-claude) WITH_CLAUDE=1 ;;
     -h | --help)
-      echo "Usage: $0 [--server] [--dry-run]"
+      echo "Usage: $0 [--server] [--dry-run] [--with-claude]"
       exit 0
       ;;
     *)
@@ -39,7 +43,7 @@ run() {
 if [[ $SERVER -eq 1 ]]; then
   PACKAGES=(zsh tmux vim git bin)
 else
-  PACKAGES=(zsh nvim tmux vim git starship bin)
+  PACKAGES=(zsh nvim tmux vim git starship mise bin)
 fi
 
 # Ghostty is optional: link its config only if the app or binary exists.
@@ -125,6 +129,16 @@ else
   done
 fi
 
+# Step 3b: install the global runtimes from the mise config (full mode only).
+if [[ $SERVER -eq 0 ]]; then
+  if command -v mise >/dev/null 2>&1; then
+    echo "==> Installing runtimes with mise"
+    run mise install # reads ~/.config/mise/config.toml
+  else
+    echo "==> Skipping mise install: mise not found"
+  fi
+fi
+
 # Step 4: tmux plugin manager.
 TPM="$HOME/.config/tmux/plugins/tpm"
 if [[ ! -d "$TPM" ]] && command -v git >/dev/null 2>&1; then
@@ -171,3 +185,23 @@ Done. Next steps:
   4. Put machine-specific git settings in ~/.config/git/local.
   5. Start a new shell (exec zsh).
 MSG
+
+# Step 6: optional private Claude config (opt-in, full mode only).
+if [[ $WITH_CLAUDE -eq 1 ]]; then
+  if [[ $SERVER -eq 1 ]]; then
+    echo "==> --with-claude is ignored in server mode"
+  else
+    echo "==> Setting up Claude config in $CLAUDE_DIR"
+    if [[ ! -e "$CLAUDE_DIR" ]]; then
+      run git clone "$CLAUDE_REPO_URL" "$CLAUDE_DIR" # needs GitHub SSH access
+    elif git -C "$CLAUDE_DIR" rev-parse --git-dir >/dev/null 2>&1; then
+      echo "Claude config already there: $CLAUDE_DIR (not pulling)"
+    else
+      echo "Warning: $CLAUDE_DIR exists but is not a git repo: skipping" >&2
+    fi
+    # run its own installer once it is there (in dry-run the clone is only printed)
+    if [[ -x "$CLAUDE_DIR/install.sh" || $DRY -eq 1 ]]; then
+      run "$CLAUDE_DIR/install.sh"
+    fi
+  fi
+fi
