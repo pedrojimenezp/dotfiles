@@ -69,7 +69,7 @@ if [[ -n "$repo" ]]; then
 else
   name="$(basename "$selected")"
 fi
-name="$(printf '%s' "$name" | tr './: ' '____')" # tmux rejects dots and colons; slashes would read as paths
+name="$(printf '%s' "$name" | tr './: ' '----' | tr -s '-')" # tmux rejects dots and colons; slashes would read as paths; collapse repeated dashes
 
 # A same-named session for another directory would be switched to by mistake; add the repo to tell them apart.
 if [[ -n "$repo" ]] && tm has-session -t "=$name" 2>/dev/null; then
