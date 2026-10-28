@@ -1,7 +1,7 @@
 # ~/.config/ghostty/config: Ghostty terminal (https://ghostty.org/docs/config).
 
-# Nerd Font so prompt/nvim icons render
-font-family = JetBrainsMono Nerd Font
+# Font: Ghostty bundles JetBrains Mono plus Nerd Font icons, so nothing to install.
+# To override, set `font-family = <name>`
 # text size in points
 font-size = 14
 # matches the nvim colorscheme (tokyonight-night)

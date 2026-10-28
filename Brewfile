@@ -44,5 +44,5 @@ brew "golangci-lint"           # Go linter aggregator
 # --- macOS-only apps and fonts ---
 if OS.mac?
   cask "ghostty"                          # GPU-accelerated terminal emulator
-  cask "font-jetbrains-mono-nerd-font"    # monospace font with icons (needed by starship/nvim/eza)
+  cask "font-jetbrains-mono-nerd-font"    # Nerd Font for iTerm (Ghostty has the font built in)
 end

@@ -8,6 +8,7 @@ REPO_REAL="$(cd "$REPO" && pwd -P)"                  # physical path (no symlink
 STAMP="$(date +%Y%m%d-%H%M%S)"                       # suffix for backup files
 SERVER=0                                             # 1 = minimal mode without Homebrew
 DRY=0                                                # 1 = print actions, change nothing
+NERD_FONT="JetBrainsMono"                            # Nerd Fonts release name; change to switch fonts
 
 for arg in "$@"; do # parse command-line flags
   case "$arg" in
@@ -123,6 +124,34 @@ TPM="$HOME/.config/tmux/plugins/tpm"
 if [[ ! -d "$TPM" ]] && command -v git >/dev/null 2>&1; then
   echo "==> Cloning TPM"
   run git clone --depth 1 https://github.com/tmux-plugins/tpm "$TPM"
+fi
+
+# Step 5: Nerd Font for Linux desktop terminals (Ghostty and macOS need nothing).
+install_font() {
+  local dir="$HOME/.local/share/fonts/${NERD_FONT}NerdFont" tmp # per-user dir, no sudo
+  if fc-list | grep -qi "${NERD_FONT} Nerd Font" || [[ -n "$(ls -A "$dir" 2>/dev/null)" ]]; then
+    return 0 # already installed
+  fi
+  echo "==> Installing ${NERD_FONT} Nerd Font"
+  if [[ $DRY -eq 1 ]]; then
+    tmp="<tmpdir>" # nothing is downloaded in dry-run
+  else
+    tmp="$(mktemp -d)"
+    trap 'rm -rf "$tmp"' EXIT # remove the download on exit
+  fi
+  # download the release archive
+  run curl -fsSL -o "$tmp/font.tar.xz" "https://github.com/ryanoasis/nerd-fonts/releases/latest/download/${NERD_FONT}.tar.xz"
+  run mkdir -p "$dir" # target folder
+  run tar -xJf "$tmp/font.tar.xz" -C "$dir" # unpack the fonts
+  run fc-cache -f # refresh the font cache
+}
+
+if [[ $SERVER -eq 0 && "$OSTYPE" == linux* ]]; then
+  if command -v fc-cache >/dev/null 2>&1; then # needs fontconfig
+    install_font
+  else
+    echo "==> Skipping Nerd Font: fc-cache not found"
+  fi
 fi
 
 cat <<'MSG'

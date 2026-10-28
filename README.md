@@ -49,7 +49,7 @@ Install [Homebrew](https://brew.sh) first if `brew` is missing (`install.sh` pri
 | `vim` | `~/.vimrc` | Small plugin-free vimrc for servers. |
 | `git` | `~/.config/git/{config,ignore}` | Git defaults, delta pager, aliases, global ignores, `local` include. |
 | `starship` | `~/.config/starship.toml` | Prompt layout. |
-| `ghostty` | `~/.config/ghostty/config` | Ghostty terminal (optional; linked only if Ghostty is installed). |
+| `ghostty` | `~/.config/ghostty/config` | Ghostty terminal (optional; linked only if Ghostty is installed). Its built-in JetBrains Mono with Nerd Font icons needs nothing installed. |
 | `bin` | `~/.local/bin` | Scripts on PATH: `tmux-sessionizer`. |
 
 ### Server mode
@@ -61,7 +61,7 @@ Install [Homebrew](https://brew.sh) first if `brew` is missing (`install.sh` pri
 No file needed. In iTerm2 > Settings > Profiles:
 
 - **Keys > General**: set Left Option key to `Esc+` (so Alt maps work in nvim and tmux).
-- **Text > Font**: pick `JetBrainsMono Nerd Font` (icons in the prompt, nvim and eza).
+- **Text > Font**: pick `JetBrainsMono Nerd Font` (installed by the Brewfile cask; icons in the prompt, nvim and eza).
 - **Terminal > Report terminal type**: `xterm-256color`. Colors are true color, set in the profile's color preset (try Tokyo Night).
 
 ## Key cheat sheet
@@ -109,6 +109,13 @@ vim-tmux-navigator takes `Ctrl+L` without prefix, so clear the screen with `pref
 
 Press `<leader>` and wait: which-key lists the options.
 
+## Fonts
+
+- **Ghostty**: nothing to do. It bundles JetBrains Mono and Nerd Font icons.
+- **iTerm**: uses the `font-jetbrains-mono-nerd-font` cask from the `Brewfile`.
+- **Other Linux terminals**: `install.sh` downloads the font into `~/.local/share/fonts` (desktop only, not `--server`; needs `fc-cache`).
+- **Switch fonts**: change `NERD_FONT` in `install.sh`, the cask name in the `Brewfile` and `font-family` in the Ghostty config.
+
 ## Tools
 
 - **neovim**: editor. **tmux**: sessions and panes. **stow**: symlinks the packages.
@@ -119,7 +126,7 @@ Press `<leader>` and wait: which-key lists the options.
 - **git-delta**: diff pager. **lazygit** / **lazydocker**: terminal UIs. **dive**: Docker layer explorer. **gh**: GitHub CLI. **git-lfs**: large files in git.
 - **mise**: per-project runtimes. **zig** / **zls**: Zig toolchain and language server.
 - **shellcheck** / **shfmt** / **golangci-lint**: shell and Go linters/formatters. **tree-sitter-cli**: builds treesitter parsers.
-- macOS only (casks): **ghostty** terminal and the **JetBrainsMono Nerd Font**.
+- macOS only (casks): **ghostty** terminal and the **JetBrainsMono Nerd Font** (for iTerm).
 - Optional (commented in `Brewfile`): **atuin** (shared shell history), **mosh** (roaming-proof SSH).
 
 ## SSH
