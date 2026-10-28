@@ -367,15 +367,14 @@ sync_iterm() {
   command -v plutil >/dev/null 2>&1 || return 0     # plutil ships with macOS
   dir="$(dirname "$ITERM_PROFILE")"                 # DynamicProfiles folder
   mkdir -p "$dir"                                   # iTerm creates it too; harmless
-  tmp="$(mktemp "${TMPDIR:-/tmp}/dotfiles-iterm.XXXXXX")"  # build outside the watched folder
+  tmp="$(mktemp "$dir/.dotfiles-iterm.XXXXXX")"  # same filesystem, hidden and no .plist: mv is one rename
   plutil -convert xml1 -o "$tmp" "$ITERM_TEMPLATE"  # copy the template (comments are dropped)
   plutil -replace "Profiles.0.Use Separate Colors for Light and Dark Mode" -bool YES "$tmp"  # follow macOS
   iterm_colors "$tmp" Light "$light_file" || { rm -f "$tmp"; return 1; }  # light appearance colors
   iterm_colors "$tmp" Dark "$dark_file" || { rm -f "$tmp"; return 1; }    # dark appearance colors
   plutil -lint -s "$tmp" || { rm -f "$tmp"; return 1; }  # never install a broken profile
-  rm -f "$ITERM_PROFILE"                            # drop the old symlink into the repo, if any
-  mv "$tmp" "$ITERM_PROFILE"                        # iTerm watches the folder and reloads it
-  chmod 644 "$ITERM_PROFILE"                        # mktemp files are private; make it a normal file
+  chmod 644 "$tmp"                                  # mktemp files are private; make it a normal file
+  mv "$tmp" "$ITERM_PROFILE"                        # atomic swap, replaces an old symlink: iTerm never sees a gap
   echo "iterm: $ITERM_PROFILE" >&2                  # report
 }
 
