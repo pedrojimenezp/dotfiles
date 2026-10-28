@@ -19,7 +19,8 @@
 	navigate = true                       # n/N jump between files in a diff
 	side-by-side = false                  # unified view (narrow terminals, tmux panes)
 	line-numbers = true                   # show line numbers in diffs
-	detect-dark-light = auto              # pick light or dark colors from the terminal background
+	syntax-theme = ansi                   # highlight code with the terminal's 16 colors (follows any theme)
+	detect-dark-light = auto              # pick light or dark diff backgrounds from the terminal background
 
 [pull]
 	rebase = true                         # rebase instead of merge on pull
