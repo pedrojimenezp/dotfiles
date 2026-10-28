@@ -114,7 +114,7 @@ theme dark             # force dark (saved)
 theme light            # force light (saved)
 theme toggle           # flip; from auto, go to the opposite of macOS
 theme auto             # back to the terminal's own profile (follows macOS)
-theme status           # print the saved mode: dark, light or auto
+theme status           # print the mode and the light/dark picks (* marks the one in use)
 tt                     # alias for theme toggle
 ```
 

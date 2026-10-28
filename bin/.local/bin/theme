@@ -33,7 +33,7 @@ usage: theme <command> [--tty <path>] [--print]
   dark | light | auto      set the mode (auto = terminal profile, follows macOS) and apply it
   toggle                   flip between light and dark
   apply                    re-apply the saved mode
-  status                   print the saved mode
+  status                   print the mode and the light/dark picks (* = in use)
   pick [light|dark]        choose a theme with fzf and live preview (default: the current mode's slot)
   set light|dark <name>    save <name> as the light or dark theme, sync and apply
   list                     print every available theme name
@@ -400,6 +400,17 @@ set_theme() {
   apply_state "$(read_state)"                       # recolor this terminal
 }
 
+# Print the mode and both picked themes, marking the one in use.
+status_report() {
+  local state mode light dark lmark="" dmark=""     # saved mode, effective mode, picks, markers
+  state="$(read_state)"                             # dark, light or auto
+  mode="$(effective_mode)"                          # what is showing now
+  light="$(config_get light)" dark="$(config_get dark)"  # the pair from the config
+  if [[ $state == auto ]]; then state="auto ($mode now)"; fi  # show what auto resolves to
+  if [[ $mode == light ]]; then lmark="  *"; else dmark="  *"; fi  # mark the one in use
+  printf 'mode:  %s\nlight: %s%s\ndark:  %s%s\n' "$state" "$light" "$lmark" "$dark" "$dmark"  # report
+}
+
 # --- Picker (fzf) ---
 
 # Print a preview of a theme: the 16 colors as blocks and sample text on its background.
@@ -502,7 +513,7 @@ case $CMD in
     apply_state "$CMD"                              # show it now
     ;;
   apply) apply_state "$(read_state)" ;;             # re-apply the saved mode
-  status) read_state ;;                             # print the saved mode
+  status) status_report ;;                          # mode and both picks
   toggle)
     case $(read_state) in
       dark) new=light ;;                            # dark -> light

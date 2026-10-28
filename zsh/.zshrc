@@ -127,7 +127,8 @@ export BAT_THEME=ansi                     # bat uses the terminal's 16 colors, s
 # Re-apply a saved dark/light choice in new local terminals. Skipped over SSH: the local
 # terminal already has the colors, and a remote shell must not override them.
 if [[ -z ${SSH_CONNECTION:-}${SSH_TTY:-} && -t 1 ]] && command -v theme >/dev/null 2>&1; then
-  case $(theme status) in
+  # the first status line is "mode:  <dark|light|auto ...>"; take its second word
+  case $(theme status | awk 'NR==1 {print $2}') in
     dark|light) theme apply ;;            # auto needs nothing: the terminal profile follows macOS
   esac
 fi
