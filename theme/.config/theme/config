@@ -2,6 +2,6 @@
 # Names come from Ghostty's theme collection: run `theme list`, or pick with `theme pick`.
 # `theme pick` / `theme set` edit this file; commit it afterwards to keep the choice.
 # Theme used in light mode
-light = GitHub Light Default
+light = Dayfox
 # Theme used in dark mode
 dark = TokyoNight Night
