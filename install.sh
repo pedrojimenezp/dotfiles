@@ -162,6 +162,11 @@ if [[ ! -d "$TPM" ]] && command -v git >/dev/null 2>&1; then
   echo "==> Cloning TPM"
   run git clone --depth 1 https://github.com/tmux-plugins/tpm "$TPM"
 fi
+# Download the plugins listed in tmux.conf; works without a running tmux server
+if [[ -x "$TPM/bin/install_plugins" || $DRY -eq 1 ]]; then
+  echo "==> Installing tmux plugins"
+  run "$TPM/bin/install_plugins" || echo "Warning: tmux plugin install failed; press prefix + I in tmux" >&2
+fi
 
 # Step 5: Nerd Font for Linux desktop terminals (Ghostty and macOS need nothing).
 install_font() {
@@ -203,7 +208,7 @@ fi
 cat <<'MSG'
 
 Done. Next steps:
-  1. Open tmux and press prefix + I (Ctrl+Space, then Shift+i) to install plugins.
+  1. Open tmux; plugins are installed already (prefix + I, Ctrl+Space then Shift+i, retries).
   2. Open nvim once and let lazy.nvim install plugins (run :Mason to check LSP tools).
   3. Move secrets and machine-specific settings into ~/.zshrc.local (sourced last).
   4. Put machine-specific git settings in ~/.config/git/local.

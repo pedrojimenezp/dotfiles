@@ -12,7 +12,7 @@ Each top-level folder is a **stow package**: its contents mirror `$HOME`. For ex
 xcode-select --install   # Git and compilers, if you do not have them yet
 git clone https://github.com/pedrojimenezp/dotfiles ~/projects/personal/dotfiles
 cd ~/projects/personal/dotfiles
-./install.sh             # brew bundle, back up old files, stow, clone TPM, mise install, theme sync
+./install.sh             # brew bundle, back up old files, stow, clone TPM and its plugins, mise install, theme sync
 ```
 
 macOS apps (casks) install into `~/Applications`, so no admin rights are needed. `install.sh` only installs what is missing and never upgrades: run `brew upgrade` yourself when you want updates.
@@ -154,7 +154,7 @@ Shortcuts: `prefix t` in tmux and `<leader>ut` in Neovim toggle the mode.
 | `prefix t` | Toggle light/dark mode |
 | `prefix r` | Reload `tmux.conf` |
 | `prefix I` | Install TPM plugins |
-| `prefix Ctrl+s` / `Ctrl+r` | Save / restore sessions (resurrect) |
+| `prefix Ctrl+s` / `Ctrl+r` | Save / restore sessions (resurrect); continuum also saves every 15 minutes and restores on tmux start, so sessions survive `tmux kill-server` and reboots (panes running `ssh` re-run it) |
 | `prefix Ctrl+l` | Clear the screen |
 
 vim-tmux-navigator takes `Ctrl+L` without prefix, so clear the screen with `prefix` then `Ctrl+L`.
