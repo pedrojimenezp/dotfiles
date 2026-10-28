@@ -89,7 +89,7 @@ No file needed. In iTerm2 > Settings > Profiles:
 | `<leader><leader>` | Open buffers |
 | `<leader>sh` / `sk` / `sd` / `sr` | Help / keymaps / diagnostics / resume |
 | `-` | Open parent directory (oil) |
-| `gd` / `gr` / `gI` | Definition / references / implementation |
+| `gd` / `grr` / `gri` | Definition / references / implementation |
 | `grn` / `gra` / `K` | Rename / code action / hover (Neovim defaults) |
 | `<leader>rn` / `ca` / `th` | Rename / code action / toggle inlay hints |
 | `<leader>f` | Format buffer (also on save) |

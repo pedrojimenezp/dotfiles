@@ -80,7 +80,7 @@ else
 fi
 command -v bat >/dev/null 2>&1 && alias cat='bat --paging=never'  # highlighted cat
 command -v lazygit >/dev/null 2>&1 && alias lg='lazygit'          # git UI
-command -v lazydocker >/dev/null 2>&1 && alias ld='lazydocker'    # docker UI
+command -v lazydocker >/dev/null 2>&1 && alias lzd='lazydocker'    # docker UI
 alias ..='cd ..'                          # go up one directory
 alias gs='git status -sb'                 # short status
 alias gd='git diff'                       # unstaged diff

@@ -12,7 +12,8 @@ return {
     config = function()
       -- Keymaps and options when a server attaches to a buffer.
       -- Neovim 0.11 already defines: grn rename, gra code action, grr references,
-      -- gri implementation, gO document symbols, K hover.
+      -- gri implementation, gO document symbols, K hover. grr/gri are overridden below
+      -- with Telescope pickers (avoid a bare gr map: it delays the gr* defaults).
       vim.api.nvim_create_autocmd("LspAttach", {
         group = vim.api.nvim_create_augroup("user_lsp_attach", { clear = true }),
         callback = function(event)
@@ -21,8 +22,8 @@ return {
           end
           local tb = function(name) return function() require("telescope.builtin")[name]() end end -- lazy telescope picker
           map("gd", tb("lsp_definitions"), "Go to definition")
-          map("gr", tb("lsp_references"), "Go to references")
-          map("gI", tb("lsp_implementations"), "Go to implementation")
+          map("grr", tb("lsp_references"), "Go to references") -- overrides default grr with Telescope
+          map("gri", tb("lsp_implementations"), "Go to implementation") -- overrides default gri with Telescope
           map("<leader>D", tb("lsp_type_definitions"), "Type definition")
           map("<leader>ds", tb("lsp_document_symbols"), "Document symbols")
           map("<leader>ws", tb("lsp_dynamic_workspace_symbols"), "Workspace symbols")
