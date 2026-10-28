@@ -5,8 +5,7 @@ map("i", "jk", "<Esc>", { desc = "Leave insert mode" })
 map("n", "<Esc>", "<cmd>nohlsearch<CR>", { desc = "Clear search highlight" })
 
 -- Windows: Ctrl-h/j/k/l are handled by vim-tmux-navigator (works across tmux panes too).
-map("n", "<leader>sv", "<cmd>vsplit<CR>", { desc = "Split vertically" })
-map("n", "<leader>sh", "<cmd>split<CR>", { desc = "Split horizontally" })
+-- Splits use the built-in Ctrl-w v / Ctrl-w s (<leader>s is the Search group).
 
 -- Move lines (Alt-j / Alt-k), as in the old vimrc.
 map("n", "<A-j>", "<cmd>m .+1<CR>==", { desc = "Move line down" })
