@@ -7,3 +7,4 @@ require("config.options") -- editor options
 require("config.keymaps") -- general keymaps
 require("config.autocmds") -- autocommands
 require("config.lazy") -- bootstrap lazy.nvim and load lua/plugins/*
+require("config.theme").setup() -- colors from the dotfiles theme pair (needs the plugins above)

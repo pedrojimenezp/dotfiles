@@ -38,21 +38,10 @@ vim.api.nvim_create_autocmd("FileType", {
   end,
 })
 
--- Follow the saved theme (or macOS in auto mode) when focus returns, e.g. after toggling elsewhere.
+-- Follow the saved mode and theme pair when focus returns (`theme pick`, `tt` or macOS changed them).
 vim.api.nvim_create_autocmd("FocusGained", {
   group = group,
-  desc = "Sync background with the saved theme",
-  callback = function()
-    local dir = vim.env.XDG_STATE_HOME or (vim.env.HOME .. "/.local/state") -- same path as the theme script
-    local ok, lines = pcall(vim.fn.readfile, dir .. "/theme", "", 1) -- first line of the state file
-    local state = ok and lines[1] or "auto" -- missing file means auto
-    local want ---@type string?
-    if state == "dark" or state == "light" then
-      want = state -- explicit choice
-    elseif vim.fn.has("mac") == 1 then
-      local res = vim.system({ "defaults", "read", "-g", "AppleInterfaceStyle" }, { text = true }):wait() -- fails in light mode
-      want = vim.trim(res.stdout or "") == "Dark" and "dark" or "light" -- follow macOS
-    end
-    if want and vim.o.background ~= want then vim.o.background = want end -- only change when different
-  end,
+  desc = "Sync colors with the dotfiles theme",
+  nested = true, -- let the 'background' change fire OptionSet (lua/config/theme.lua reloads colors there)
+  callback = function() require("config.theme").sync() end, -- re-reads ~/.config/theme/config
 })

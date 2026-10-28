@@ -30,7 +30,8 @@ map("n", "<leader>q", "<cmd>quit<CR>", { desc = "Quit window" })
 map("n", "<leader>e", vim.diagnostic.open_float, { desc = "Show diagnostic" })
 map("n", "<leader>dq", vim.diagnostic.setloclist, { desc = "Diagnostics to location list" })
 
--- Toggle light/dark: the `theme` script recolors the terminal, then nvim follows.
+-- Toggle light/dark: the `theme` script recolors the terminal, then nvim follows (a 'background'
+-- change loads the other slot of ~/.config/theme/config, see lua/config/theme.lua).
 map("n", "<leader>ut", function()
   if vim.fn.executable("theme") == 1 then -- the script lives in ~/.local/bin
     local res = vim.system({ "theme", "toggle", "--print" }, { text = true }):wait() -- sync, returns escape codes
