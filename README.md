@@ -12,7 +12,7 @@ Each top-level folder is a **stow package**: its contents mirror `$HOME`. For ex
 xcode-select --install   # Git and compilers, if you do not have them yet
 git clone https://github.com/pedrojimenezp/dotfiles ~/projects/personal/dotfiles
 cd ~/projects/personal/dotfiles
-./install.sh             # brew bundle, back up old files, stow, clone TPM, mise install
+./install.sh             # brew bundle, back up old files, stow, clone TPM, mise install, theme sync
 ```
 
 macOS apps (casks) install into `~/Applications`, so no admin rights are needed. `install.sh` only installs what is missing and never upgrades: run `brew upgrade` yourself when you want updates.
@@ -34,11 +34,11 @@ Install [Homebrew](https://brew.sh) first if `brew` is missing (`install.sh` pri
 3. Move secrets and machine settings into `~/.zshrc.local` (sourced last, not tracked).
 4. Put machine-specific git settings in `~/.config/git/local`.
 
-`install.sh` is idempotent. If `stow` is missing it falls back to plain symlinks. Existing real files are renamed to `<file>.backup-YYYYmmdd-HHMMSS`. `~/.gitconfig` is backed up too, because it takes precedence over `~/.config/git/config`.
+`install.sh` is idempotent. It stows with `--no-folding`, so every file is its own link and folders like `~/.config/ghostty` stay real (generated files never land in the repo). If `stow` is missing it falls back to plain symlinks. Existing real files are renamed to `<file>.backup-YYYYmmdd-HHMMSS`. `~/.gitconfig` is backed up too, because it takes precedence over `~/.config/git/config`.
 
 ```sh
 ./install.sh --dry-run   # show what would happen, change nothing
-./install.sh --server    # no Homebrew: only zsh, tmux, vim, git, bin
+./install.sh --server    # no Homebrew: only zsh, tmux, vim, git, bin, theme
 ./install.sh --with-claude  # also clone and install the private Claude config (needs GitHub SSH access)
 ```
 
@@ -52,14 +52,17 @@ Install [Homebrew](https://brew.sh) first if `brew` is missing (`install.sh` pri
 | `vim` | `~/.vimrc` | Small plugin-free vimrc for servers. |
 | `git` | `~/.config/git/{config,ignore}` | Git defaults, delta pager, aliases, global ignores, `local` include. |
 | `starship` | `~/.config/starship.toml` | Prompt layout. |
-| `ghostty` | `~/.config/ghostty/config` | Ghostty terminal (optional; linked only if Ghostty is installed). Uses the Monaspice Nerd Font (Neon and Radon). |
-| `iterm` | `~/Library/Application Support/iTerm2/DynamicProfiles/dotfiles.plist` | iTerm2 Dynamic Profile "Dotfiles" (macOS only): Monaspace Neon font, Tokyo Night colors, Option as Esc+. |
+| `ghostty` | `~/.config/ghostty/config` | Ghostty terminal (optional; linked only if Ghostty is installed). Uses the Monaspice Nerd Font (Neon and Radon). Colors come from the generated `theme.conf` next to it. |
+| `iterm` | `~/.config/iterm/dotfiles-profile.plist` | Template for the iTerm2 Dynamic Profile "Dotfiles" (macOS only): Monaspace Neon font, Option as Esc+. `theme sync` adds the colors and writes the real profile. |
 | `mise` | `~/.config/mise/config.toml` | Global mise defaults: node (LTS) and go (latest), `.nvmrc` support. Zig stays in Homebrew. |
-| `bin` | `~/.local/bin` | Scripts on PATH: `tmux-sessionizer`, `theme` (light/dark switch). |
+| `bin` | `~/.local/bin` | Scripts on PATH: `tmux-sessionizer`, `theme` (theme picker and light/dark switch). |
+| `theme` | `~/.config/theme/config` | The light/dark theme pair (tracked), used by the terminals, tmux and Neovim. |
+
+When Neovim is installed, the `vim` and `vi` aliases open `nvim`; `command vim` runs the real Vim.
 
 ### Server mode
 
-`./install.sh --server` skips Homebrew and Ghostty, and stows only `zsh`, `tmux`, `vim`, `git` and `bin`. The zsh config guards every tool, so it works with only the tools the server has. Over SSH, tmux (`set-clipboard on`) and nvim (OSC 52) copy to your local clipboard.
+`./install.sh --server` skips Homebrew and Ghostty, and stows only `zsh`, `tmux`, `vim`, `git`, `bin` and `theme`. The zsh config guards every tool, so it works with only the tools the server has. Over SSH, tmux (`set-clipboard on`) and nvim (OSC 52) copy to your local clipboard.
 
 ## Runtimes (mise)
 
@@ -79,38 +82,62 @@ On a new machine run `./install.sh --with-claude` (needs GitHub SSH access). It 
 
 ## iTerm settings
 
-The `iterm` package (macOS only, not in `--server` mode) installs a Dynamic Profile named "Dotfiles": font, colors, Option keys, `xterm-256color` and unlimited scrollback.
+The `iterm` package (macOS only, not in `--server` mode) installs a profile template, `~/.config/iterm/dotfiles-profile.plist`: font, Option keys, `xterm-256color` and unlimited scrollback, no colors. `theme sync` (run by `install.sh`, `theme set` and `theme pick`) adds the colors of the light/dark pair and writes a real file, `~/Library/Application Support/iTerm2/DynamicProfiles/dotfiles.plist`, a Dynamic Profile named "Dotfiles" with separate light and dark colors.
 
-One manual step per machine: iTerm Settings > Profiles > select "Dotfiles" > Other Actions > Set as Default.
+One manual step per machine: iTerm Settings > Profiles > select "Dotfiles" > Other Actions > Set as Default. The profile keeps the same Guid, so this survives every sync.
 
-Dynamic Profiles are read-only in the UI: change `iterm/Library/Application Support/iTerm2/DynamicProfiles/dotfiles.plist` in the repo (iTerm reloads it on save).
-
-iTerm re-reads Dynamic Profiles only when a file inside its folder changes; after pulling a change to the profile, restart iTerm (Cmd+Q) to apply it.
+Dynamic Profiles are read-only in the UI: change the template in the repo, then run `theme sync`. iTerm watches the DynamicProfiles folder and reloads the profile when `theme sync` rewrites it. Older installs linked that file into the repo; `install.sh` removes the old link. If iTerm ever misses a change, restart it (Cmd+Q).
 
 ## Light and dark themes
 
-The palette is TokyoNight Day (light) and Night (dark), the same colors in Ghostty, iTerm, tmux and Neovim. The default is `auto`: the terminal follows the macOS appearance and the `theme` script does nothing.
+Two settings decide the colors:
 
-```sh
-theme dark     # force dark (saved)
-theme light    # force light (saved)
-theme toggle   # flip; from auto, go to the opposite of macOS
-theme auto     # reset to the terminal's own profile (follows macOS)
-theme status   # print the saved state: dark, light or auto
-tt             # alias for theme toggle
+- **The theme pair** (tracked): `~/.config/theme/config` names one theme for light mode and one for dark mode. It is part of the repo, so every machine gets the same pair.
+- **The mode** (per machine): `auto`, `light` or `dark`, saved in `~/.local/state/theme`. In `auto` the terminal follows the macOS appearance.
+
+```
+# ~/.config/theme/config
+light = GitHub Light Default
+dark = TokyoNight Night
 ```
 
-When Neovim is installed, the `vim` and `vi` aliases open `nvim`; `command vim` runs the real Vim.
+Theme names come from Ghostty's collection (several hundred themes, the [iTerm2-Color-Schemes](https://github.com/mbadolato/iTerm2-Color-Schemes) project). The `theme` script looks a name up in this order: its own cache (`~/.local/share/theme/themes`), the themes bundled with Ghostty (the macOS app, or `/usr/share/ghostty/themes` on Linux), then downloads it from GitHub into the cache. So servers without Ghostty work too, with `curl`.
 
-Shortcuts: `prefix t` in tmux, `<leader>ut` in Neovim.
+```sh
+theme pick             # choose the theme for the current mode with fzf (live preview)
+theme pick dark        # choose the dark theme, even while in light mode
+theme set light "Flexoki Light"  # same without fzf
+theme list             # every theme name
+theme file "Nord"      # path of a theme file (downloads it if needed)
+theme sync             # regenerate the Ghostty and iTerm files from the pair
+theme dark             # force dark (saved)
+theme light            # force light (saved)
+theme toggle           # flip; from auto, go to the opposite of macOS
+theme auto             # back to the terminal's own profile (follows macOS)
+theme status           # print the saved mode: dark, light or auto
+tt                     # alias for theme toggle
+```
 
-**How it works.** `theme` saves the choice in `~/.local/state/theme` and sends OSC escape sequences that change the terminal's own palette, background, foreground and cursor (`auto` sends the OSC resets). Because the colors live in the terminal, not in each program, it works over SSH and in tmux: inside tmux the sequences are wrapped in DCS passthrough (`allow-passthrough on`), and `prefix t` writes straight to the client's tty. New local shells run `theme apply` when the saved state is dark or light (not over SSH). tmux uses palette color names, so its status line adapts. Neovim (tokyonight `night` and `day`) follows `background`, bat uses `BAT_THEME_DARK` / `BAT_THEME_LIGHT`, and delta uses `detect-dark-light`. Ghostty and iTerm switch with macOS on their own.
+Shortcuts: `prefix t` in tmux and `<leader>ut` in Neovim toggle the mode.
+
+**Picking a theme.** `theme pick` opens fzf over `theme list`. Moving through the list recolors the terminal right away, and the preview pane shows the 16 colors and some sample code. Enter saves the name in `~/.config/theme/config`, runs `theme sync` and applies the current mode. Esc puts the previous colors back. Without fzf, use `theme set`. The config file is a link into the repo, so a pick changes a tracked file: **commit it** to keep the choice on every machine.
+
+**How each tool follows.**
+
+- **Terminal (any, also over SSH)**: `theme dark`/`light` send OSC escape sequences that set the terminal's palette, background, foreground and cursor from the theme file (`auto` sends the resets). Inside tmux they are wrapped in DCS passthrough (`allow-passthrough on`); `prefix t` writes straight to the client's tty. New local shells run `theme apply` when the mode is dark or light (not over SSH).
+- **Ghostty**: the tracked config includes `config-file = ?theme.conf`; `theme sync` writes `~/.config/ghostty/theme.conf` with `theme = light:<light>,dark:<dark>`, so Ghostty switches with macOS by itself. Downloaded themes are copied to `~/.config/ghostty/themes` (colors only). `theme sync` sends Ghostty `SIGUSR2` to reload; if a window keeps the old colors, reload with `Cmd+Shift+,` (or `Cmd+Shift+R` from this config).
+- **iTerm**: `theme sync` writes the "Dotfiles" Dynamic Profile with light and dark colors (see [iTerm settings](#iterm-settings)); iTerm reloads it by itself.
+- **tmux**: the status line uses palette color names, so it follows the terminal.
+- **Neovim**: `background` picks the slot, the slot's name picks the colorscheme: `TokyoNight …` uses tokyonight.nvim, `GitHub …` uses github-nvim-theme, and any other theme is built with `mini.base16` from the theme file. Open instances update on `<leader>ut` and when they regain focus (so a `theme pick` in the shell shows up when you return).
+- **bat and delta**: both use the `ansi` theme, which draws with the terminal's 16 colors, so they match any theme. delta still uses `detect-dark-light` for its diff backgrounds.
 
 **Limits.**
 
-- A new window flashes the terminal's default colors for a moment before the saved theme applies.
+- A new window flashes the terminal's default colors for a moment before the saved mode applies.
 - A tmux inside a remote tmux is not wrapped twice, so toggling from there only reaches the inner tmux.
-- Open Neovim instances update on `<leader>ut` or when they regain focus.
+- `theme list` without Ghostty uses the GitHub contents API (cached for a day), which returns at most 1000 names.
+- Downloaded themes are not updated; delete `~/.local/share/theme/themes/<name>` to fetch one again.
+- Neovim's base16 fallback is an approximation of the terminal theme, not a hand-made colorscheme.
 
 ## Key cheat sheet
 
@@ -124,7 +151,7 @@ Shortcuts: `prefix t` in tmux, `<leader>ut` in Neovim.
 | `Ctrl+h/j/k/l` | Move between panes and nvim splits (no prefix) |
 | `prefix [` then `v`, `y` | Copy mode: select, copy (also to the system clipboard) |
 | `prefix f` | Project session picker (fzf over `~/projects`, or `$SESSIONIZER_DIRS`) |
-| `prefix t` | Toggle light/dark theme |
+| `prefix t` | Toggle light/dark mode |
 | `prefix r` | Reload `tmux.conf` |
 | `prefix I` | Install TPM plugins |
 | `prefix Ctrl+s` / `Ctrl+r` | Save / restore sessions (resurrect) |
@@ -136,8 +163,11 @@ vim-tmux-navigator takes `Ctrl+L` without prefix, so clear the screen with `pref
 
 | Command | Action |
 | --- | --- |
-| `tt` | Toggle light/dark theme |
-| `theme dark`, `light`, `auto` | Set the theme (auto follows macOS) |
+| `tt` | Toggle light/dark mode |
+| `theme dark`, `light`, `auto` | Set the mode (auto follows macOS) |
+| `theme pick` | Choose the theme for the current mode (fzf, live preview) |
+| `theme set light NAME` | Save a theme without fzf (`dark` for the dark slot) |
+| `theme list` | List every theme name |
 
 ### Neovim (leader: `Space`)
 
@@ -162,7 +192,7 @@ vim-tmux-navigator takes `Ctrl+L` without prefix, so clear the screen with `pref
 | `<leader>f` | Format buffer (also on save) |
 | `]c` / `[c`, `<leader>hs/hr/hp/hb` | Git hunks: next/prev, stage, reset, preview, blame |
 | `<leader>e` / `dq` | Show diagnostic under cursor / send diagnostics to the location list |
-| `<leader>ut` | Toggle light/dark theme |
+| `<leader>ut` | Toggle light/dark mode (terminal and Neovim) |
 | `Alt+j` / `Alt+k` | Move line or selection |
 | `sa` / `sd` / `sr` | mini.surround: add, delete, replace |
 
@@ -175,7 +205,7 @@ Press Space and wait: which-key lists the options.
 - **Ghostty**: `font-family = MonaspiceNe Nerd Font` and `font-family-italic = MonaspiceRn Nerd Font`.
 - **Ghostty CLI**: on macOS the `ghostty` command comes from the app bundle and `.zshrc` adds it to `PATH`. Handy: `ghostty +list-fonts`, `ghostty +show-config`, `ghostty +list-themes`.
 - **iTerm**: the "Dotfiles" profile uses `MonaspiceNeNF 14` (the PostScript name; find it with `mdls -name com_apple_ats_name_postscript <font file>` when switching fonts).
-- **Switch fonts**: change `NERD_FONT` and `NERD_FONT_FAMILY` in `install.sh`, the cask in the `Brewfile`, `font-family` and `font-family-italic` in the Ghostty config, and `Normal Font` in the iTerm plist.
+- **Switch fonts**: change `NERD_FONT` and `NERD_FONT_FAMILY` in `install.sh`, the cask in the `Brewfile`, `font-family` and `font-family-italic` in the Ghostty config, and `Normal Font` in the iTerm template (`iterm/.config/iterm/dotfiles-profile.plist`).
 
 ## Tools
 
