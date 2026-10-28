@@ -1,5 +1,7 @@
 # Brewfile: install everything with `brew bundle` (see install.sh).
 
+cask_args appdir: "~/Applications" # per-user app folder: casks never need sudo or admin rights
+
 # --- Editor and terminal ---
 brew "neovim"                  # main editor (Lua config in nvim/)
 brew "tmux"                    # terminal multiplexer: sessions, windows, panes

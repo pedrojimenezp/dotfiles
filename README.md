@@ -15,6 +15,8 @@ cd ~/projects/personal/dotfiles
 ./install.sh             # brew bundle, back up old files, stow, clone TPM, mise install
 ```
 
+macOS apps (casks) install into `~/Applications`, so no admin rights are needed. `install.sh` only installs what is missing and never upgrades: run `brew upgrade` yourself when you want updates.
+
 Install [Homebrew](https://brew.sh) first if `brew` is missing (`install.sh` prints the command and stops).
 
 ### Linux
@@ -67,7 +69,7 @@ Global defaults (node LTS, latest go) live in the `mise` package, so `mise use -
 - **New machine**: `./install.sh` runs `mise install` (or run it yourself).
 - **Updates**: `mise outdated` shows what is behind, `mise upgrade` updates it.
 - **Go**: the `toolchain` line in `go.mod` still works. `go install` tools land in `~/go/bin`.
-- **Old mise**: if an older mise sits in `~/.local/bin` (earlier on PATH), delete it so the Homebrew one is used.
+- **Old mise**: a standalone mise in `~/.local/bin` comes first on PATH and shadows the Homebrew one, so `./install.sh` renames it to `mise.backup-<stamp>` (full mode only).
 
 ## Claude Code
 

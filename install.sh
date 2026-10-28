@@ -60,7 +60,8 @@ fi
 if [[ $SERVER -eq 0 ]]; then
   if command -v brew >/dev/null 2>&1; then
     echo "==> Installing Homebrew packages"
-    run brew bundle --file="$REPO/Brewfile"
+    # Upgrades are a separate, deliberate `brew upgrade`.
+    run brew bundle --no-upgrade --file="$REPO/Brewfile"
   else
     cat <<'MSG'
 Homebrew was not found. Install it first (this script never uses sudo):
@@ -87,6 +88,15 @@ backup() {
     run mv "$path" "$path.backup-$STAMP"
   fi
 }
+
+# Step 1b: an old standalone mise in ~/.local/bin shadows the Homebrew one on PATH.
+if [[ $SERVER -eq 0 ]]; then
+  BREW_MISE="$(brew --prefix 2>/dev/null)/bin/mise" # Homebrew's copy
+  if [[ -x "$BREW_MISE" && -f "$HOME/.local/bin/mise" && ! -L "$HOME/.local/bin/mise" ]]; then
+    echo "==> $HOME/.local/bin/mise shadows the Homebrew mise on PATH; backing it up"
+    backup "$HOME/.local/bin/mise"
+  fi
+fi
 
 # Step 2: back up every file a package would link, so stow never conflicts.
 echo "==> Backing up existing files"
