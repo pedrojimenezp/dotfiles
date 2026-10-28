@@ -1,7 +1,12 @@
 # ~/.config/ghostty/config: Ghostty terminal (https://ghostty.org/docs/config).
 
-# Font: Ghostty bundles JetBrains Mono plus Nerd Font icons, so nothing to install.
-# To override, set `font-family = <name>`
+# Font: Monaspace (GitHub Next) Nerd Font, installed by the Brewfile cask or install.sh.
+# Neon for code
+font-family = MonaspiceNe Nerd Font
+# Radon (handwriting style) for italics and comments
+font-family-italic = MonaspiceRn Nerd Font
+# Ghostty still falls back to its built-in Nerd Font symbols for icons.
+# Monaspace texture healing relies on the `calt` font feature: on by default, do not disable it.
 # text size in points
 font-size = 14
 # matches the nvim colorscheme (tokyonight-night)

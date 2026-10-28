@@ -49,7 +49,8 @@ Install [Homebrew](https://brew.sh) first if `brew` is missing (`install.sh` pri
 | `vim` | `~/.vimrc` | Small plugin-free vimrc for servers. |
 | `git` | `~/.config/git/{config,ignore}` | Git defaults, delta pager, aliases, global ignores, `local` include. |
 | `starship` | `~/.config/starship.toml` | Prompt layout. |
-| `ghostty` | `~/.config/ghostty/config` | Ghostty terminal (optional; linked only if Ghostty is installed). Its built-in JetBrains Mono with Nerd Font icons needs nothing installed. |
+| `ghostty` | `~/.config/ghostty/config` | Ghostty terminal (optional; linked only if Ghostty is installed). Uses the Monaspice Nerd Font (Neon and Radon). |
+| `iterm` | `~/Library/Application Support/iTerm2/DynamicProfiles/dotfiles.plist` | iTerm2 Dynamic Profile "Dotfiles" (macOS only): Monaspace Neon font, Tokyo Night colors, Option as Esc+. |
 | `bin` | `~/.local/bin` | Scripts on PATH: `tmux-sessionizer`. |
 
 ### Server mode
@@ -58,11 +59,11 @@ Install [Homebrew](https://brew.sh) first if `brew` is missing (`install.sh` pri
 
 ## iTerm settings
 
-No file needed. In iTerm2 > Settings > Profiles:
+The `iterm` package (macOS only, not in `--server` mode) installs a Dynamic Profile named "Dotfiles": font, colors, Option keys, `xterm-256color` and unlimited scrollback.
 
-- **Keys > General**: set Left Option key to `Esc+` (so Alt maps work in nvim and tmux).
-- **Text > Font**: pick `JetBrainsMono Nerd Font` (installed by the Brewfile cask; icons in the prompt, nvim and eza).
-- **Terminal > Report terminal type**: `xterm-256color`. Colors are true color, set in the profile's color preset (try Tokyo Night).
+One manual step per machine: iTerm Settings > Profiles > select "Dotfiles" > Other Actions > Set as Default.
+
+Dynamic Profiles are read-only in the UI: change `iterm/Library/Application Support/iTerm2/DynamicProfiles/dotfiles.plist` in the repo (iTerm reloads it on save).
 
 ## Key cheat sheet
 
@@ -111,10 +112,11 @@ Press `<leader>` and wait: which-key lists the options.
 
 ## Fonts
 
-- **Ghostty**: nothing to do. It bundles JetBrains Mono and Nerd Font icons.
-- **iTerm**: uses the `font-jetbrains-mono-nerd-font` cask from the `Brewfile`.
-- **Other Linux terminals**: `install.sh` downloads the font into `~/.local/share/fonts` (desktop only, not `--server`; needs `fc-cache`).
-- **Switch fonts**: change `NERD_FONT` in `install.sh`, the cask name in the `Brewfile` and `font-family` in the Ghostty config.
+[Monaspace](https://monaspace.githubnext.com) (GitHub Next): **Neon** for code and **Radon** (handwriting style) for italics. It is installed as the Monaspice Nerd Font (Nerd Fonts renames Monaspace): by the Brewfile cask on macOS and by `install.sh` on a Linux desktop (into `~/.local/share/fonts`, not `--server`; needs `fc-cache`).
+
+- **Ghostty**: `font-family = MonaspiceNe Nerd Font` and `font-family-italic = MonaspiceRn Nerd Font`.
+- **iTerm**: the "Dotfiles" profile uses `MonaspiceNeNF-Regular 14`.
+- **Switch fonts**: change `NERD_FONT` and `NERD_FONT_FAMILY` in `install.sh`, the cask in the `Brewfile`, `font-family` and `font-family-italic` in the Ghostty config, and `Normal Font` in the iTerm plist.
 
 ## Tools
 
@@ -126,7 +128,7 @@ Press `<leader>` and wait: which-key lists the options.
 - **git-delta**: diff pager. **lazygit** / **lazydocker**: terminal UIs. **dive**: Docker layer explorer. **gh**: GitHub CLI. **git-lfs**: large files in git.
 - **mise**: per-project runtimes. **zig** / **zls**: Zig toolchain and language server.
 - **shellcheck** / **shfmt** / **golangci-lint**: shell and Go linters/formatters. **tree-sitter-cli**: builds treesitter parsers.
-- macOS only (casks): **ghostty** terminal and the **JetBrainsMono Nerd Font** (for iTerm).
+- macOS only (casks): **ghostty** terminal and the **Monaspice Nerd Font** (Monaspace, for Ghostty and iTerm).
 - Optional (commented in `Brewfile`): **atuin** (shared shell history), **mosh** (roaming-proof SSH).
 
 ## SSH

@@ -8,7 +8,8 @@ REPO_REAL="$(cd "$REPO" && pwd -P)"                  # physical path (no symlink
 STAMP="$(date +%Y%m%d-%H%M%S)"                       # suffix for backup files
 SERVER=0                                             # 1 = minimal mode without Homebrew
 DRY=0                                                # 1 = print actions, change nothing
-NERD_FONT="JetBrainsMono"                            # Nerd Fonts release name; change to switch fonts
+NERD_FONT="Monaspace"                                # Nerd Fonts release archive name; change to switch fonts
+NERD_FONT_FAMILY="Monaspice"                         # family prefix fc-list reports (Nerd Fonts renames Monaspace)
 
 for arg in "$@"; do # parse command-line flags
   case "$arg" in
@@ -44,6 +45,11 @@ fi
 # Ghostty is optional: link its config only if the app or binary exists.
 if [[ $SERVER -eq 0 ]] && { [[ -d /Applications/Ghostty.app ]] || command -v ghostty >/dev/null 2>&1; }; then
   PACKAGES+=(ghostty)
+fi
+
+# iTerm Dynamic Profile: macOS only, never in server mode.
+if [[ $SERVER -eq 0 && "$OSTYPE" == darwin* ]]; then
+  PACKAGES+=(iterm)
 fi
 
 # Step 1: Homebrew packages (full mode only).
@@ -129,7 +135,8 @@ fi
 # Step 5: Nerd Font for Linux desktop terminals (Ghostty and macOS need nothing).
 install_font() {
   local dir="$HOME/.local/share/fonts/${NERD_FONT}NerdFont" tmp # per-user dir, no sudo
-  if fc-list | grep -qi "${NERD_FONT} Nerd Font" || [[ -n "$(ls -A "$dir" 2>/dev/null)" ]]; then
+  # fc-list shows Monaspice families as "MonaspiceNe Nerd Font", so match the family prefix
+  if fc-list | grep -qi "${NERD_FONT_FAMILY}.* Nerd Font" || [[ -n "$(ls -A "$dir" 2>/dev/null)" ]]; then
     return 0 # already installed
   fi
   echo "==> Installing ${NERD_FONT} Nerd Font"
