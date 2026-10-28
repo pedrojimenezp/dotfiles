@@ -34,6 +34,13 @@ case $OSTYPE in
   darwin*)
     alias o='open'                        # open files/URLs with the default app
     alias ls='ls -G'                      # colored ls (replaced by eza below if installed)
+    for ghostty_dir in "$HOME/Applications/Ghostty.app/Contents/MacOS" /Applications/Ghostty.app/Contents/MacOS; do # new appdir first, then old
+      if [[ -x $ghostty_dir/ghostty ]]; then  # skip empty leftover app folders
+        path+=("$ghostty_dir")                # ghostty CLI lives inside the app bundle
+        break                                 # use the first install found
+      fi
+    done
+    unset ghostty_dir                         # keep the shell namespace clean
     ;;
   linux*)
     alias o='xdg-open'                    # open files/URLs with the default app

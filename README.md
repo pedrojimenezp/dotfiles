@@ -135,6 +135,7 @@ Press `<leader>` and wait: which-key lists the options.
 [Monaspace](https://monaspace.githubnext.com) (GitHub Next): **Neon** for code and **Radon** (handwriting style) for italics. It is installed as the Monaspice Nerd Font (Nerd Fonts renames Monaspace): by the Brewfile cask on macOS and by `install.sh` on a Linux desktop (into `~/.local/share/fonts`, not `--server`; needs `fc-cache`).
 
 - **Ghostty**: `font-family = MonaspiceNe Nerd Font` and `font-family-italic = MonaspiceRn Nerd Font`.
+- **Ghostty CLI**: on macOS the `ghostty` command comes from the app bundle and `.zshrc` adds it to `PATH`. Handy: `ghostty +list-fonts`, `ghostty +show-config`, `ghostty +list-themes`.
 - **iTerm**: the "Dotfiles" profile uses `MonaspiceNeNF-Regular 14`.
 - **Switch fonts**: change `NERD_FONT` and `NERD_FONT_FAMILY` in `install.sh`, the cask in the `Brewfile`, `font-family` and `font-family-italic` in the Ghostty config, and `Normal Font` in the iTerm plist.
 
