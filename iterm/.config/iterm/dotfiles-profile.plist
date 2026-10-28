@@ -28,6 +28,16 @@
     <key>Unlimited Scrollback</key><true/>
     <!-- "No" = new sessions start in the home folder -->
     <key>Custom Directory</key><string>No</string>
+    <!-- key mappings: key code and modifiers -> action -->
+    <key>Keyboard Map</key>
+    <dict>
+      <!-- Cmd-K (0x6b = k, 0x100000 = Command): action 11 sends hex codes Ctrl-Space (tmux prefix) + Ctrl-L to clear the pane -->
+      <key>0x6b-0x100000</key>
+      <dict>
+        <key>Action</key><integer>11</integer>
+        <key>Text</key><string>0x00 0x0c</string>
+      </dict>
+    </dict>
     </dict>
   </array>
 </dict>

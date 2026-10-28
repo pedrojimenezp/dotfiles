@@ -49,3 +49,7 @@ keybind = cmd+shift+d=new_split:down
 keybind = cmd+shift+enter=toggle_split_zoom
 # Cmd-Shift-R: reload this config
 keybind = cmd+shift+r=reload_config
+# Cmd-K: clear the tmux pane. Sends Ctrl-Space (tmux prefix, \x00) then Ctrl-L (\x0c)
+keybind = cmd+k=text:\x00\x0c
+# Ctrl-Shift-K: same on Linux, where there is no Cmd
+keybind = ctrl+shift+k=text:\x00\x0c

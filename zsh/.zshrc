@@ -63,6 +63,13 @@ setopt AUTO_CD                            # typing a directory name cd's into it
 setopt INTERACTIVE_COMMENTS               # allow # comments at the prompt
 setopt NO_BEEP                            # no terminal bell
 bindkey -e                                # emacs keymap (Ctrl-A, Ctrl-E, Ctrl-R, ...)
+# Ctrl-L also wipes the scrollback (CSI 3 J), like a full clear; Cmd-K relies on this outside tmux
+clear-screen-and-scrollback() {
+  printf '\e[3J'                           # ask the terminal to erase its scrollback
+  zle clear-screen                          # then the normal clear + prompt redraw
+}
+zle -N clear-screen-and-scrollback        # register the function as a widget
+bindkey '^L' clear-screen-and-scrollback  # Ctrl-L runs it
 
 # --- Completion ---
 # Extra completions from Homebrew must be on fpath before compinit.
