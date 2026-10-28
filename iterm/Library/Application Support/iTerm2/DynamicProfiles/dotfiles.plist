@@ -27,6 +27,8 @@
     <key>Unlimited Scrollback</key><true/>
     <!-- "No" = new sessions start in the home folder -->
     <key>Custom Directory</key><string>No</string>
+    <!-- one Tokyo Night palette in both light and dark macOS appearance -->
+    <key>Use Separate Colors for Light and Dark Mode</key><false/>
     <!-- text color (#c0caf5) -->
     <key>Foreground Color</key>
     <dict>

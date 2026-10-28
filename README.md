@@ -85,6 +85,8 @@ One manual step per machine: iTerm Settings > Profiles > select "Dotfiles" > Oth
 
 Dynamic Profiles are read-only in the UI: change `iterm/Library/Application Support/iTerm2/DynamicProfiles/dotfiles.plist` in the repo (iTerm reloads it on save).
 
+iTerm re-reads Dynamic Profiles only when a file inside its folder changes; after pulling a change to the profile, restart iTerm (Cmd+Q) to apply it.
+
 ## Key cheat sheet
 
 ### tmux (prefix: `Ctrl+Space`)
