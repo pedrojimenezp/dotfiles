@@ -41,12 +41,12 @@ run() {
 
 # Packages to link: full mode vs server mode.
 if [[ $SERVER -eq 1 ]]; then
-  PACKAGES=(zsh tmux vim git bin)
+  PACKAGES=(zsh tmux vim git bin theme)
 else
-  PACKAGES=(zsh nvim tmux vim git starship mise bin)
+  PACKAGES=(zsh nvim tmux vim git starship mise bin theme)
 fi
 
-# iTerm Dynamic Profile: macOS only, never in server mode.
+# iTerm Dynamic Profile template (theme sync builds the real profile): macOS only, never in server mode.
 if [[ $SERVER -eq 0 && "$OSTYPE" == darwin* ]]; then
   PACKAGES+=(iterm)
 fi
@@ -126,17 +126,19 @@ link_package() {
   done < <(find "$REPO/$pkg" -type f -print0)
 }
 
+# Step 2b: the iTerm profile used to be a link into this repo; `theme sync` now writes a real file there.
+ITERM_PROFILE="$HOME/Library/Application Support/iTerm2/DynamicProfiles/dotfiles.plist" # generated profile
+OLD_TARGET="iterm/Library/Application Support/iTerm2/DynamicProfiles/dotfiles.plist" # where the old link pointed
+if [[ -L "$ITERM_PROFILE" && "$(readlink "$ITERM_PROFILE")" == *"$OLD_TARGET" ]]; then # old stow link (may dangle now)
+  echo "==> Removing the old iTerm profile link (theme sync recreates it)"
+  run rm "$ITERM_PROFILE" # only the link; the repo file is untouched
+fi
+
 # Step 3: link the packages.
 echo "==> Linking packages: ${PACKAGES[*]}"
 if command -v stow >/dev/null 2>&1; then
-  # Pre-create real directories so stow links files, not whole folders (keeps ~/.config writable).
-  for pkg in "${PACKAGES[@]}"; do
-    while IFS= read -r -d '' file; do
-      rel="${file#"$REPO/$pkg/"}"
-      run mkdir -p "$(dirname "$HOME/$rel")"
-    done < <(find "$REPO/$pkg" -type f -print0)
-  done
-  run stow --restow --dir="$REPO" --target="$HOME" "${PACKAGES[@]}"
+  # --no-folding links files, never whole folders: generated files (Ghostty theme.conf) stay out of the repo
+  run stow --restow --no-folding --dir="$REPO" --target="$HOME" "${PACKAGES[@]}"
 else
   echo "stow not found: falling back to plain symlinks"
   for pkg in "${PACKAGES[@]}"; do
@@ -189,6 +191,13 @@ if [[ $SERVER -eq 0 && "$OSTYPE" == linux* ]]; then
   else
     echo "==> Skipping Nerd Font: fc-cache not found"
   fi
+fi
+
+# Step 5b: generate the Ghostty and iTerm theme files from ~/.config/theme/config (full mode only).
+if [[ $SERVER -eq 0 ]]; then
+  echo "==> Generating terminal theme files (theme sync)"
+  # a failed sync (offline, unknown theme name) must not stop the install
+  run "$REPO/bin/.local/bin/theme" sync || echo "Warning: theme sync failed; run 'theme sync' later" >&2
 fi
 
 cat <<'MSG'

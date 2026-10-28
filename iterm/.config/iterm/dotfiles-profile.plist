@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- iTerm2 Dynamic Profile template (no colors). `theme sync` adds the colors of the light/dark pair in
+     ~/.config/theme/config and writes ~/Library/Application Support/iTerm2/DynamicProfiles/dotfiles.plist. -->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <!-- list of profiles in this file -->
+  <key>Profiles</key>
+  <array>
+    <dict>
+    <!-- profile name shown in iTerm -->
+    <key>Name</key><string>Dotfiles</string>
+    <!-- fixed id so iTerm keeps the profile and the default setting across reloads -->
+    <key>Guid</key><string>06F095D4-D35C-4790-B4C4-4C25662677E9</string>
+    <!-- Monaspace Neon (Nerd Font build), size 14. The value is the PostScript name: find it with `mdls -name com_apple_ats_name_postscript <font file>` -->
+    <key>Normal Font</key><string>MonaspiceNeNF 14</string>
+    <!-- one font for all text, no separate non-ASCII font -->
+    <key>Use Non-ASCII Font</key><false/>
+    <!-- ligatures: needed for Monaspace texture healing -->
+    <key>ASCII Ligatures</key><true/>
+    <!-- left Option sends Esc+ (2) so Alt maps work in nvim and tmux -->
+    <key>Option Key Sends</key><integer>2</integer>
+    <!-- right Option stays normal (0) to type Spanish accents -->
+    <key>Right Option Key Sends</key><integer>0</integer>
+    <!-- terminal type reported to programs -->
+    <key>Terminal Type</key><string>xterm-256color</string>
+    <!-- keep all scrollback -->
+    <key>Unlimited Scrollback</key><true/>
+    <!-- "No" = new sessions start in the home folder -->
+    <key>Custom Directory</key><string>No</string>
+    </dict>
+  </array>
+</dict>
+</plist>

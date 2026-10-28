@@ -9,8 +9,9 @@ font-family-italic = MonaspiceRn Nerd Font
 # Monaspace texture healing relies on the `calt` font feature: on by default, do not disable it.
 # text size in points
 font-size = 14
-# follows macOS appearance: Day in light mode, Night in dark mode (matches tokyonight in nvim)
-theme = light:TokyoNight Day,dark:TokyoNight Night
+# Colors: `theme sync` writes theme.conf next to this file (theme = light:<name>,dark:<name>, from
+# ~/.config/theme/config). The path is relative to this file's link; ? = no error if it is missing yet.
+config-file = ?theme.conf
 # fully opaque window
 background-opacity = 1
 # horizontal padding in pixels
