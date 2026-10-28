@@ -1,0 +1,143 @@
+#!/usr/bin/env bash
+# theme: switch the terminal between TokyoNight Day (light) and Night (dark) via OSC sequences.
+# Usage: theme dark|light|toggle|auto|apply|status [--tty <path>] [--print]
+set -euo pipefail                                   # stop on errors and unset variables
+
+STATE_FILE="${XDG_STATE_HOME:-$HOME/.local/state}/theme"  # saved choice: dark, light or auto
+ESC=$'\033'                                         # escape character
+BEL=$'\007'                                         # bell, terminates OSC sequences
+ST="${ESC}\\"                                        # string terminator (ESC backslash)
+OUT_TTY=""                                          # target tty (empty = stdout)
+
+# TokyoNight Night palette (colors 0-15), copied from Ghostty's bundled theme.
+NIGHT_PALETTE=(15161e f7768e 9ece6a e0af68 7aa2f7 bb9af7 7dcfff a9b1d6 414868 f7768e 9ece6a e0af68 7aa2f7 bb9af7 7dcfff c0caf5)
+NIGHT_FG=c0caf5                                     # Night foreground
+NIGHT_BG=1a1b26                                     # Night background
+NIGHT_CURSOR=c0caf5                                 # Night cursor
+
+# TokyoNight Day palette (colors 0-15), copied from Ghostty's bundled theme.
+DAY_PALETTE=(e9e9ed f52a65 587539 8c6c3e 2e7de9 9854f1 007197 6172b0 a1a6c5 f52a65 587539 8c6c3e 2e7de9 9854f1 007197 3760bf)
+DAY_FG=3760bf                                       # Day foreground
+DAY_BG=e1e2e7                                       # Day background
+DAY_CURSOR=3760bf                                   # Day cursor
+
+# Read the saved state; a missing or unknown value means auto.
+read_state() {
+  local value=""                                    # file content
+  [[ -r $STATE_FILE ]] && value="$(head -n 1 "$STATE_FILE")"  # first line only
+  case $value in
+    dark | light) echo "$value" ;;                  # valid explicit choice
+    *) echo auto ;;                                 # default
+  esac
+}
+
+# Save the state, creating the directory if needed.
+write_state() {
+  mkdir -p "$(dirname "$STATE_FILE")"               # first run: create the state dir
+  echo "$1" >"$STATE_FILE"                          # store the choice
+}
+
+# Print the current macOS appearance (dark or light); non-macOS reports light.
+system_appearance() {
+  if [[ $(uname -s) == Darwin ]] &&
+    [[ $(defaults read -g AppleInterfaceStyle 2>/dev/null || true) == Dark ]]; then
+    echo dark                                       # macOS is in dark mode
+  else
+    echo light                                      # light mode or not macOS
+  fi
+}
+
+# Print the OSC sequences for a palette: dark or light.
+palette_sequences() {
+  local -a colors                                   # 16 palette entries
+  local fg bg cursor i                              # remaining colors and loop index
+  if [[ $1 == dark ]]; then
+    colors=("${NIGHT_PALETTE[@]}") fg=$NIGHT_FG bg=$NIGHT_BG cursor=$NIGHT_CURSOR
+  else
+    colors=("${DAY_PALETTE[@]}") fg=$DAY_FG bg=$DAY_BG cursor=$DAY_CURSOR
+  fi
+  for i in "${!colors[@]}"; do
+    printf '%s]4;%d;#%s%s\n' "$ESC" "$i" "${colors[$i]}" "$BEL"  # OSC 4: palette color i
+  done
+  printf '%s]10;#%s%s\n' "$ESC" "$fg" "$BEL"        # OSC 10: foreground
+  printf '%s]11;#%s%s\n' "$ESC" "$bg" "$BEL"        # OSC 11: background
+  printf '%s]12;#%s%s\n' "$ESC" "$cursor" "$BEL"    # OSC 12: cursor
+}
+
+# Print the OSC resets: the terminal falls back to its own profile.
+reset_sequences() {
+  printf '%s]104%s\n' "$ESC" "$BEL"                 # OSC 104: reset the palette
+  printf '%s]110%s\n' "$ESC" "$BEL"                 # OSC 110: reset foreground
+  printf '%s]111%s\n' "$ESC" "$BEL"                 # OSC 111: reset background
+  printf '%s]112%s\n' "$ESC" "$BEL"                 # OSC 112: reset cursor
+}
+
+# Copy sequences (one per line on stdin) to stdout, wrapped for tmux when needed.
+emit_stdout() {
+  local seq                                         # one sequence without its newline
+  local wrap=0                                      # 1 = wrap for tmux passthrough
+  [[ -n ${TMUX:-} && -z $OUT_TTY ]] && wrap=1       # tmux pane: pass through to the outer terminal
+  while IFS= read -r seq; do
+    if ((wrap)); then
+      printf '%sPtmux;%s%s' "$ESC" "${seq//$ESC/$ESC$ESC}" "$ST"  # DCS passthrough, ESC doubled
+    else
+      printf '%s' "$seq"                            # raw sequence
+    fi
+  done
+}
+
+# Send stdin sequences to the --tty target, or to stdout.
+emit() {
+  if [[ -n $OUT_TTY ]]; then
+    emit_stdout >"$OUT_TTY"                         # raw sequences straight to the client tty
+  else
+    emit_stdout                                     # stdout (the pane, or the caller with --print)
+  fi
+}
+
+# Apply a state: dark, light or auto.
+apply_state() {
+  case $1 in
+    auto) reset_sequences | emit ;;                 # back to the terminal's own colors
+    *) palette_sequences "$1" | emit ;;             # explicit palette
+  esac
+  if [[ -n ${TMUX:-} ]]; then
+    tmux refresh-client -S 2>/dev/null || true      # redraw tmux, harmless on failure
+  fi
+}
+
+# Parse arguments: one command plus optional flags.
+CMD=""                                              # dark, light, toggle, auto, apply or status
+PRINT=0                                             # 1 = print to stdout
+while (($#)); do
+  case $1 in
+    --tty) OUT_TTY="${2:?--tty needs a path}"; shift 2 ;;  # write to this tty
+    --print) PRINT=1; shift ;;                      # stdout (the default, kept for callers)
+    -h | --help) CMD=help; shift ;;                 # show usage
+    *) CMD=$1; shift ;;                             # the command word
+  esac
+done
+((PRINT)) && OUT_TTY=""                             # --print wins over --tty
+
+case $CMD in
+  dark | light | auto)
+    write_state "$CMD"                              # remember the choice
+    apply_state "$CMD"                              # show it now
+    ;;
+  apply) apply_state "$(read_state)" ;;             # re-apply the saved state
+  status) read_state ;;                             # print the saved state
+  toggle)
+    case $(read_state) in
+      dark) new=light ;;                            # dark -> light
+      light) new=dark ;;                            # light -> dark
+      *) if [[ $(system_appearance) == dark ]]; then new=light; else new=dark; fi ;;  # auto: opposite of macOS
+    esac
+    write_state "$new"                              # remember the choice
+    apply_state "$new"                              # show it now
+    ;;
+  *)
+    echo "usage: theme dark|light|toggle|auto|apply|status [--tty <path>] [--print]" >&2  # help text
+    [[ $CMD == help ]] && exit 0                    # help is not an error
+    exit 2                                          # unknown command
+    ;;
+esac

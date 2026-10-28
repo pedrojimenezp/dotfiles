@@ -47,15 +47,15 @@ Install [Homebrew](https://brew.sh) first if `brew` is missing (`install.sh` pri
 | Package | Links to | What it does |
 | --- | --- | --- |
 | `zsh` | `~/.zshrc` | Plain zsh: history, completion, aliases, fzf, zoxide, mise, starship, autosuggestions, syntax highlighting. Sources `~/.zshrc.local` last. |
-| `nvim` | `~/.config/nvim` | Neovim 0.11+ config (lazy.nvim, LSP, treesitter, telescope, conform, blink.cmp). |
-| `tmux` | `~/.config/tmux/tmux.conf` | tmux with prefix `Ctrl+Space`, vi copy mode, TPM plugins, minimal status line. |
+| `nvim` | `~/.config/nvim` | Neovim 0.12 config (lazy.nvim, LSP, treesitter, telescope, conform, blink.cmp). |
+| `tmux` | `~/.config/tmux/tmux.conf` | tmux with prefix `Ctrl+Space`, vi copy mode, TPM plugins, minimal status line that follows the terminal palette. |
 | `vim` | `~/.vimrc` | Small plugin-free vimrc for servers. |
 | `git` | `~/.config/git/{config,ignore}` | Git defaults, delta pager, aliases, global ignores, `local` include. |
 | `starship` | `~/.config/starship.toml` | Prompt layout. |
 | `ghostty` | `~/.config/ghostty/config` | Ghostty terminal (optional; linked only if Ghostty is installed). Uses the Monaspice Nerd Font (Neon and Radon). |
 | `iterm` | `~/Library/Application Support/iTerm2/DynamicProfiles/dotfiles.plist` | iTerm2 Dynamic Profile "Dotfiles" (macOS only): Monaspace Neon font, Tokyo Night colors, Option as Esc+. |
 | `mise` | `~/.config/mise/config.toml` | Global mise defaults: node (LTS) and go (latest), `.nvmrc` support. Zig stays in Homebrew. |
-| `bin` | `~/.local/bin` | Scripts on PATH: `tmux-sessionizer`. |
+| `bin` | `~/.local/bin` | Scripts on PATH: `tmux-sessionizer`, `theme` (light/dark switch). |
 
 ### Server mode
 
@@ -87,6 +87,29 @@ Dynamic Profiles are read-only in the UI: change `iterm/Library/Application Supp
 
 iTerm re-reads Dynamic Profiles only when a file inside its folder changes; after pulling a change to the profile, restart iTerm (Cmd+Q) to apply it.
 
+## Light and dark themes
+
+The palette is TokyoNight Day (light) and Night (dark), the same colors in Ghostty, iTerm, tmux and Neovim. The default is `auto`: the terminal follows the macOS appearance and the `theme` script does nothing.
+
+```sh
+theme dark     # force dark (saved)
+theme light    # force light (saved)
+theme toggle   # flip; from auto, go to the opposite of macOS
+theme auto     # reset to the terminal's own profile (follows macOS)
+theme status   # print the saved state: dark, light or auto
+tt             # alias for theme toggle
+```
+
+Shortcuts: `prefix t` in tmux, `<leader>ut` in Neovim.
+
+**How it works.** `theme` saves the choice in `~/.local/state/theme` and sends OSC escape sequences that change the terminal's own palette, background, foreground and cursor (`auto` sends the OSC resets). Because the colors live in the terminal, not in each program, it works over SSH and in tmux: inside tmux the sequences are wrapped in DCS passthrough (`allow-passthrough on`), and `prefix t` writes straight to the client's tty. New local shells run `theme apply` when the saved state is dark or light (not over SSH). tmux uses palette color names, so its status line adapts. Neovim (tokyonight `night` and `day`) follows `background`, bat uses `BAT_THEME_DARK` / `BAT_THEME_LIGHT`, and delta uses `detect-dark-light`. Ghostty and iTerm switch with macOS on their own.
+
+**Limits.**
+
+- A new window flashes the terminal's default colors for a moment before the saved theme applies.
+- A tmux inside a remote tmux is not wrapped twice, so toggling from there only reaches the inner tmux.
+- Open Neovim instances update on `<leader>ut` or when they regain focus.
+
 ## Key cheat sheet
 
 ### tmux (prefix: `Ctrl+Space`)
@@ -99,12 +122,20 @@ iTerm re-reads Dynamic Profiles only when a file inside its folder changes; afte
 | `Ctrl+h/j/k/l` | Move between panes and nvim splits (no prefix) |
 | `prefix [` then `v`, `y` | Copy mode: select, copy (also to the system clipboard) |
 | `prefix f` | Project session picker (fzf over `~/projects`, or `$SESSIONIZER_DIRS`) |
+| `prefix t` | Toggle light/dark theme |
 | `prefix r` | Reload `tmux.conf` |
 | `prefix I` | Install TPM plugins |
 | `prefix Ctrl+s` / `Ctrl+r` | Save / restore sessions (resurrect) |
 | `prefix Ctrl+l` | Clear the screen |
 
 vim-tmux-navigator takes `Ctrl+L` without prefix, so clear the screen with `prefix` then `Ctrl+L`.
+
+### Shell
+
+| Command | Action |
+| --- | --- |
+| `tt` | Toggle light/dark theme |
+| `theme dark`, `light`, `auto` | Set the theme (auto follows macOS) |
 
 ### Neovim (leader: `Space`)
 
@@ -127,6 +158,7 @@ vim-tmux-navigator takes `Ctrl+L` without prefix, so clear the screen with `pref
 | `<leader>f` | Format buffer (also on save) |
 | `]c` / `[c`, `<leader>hs/hr/hp/hb` | Git hunks: next/prev, stage, reset, preview, blame |
 | `<leader>e` / `dq` | Show diagnostic under cursor / send diagnostics to the location list |
+| `<leader>ut` | Toggle light/dark theme |
 | `Alt+j` / `Alt+k` | Move line or selection |
 | `sa` / `sd` / `sr` | mini.surround: add, delete, replace |
 

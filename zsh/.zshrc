@@ -110,6 +110,19 @@ if command -v starship >/dev/null 2>&1; then
   eval "$(starship init zsh)"             # prompt
 fi
 
+# --- Light/dark theme (bin/.local/bin/theme; state in ~/.local/state/theme) ---
+alias tt='theme toggle'                   # flip between light and dark
+export BAT_THEME=auto                     # bat picks dark or light from the terminal background
+export BAT_THEME_DARK=OneHalfDark         # bat theme on a dark background
+export BAT_THEME_LIGHT=GitHub             # bat theme on a light background
+# Re-apply a saved dark/light choice in new local terminals. Skipped over SSH: the local
+# terminal already has the colors, and a remote shell must not override them.
+if [[ -z ${SSH_CONNECTION:-}${SSH_TTY:-} && -t 1 ]] && command -v theme >/dev/null 2>&1; then
+  case $(theme status) in
+    dark|light) theme apply ;;            # auto needs nothing: the terminal profile follows macOS
+  esac
+fi
+
 # --- Plugins from Homebrew (syntax-highlighting must load last) ---
 if [[ -n ${HOMEBREW_PREFIX:-} ]]; then
   [[ -f $HOMEBREW_PREFIX/share/zsh-autosuggestions/zsh-autosuggestions.zsh ]] &&

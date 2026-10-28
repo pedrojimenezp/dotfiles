@@ -27,8 +27,8 @@
     <key>Unlimited Scrollback</key><true/>
     <!-- "No" = new sessions start in the home folder -->
     <key>Custom Directory</key><string>No</string>
-    <!-- one Tokyo Night palette in both light and dark macOS appearance -->
-    <key>Use Separate Colors for Light and Dark Mode</key><false/>
+    <!-- TokyoNight Day in macOS light mode, Night in dark mode; the plain color keys below are Night -->
+    <key>Use Separate Colors for Light and Dark Mode</key><true/>
     <!-- text color (#c0caf5) -->
     <key>Foreground Color</key>
     <dict>
@@ -284,6 +284,536 @@
     </dict>
     <!-- bright white (#c0caf5) -->
     <key>Ansi 15 Color</key>
+    <dict>
+      <!-- sRGB color space -->
+      <key>Color Space</key><string>sRGB</string>
+      <!-- red, green, blue, alpha components (0-1) -->
+      <key>Red Component</key><real>0.752941</real>
+      <key>Green Component</key><real>0.792157</real>
+      <key>Blue Component</key><real>0.960784</real>
+      <key>Alpha Component</key><real>1</real>
+    </dict>
+    <!-- ===== Light mode colors: TokyoNight Day (keys end with "(Light)") ===== -->
+    <!-- foreground in TokyoNight Day (#3760bf) -->
+    <key>Foreground Color (Light)</key>
+    <dict>
+      <!-- sRGB color space -->
+      <key>Color Space</key><string>sRGB</string>
+      <!-- red, green, blue, alpha components (0-1) -->
+      <key>Red Component</key><real>0.215686</real>
+      <key>Green Component</key><real>0.376471</real>
+      <key>Blue Component</key><real>0.749020</real>
+      <key>Alpha Component</key><real>1</real>
+    </dict>
+    <!-- background in TokyoNight Day (#e1e2e7) -->
+    <key>Background Color (Light)</key>
+    <dict>
+      <!-- sRGB color space -->
+      <key>Color Space</key><string>sRGB</string>
+      <!-- red, green, blue, alpha components (0-1) -->
+      <key>Red Component</key><real>0.882353</real>
+      <key>Green Component</key><real>0.886275</real>
+      <key>Blue Component</key><real>0.905882</real>
+      <key>Alpha Component</key><real>1</real>
+    </dict>
+    <!-- cursor in TokyoNight Day (#3760bf) -->
+    <key>Cursor Color (Light)</key>
+    <dict>
+      <!-- sRGB color space -->
+      <key>Color Space</key><string>sRGB</string>
+      <!-- red, green, blue, alpha components (0-1) -->
+      <key>Red Component</key><real>0.215686</real>
+      <key>Green Component</key><real>0.376471</real>
+      <key>Blue Component</key><real>0.749020</real>
+      <key>Alpha Component</key><real>1</real>
+    </dict>
+    <!-- cursor text in TokyoNight Day (#e1e2e7) -->
+    <key>Cursor Text Color (Light)</key>
+    <dict>
+      <!-- sRGB color space -->
+      <key>Color Space</key><string>sRGB</string>
+      <!-- red, green, blue, alpha components (0-1) -->
+      <key>Red Component</key><real>0.882353</real>
+      <key>Green Component</key><real>0.886275</real>
+      <key>Blue Component</key><real>0.905882</real>
+      <key>Alpha Component</key><real>1</real>
+    </dict>
+    <!-- selection in TokyoNight Day (#99a7df) -->
+    <key>Selection Color (Light)</key>
+    <dict>
+      <!-- sRGB color space -->
+      <key>Color Space</key><string>sRGB</string>
+      <!-- red, green, blue, alpha components (0-1) -->
+      <key>Red Component</key><real>0.600000</real>
+      <key>Green Component</key><real>0.654902</real>
+      <key>Blue Component</key><real>0.874510</real>
+      <key>Alpha Component</key><real>1</real>
+    </dict>
+    <!-- selected text in TokyoNight Day (#3760bf) -->
+    <key>Selected Text Color (Light)</key>
+    <dict>
+      <!-- sRGB color space -->
+      <key>Color Space</key><string>sRGB</string>
+      <!-- red, green, blue, alpha components (0-1) -->
+      <key>Red Component</key><real>0.215686</real>
+      <key>Green Component</key><real>0.376471</real>
+      <key>Blue Component</key><real>0.749020</real>
+      <key>Alpha Component</key><real>1</real>
+    </dict>
+    <!-- bold in TokyoNight Day (#3760bf) -->
+    <key>Bold Color (Light)</key>
+    <dict>
+      <!-- sRGB color space -->
+      <key>Color Space</key><string>sRGB</string>
+      <!-- red, green, blue, alpha components (0-1) -->
+      <key>Red Component</key><real>0.215686</real>
+      <key>Green Component</key><real>0.376471</real>
+      <key>Blue Component</key><real>0.749020</real>
+      <key>Alpha Component</key><real>1</real>
+    </dict>
+    <!-- link in TokyoNight Day (#2e7de9) -->
+    <key>Link Color (Light)</key>
+    <dict>
+      <!-- sRGB color space -->
+      <key>Color Space</key><string>sRGB</string>
+      <!-- red, green, blue, alpha components (0-1) -->
+      <key>Red Component</key><real>0.180392</real>
+      <key>Green Component</key><real>0.490196</real>
+      <key>Blue Component</key><real>0.913725</real>
+      <key>Alpha Component</key><real>1</real>
+    </dict>
+    <!-- ansi 0 in TokyoNight Day (#e9e9ed) -->
+    <key>Ansi 0 Color (Light)</key>
+    <dict>
+      <!-- sRGB color space -->
+      <key>Color Space</key><string>sRGB</string>
+      <!-- red, green, blue, alpha components (0-1) -->
+      <key>Red Component</key><real>0.913725</real>
+      <key>Green Component</key><real>0.913725</real>
+      <key>Blue Component</key><real>0.929412</real>
+      <key>Alpha Component</key><real>1</real>
+    </dict>
+    <!-- ansi 1 in TokyoNight Day (#f52a65) -->
+    <key>Ansi 1 Color (Light)</key>
+    <dict>
+      <!-- sRGB color space -->
+      <key>Color Space</key><string>sRGB</string>
+      <!-- red, green, blue, alpha components (0-1) -->
+      <key>Red Component</key><real>0.960784</real>
+      <key>Green Component</key><real>0.164706</real>
+      <key>Blue Component</key><real>0.396078</real>
+      <key>Alpha Component</key><real>1</real>
+    </dict>
+    <!-- ansi 2 in TokyoNight Day (#587539) -->
+    <key>Ansi 2 Color (Light)</key>
+    <dict>
+      <!-- sRGB color space -->
+      <key>Color Space</key><string>sRGB</string>
+      <!-- red, green, blue, alpha components (0-1) -->
+      <key>Red Component</key><real>0.345098</real>
+      <key>Green Component</key><real>0.458824</real>
+      <key>Blue Component</key><real>0.223529</real>
+      <key>Alpha Component</key><real>1</real>
+    </dict>
+    <!-- ansi 3 in TokyoNight Day (#8c6c3e) -->
+    <key>Ansi 3 Color (Light)</key>
+    <dict>
+      <!-- sRGB color space -->
+      <key>Color Space</key><string>sRGB</string>
+      <!-- red, green, blue, alpha components (0-1) -->
+      <key>Red Component</key><real>0.549020</real>
+      <key>Green Component</key><real>0.423529</real>
+      <key>Blue Component</key><real>0.243137</real>
+      <key>Alpha Component</key><real>1</real>
+    </dict>
+    <!-- ansi 4 in TokyoNight Day (#2e7de9) -->
+    <key>Ansi 4 Color (Light)</key>
+    <dict>
+      <!-- sRGB color space -->
+      <key>Color Space</key><string>sRGB</string>
+      <!-- red, green, blue, alpha components (0-1) -->
+      <key>Red Component</key><real>0.180392</real>
+      <key>Green Component</key><real>0.490196</real>
+      <key>Blue Component</key><real>0.913725</real>
+      <key>Alpha Component</key><real>1</real>
+    </dict>
+    <!-- ansi 5 in TokyoNight Day (#9854f1) -->
+    <key>Ansi 5 Color (Light)</key>
+    <dict>
+      <!-- sRGB color space -->
+      <key>Color Space</key><string>sRGB</string>
+      <!-- red, green, blue, alpha components (0-1) -->
+      <key>Red Component</key><real>0.596078</real>
+      <key>Green Component</key><real>0.329412</real>
+      <key>Blue Component</key><real>0.945098</real>
+      <key>Alpha Component</key><real>1</real>
+    </dict>
+    <!-- ansi 6 in TokyoNight Day (#007197) -->
+    <key>Ansi 6 Color (Light)</key>
+    <dict>
+      <!-- sRGB color space -->
+      <key>Color Space</key><string>sRGB</string>
+      <!-- red, green, blue, alpha components (0-1) -->
+      <key>Red Component</key><real>0.000000</real>
+      <key>Green Component</key><real>0.443137</real>
+      <key>Blue Component</key><real>0.592157</real>
+      <key>Alpha Component</key><real>1</real>
+    </dict>
+    <!-- ansi 7 in TokyoNight Day (#6172b0) -->
+    <key>Ansi 7 Color (Light)</key>
+    <dict>
+      <!-- sRGB color space -->
+      <key>Color Space</key><string>sRGB</string>
+      <!-- red, green, blue, alpha components (0-1) -->
+      <key>Red Component</key><real>0.380392</real>
+      <key>Green Component</key><real>0.447059</real>
+      <key>Blue Component</key><real>0.690196</real>
+      <key>Alpha Component</key><real>1</real>
+    </dict>
+    <!-- ansi 8 in TokyoNight Day (#a1a6c5) -->
+    <key>Ansi 8 Color (Light)</key>
+    <dict>
+      <!-- sRGB color space -->
+      <key>Color Space</key><string>sRGB</string>
+      <!-- red, green, blue, alpha components (0-1) -->
+      <key>Red Component</key><real>0.631373</real>
+      <key>Green Component</key><real>0.650980</real>
+      <key>Blue Component</key><real>0.772549</real>
+      <key>Alpha Component</key><real>1</real>
+    </dict>
+    <!-- ansi 9 in TokyoNight Day (#f52a65) -->
+    <key>Ansi 9 Color (Light)</key>
+    <dict>
+      <!-- sRGB color space -->
+      <key>Color Space</key><string>sRGB</string>
+      <!-- red, green, blue, alpha components (0-1) -->
+      <key>Red Component</key><real>0.960784</real>
+      <key>Green Component</key><real>0.164706</real>
+      <key>Blue Component</key><real>0.396078</real>
+      <key>Alpha Component</key><real>1</real>
+    </dict>
+    <!-- ansi 10 in TokyoNight Day (#587539) -->
+    <key>Ansi 10 Color (Light)</key>
+    <dict>
+      <!-- sRGB color space -->
+      <key>Color Space</key><string>sRGB</string>
+      <!-- red, green, blue, alpha components (0-1) -->
+      <key>Red Component</key><real>0.345098</real>
+      <key>Green Component</key><real>0.458824</real>
+      <key>Blue Component</key><real>0.223529</real>
+      <key>Alpha Component</key><real>1</real>
+    </dict>
+    <!-- ansi 11 in TokyoNight Day (#8c6c3e) -->
+    <key>Ansi 11 Color (Light)</key>
+    <dict>
+      <!-- sRGB color space -->
+      <key>Color Space</key><string>sRGB</string>
+      <!-- red, green, blue, alpha components (0-1) -->
+      <key>Red Component</key><real>0.549020</real>
+      <key>Green Component</key><real>0.423529</real>
+      <key>Blue Component</key><real>0.243137</real>
+      <key>Alpha Component</key><real>1</real>
+    </dict>
+    <!-- ansi 12 in TokyoNight Day (#2e7de9) -->
+    <key>Ansi 12 Color (Light)</key>
+    <dict>
+      <!-- sRGB color space -->
+      <key>Color Space</key><string>sRGB</string>
+      <!-- red, green, blue, alpha components (0-1) -->
+      <key>Red Component</key><real>0.180392</real>
+      <key>Green Component</key><real>0.490196</real>
+      <key>Blue Component</key><real>0.913725</real>
+      <key>Alpha Component</key><real>1</real>
+    </dict>
+    <!-- ansi 13 in TokyoNight Day (#9854f1) -->
+    <key>Ansi 13 Color (Light)</key>
+    <dict>
+      <!-- sRGB color space -->
+      <key>Color Space</key><string>sRGB</string>
+      <!-- red, green, blue, alpha components (0-1) -->
+      <key>Red Component</key><real>0.596078</real>
+      <key>Green Component</key><real>0.329412</real>
+      <key>Blue Component</key><real>0.945098</real>
+      <key>Alpha Component</key><real>1</real>
+    </dict>
+    <!-- ansi 14 in TokyoNight Day (#007197) -->
+    <key>Ansi 14 Color (Light)</key>
+    <dict>
+      <!-- sRGB color space -->
+      <key>Color Space</key><string>sRGB</string>
+      <!-- red, green, blue, alpha components (0-1) -->
+      <key>Red Component</key><real>0.000000</real>
+      <key>Green Component</key><real>0.443137</real>
+      <key>Blue Component</key><real>0.592157</real>
+      <key>Alpha Component</key><real>1</real>
+    </dict>
+    <!-- ansi 15 in TokyoNight Day (#3760bf) -->
+    <key>Ansi 15 Color (Light)</key>
+    <dict>
+      <!-- sRGB color space -->
+      <key>Color Space</key><string>sRGB</string>
+      <!-- red, green, blue, alpha components (0-1) -->
+      <key>Red Component</key><real>0.215686</real>
+      <key>Green Component</key><real>0.376471</real>
+      <key>Blue Component</key><real>0.749020</real>
+      <key>Alpha Component</key><real>1</real>
+    </dict>
+    <!-- ===== Dark mode colors: TokyoNight Night (keys end with "(Dark)") ===== -->
+    <!-- foreground in TokyoNight Night (#c0caf5) -->
+    <key>Foreground Color (Dark)</key>
+    <dict>
+      <!-- sRGB color space -->
+      <key>Color Space</key><string>sRGB</string>
+      <!-- red, green, blue, alpha components (0-1) -->
+      <key>Red Component</key><real>0.752941</real>
+      <key>Green Component</key><real>0.792157</real>
+      <key>Blue Component</key><real>0.960784</real>
+      <key>Alpha Component</key><real>1</real>
+    </dict>
+    <!-- background in TokyoNight Night (#1a1b26) -->
+    <key>Background Color (Dark)</key>
+    <dict>
+      <!-- sRGB color space -->
+      <key>Color Space</key><string>sRGB</string>
+      <!-- red, green, blue, alpha components (0-1) -->
+      <key>Red Component</key><real>0.101961</real>
+      <key>Green Component</key><real>0.105882</real>
+      <key>Blue Component</key><real>0.149020</real>
+      <key>Alpha Component</key><real>1</real>
+    </dict>
+    <!-- cursor in TokyoNight Night (#c0caf5) -->
+    <key>Cursor Color (Dark)</key>
+    <dict>
+      <!-- sRGB color space -->
+      <key>Color Space</key><string>sRGB</string>
+      <!-- red, green, blue, alpha components (0-1) -->
+      <key>Red Component</key><real>0.752941</real>
+      <key>Green Component</key><real>0.792157</real>
+      <key>Blue Component</key><real>0.960784</real>
+      <key>Alpha Component</key><real>1</real>
+    </dict>
+    <!-- cursor text in TokyoNight Night (#15161e) -->
+    <key>Cursor Text Color (Dark)</key>
+    <dict>
+      <!-- sRGB color space -->
+      <key>Color Space</key><string>sRGB</string>
+      <!-- red, green, blue, alpha components (0-1) -->
+      <key>Red Component</key><real>0.082353</real>
+      <key>Green Component</key><real>0.086275</real>
+      <key>Blue Component</key><real>0.117647</real>
+      <key>Alpha Component</key><real>1</real>
+    </dict>
+    <!-- selection in TokyoNight Night (#283457) -->
+    <key>Selection Color (Dark)</key>
+    <dict>
+      <!-- sRGB color space -->
+      <key>Color Space</key><string>sRGB</string>
+      <!-- red, green, blue, alpha components (0-1) -->
+      <key>Red Component</key><real>0.156863</real>
+      <key>Green Component</key><real>0.203922</real>
+      <key>Blue Component</key><real>0.341176</real>
+      <key>Alpha Component</key><real>1</real>
+    </dict>
+    <!-- selected text in TokyoNight Night (#c0caf5) -->
+    <key>Selected Text Color (Dark)</key>
+    <dict>
+      <!-- sRGB color space -->
+      <key>Color Space</key><string>sRGB</string>
+      <!-- red, green, blue, alpha components (0-1) -->
+      <key>Red Component</key><real>0.752941</real>
+      <key>Green Component</key><real>0.792157</real>
+      <key>Blue Component</key><real>0.960784</real>
+      <key>Alpha Component</key><real>1</real>
+    </dict>
+    <!-- bold in TokyoNight Night (#c0caf5) -->
+    <key>Bold Color (Dark)</key>
+    <dict>
+      <!-- sRGB color space -->
+      <key>Color Space</key><string>sRGB</string>
+      <!-- red, green, blue, alpha components (0-1) -->
+      <key>Red Component</key><real>0.752941</real>
+      <key>Green Component</key><real>0.792157</real>
+      <key>Blue Component</key><real>0.960784</real>
+      <key>Alpha Component</key><real>1</real>
+    </dict>
+    <!-- link in TokyoNight Night (#7aa2f7) -->
+    <key>Link Color (Dark)</key>
+    <dict>
+      <!-- sRGB color space -->
+      <key>Color Space</key><string>sRGB</string>
+      <!-- red, green, blue, alpha components (0-1) -->
+      <key>Red Component</key><real>0.478431</real>
+      <key>Green Component</key><real>0.635294</real>
+      <key>Blue Component</key><real>0.968627</real>
+      <key>Alpha Component</key><real>1</real>
+    </dict>
+    <!-- ansi 0 in TokyoNight Night (#15161e) -->
+    <key>Ansi 0 Color (Dark)</key>
+    <dict>
+      <!-- sRGB color space -->
+      <key>Color Space</key><string>sRGB</string>
+      <!-- red, green, blue, alpha components (0-1) -->
+      <key>Red Component</key><real>0.082353</real>
+      <key>Green Component</key><real>0.086275</real>
+      <key>Blue Component</key><real>0.117647</real>
+      <key>Alpha Component</key><real>1</real>
+    </dict>
+    <!-- ansi 1 in TokyoNight Night (#f7768e) -->
+    <key>Ansi 1 Color (Dark)</key>
+    <dict>
+      <!-- sRGB color space -->
+      <key>Color Space</key><string>sRGB</string>
+      <!-- red, green, blue, alpha components (0-1) -->
+      <key>Red Component</key><real>0.968627</real>
+      <key>Green Component</key><real>0.462745</real>
+      <key>Blue Component</key><real>0.556863</real>
+      <key>Alpha Component</key><real>1</real>
+    </dict>
+    <!-- ansi 2 in TokyoNight Night (#9ece6a) -->
+    <key>Ansi 2 Color (Dark)</key>
+    <dict>
+      <!-- sRGB color space -->
+      <key>Color Space</key><string>sRGB</string>
+      <!-- red, green, blue, alpha components (0-1) -->
+      <key>Red Component</key><real>0.619608</real>
+      <key>Green Component</key><real>0.807843</real>
+      <key>Blue Component</key><real>0.415686</real>
+      <key>Alpha Component</key><real>1</real>
+    </dict>
+    <!-- ansi 3 in TokyoNight Night (#e0af68) -->
+    <key>Ansi 3 Color (Dark)</key>
+    <dict>
+      <!-- sRGB color space -->
+      <key>Color Space</key><string>sRGB</string>
+      <!-- red, green, blue, alpha components (0-1) -->
+      <key>Red Component</key><real>0.878431</real>
+      <key>Green Component</key><real>0.686275</real>
+      <key>Blue Component</key><real>0.407843</real>
+      <key>Alpha Component</key><real>1</real>
+    </dict>
+    <!-- ansi 4 in TokyoNight Night (#7aa2f7) -->
+    <key>Ansi 4 Color (Dark)</key>
+    <dict>
+      <!-- sRGB color space -->
+      <key>Color Space</key><string>sRGB</string>
+      <!-- red, green, blue, alpha components (0-1) -->
+      <key>Red Component</key><real>0.478431</real>
+      <key>Green Component</key><real>0.635294</real>
+      <key>Blue Component</key><real>0.968627</real>
+      <key>Alpha Component</key><real>1</real>
+    </dict>
+    <!-- ansi 5 in TokyoNight Night (#bb9af7) -->
+    <key>Ansi 5 Color (Dark)</key>
+    <dict>
+      <!-- sRGB color space -->
+      <key>Color Space</key><string>sRGB</string>
+      <!-- red, green, blue, alpha components (0-1) -->
+      <key>Red Component</key><real>0.733333</real>
+      <key>Green Component</key><real>0.603922</real>
+      <key>Blue Component</key><real>0.968627</real>
+      <key>Alpha Component</key><real>1</real>
+    </dict>
+    <!-- ansi 6 in TokyoNight Night (#7dcfff) -->
+    <key>Ansi 6 Color (Dark)</key>
+    <dict>
+      <!-- sRGB color space -->
+      <key>Color Space</key><string>sRGB</string>
+      <!-- red, green, blue, alpha components (0-1) -->
+      <key>Red Component</key><real>0.490196</real>
+      <key>Green Component</key><real>0.811765</real>
+      <key>Blue Component</key><real>1.000000</real>
+      <key>Alpha Component</key><real>1</real>
+    </dict>
+    <!-- ansi 7 in TokyoNight Night (#a9b1d6) -->
+    <key>Ansi 7 Color (Dark)</key>
+    <dict>
+      <!-- sRGB color space -->
+      <key>Color Space</key><string>sRGB</string>
+      <!-- red, green, blue, alpha components (0-1) -->
+      <key>Red Component</key><real>0.662745</real>
+      <key>Green Component</key><real>0.694118</real>
+      <key>Blue Component</key><real>0.839216</real>
+      <key>Alpha Component</key><real>1</real>
+    </dict>
+    <!-- ansi 8 in TokyoNight Night (#414868) -->
+    <key>Ansi 8 Color (Dark)</key>
+    <dict>
+      <!-- sRGB color space -->
+      <key>Color Space</key><string>sRGB</string>
+      <!-- red, green, blue, alpha components (0-1) -->
+      <key>Red Component</key><real>0.254902</real>
+      <key>Green Component</key><real>0.282353</real>
+      <key>Blue Component</key><real>0.407843</real>
+      <key>Alpha Component</key><real>1</real>
+    </dict>
+    <!-- ansi 9 in TokyoNight Night (#f7768e) -->
+    <key>Ansi 9 Color (Dark)</key>
+    <dict>
+      <!-- sRGB color space -->
+      <key>Color Space</key><string>sRGB</string>
+      <!-- red, green, blue, alpha components (0-1) -->
+      <key>Red Component</key><real>0.968627</real>
+      <key>Green Component</key><real>0.462745</real>
+      <key>Blue Component</key><real>0.556863</real>
+      <key>Alpha Component</key><real>1</real>
+    </dict>
+    <!-- ansi 10 in TokyoNight Night (#9ece6a) -->
+    <key>Ansi 10 Color (Dark)</key>
+    <dict>
+      <!-- sRGB color space -->
+      <key>Color Space</key><string>sRGB</string>
+      <!-- red, green, blue, alpha components (0-1) -->
+      <key>Red Component</key><real>0.619608</real>
+      <key>Green Component</key><real>0.807843</real>
+      <key>Blue Component</key><real>0.415686</real>
+      <key>Alpha Component</key><real>1</real>
+    </dict>
+    <!-- ansi 11 in TokyoNight Night (#e0af68) -->
+    <key>Ansi 11 Color (Dark)</key>
+    <dict>
+      <!-- sRGB color space -->
+      <key>Color Space</key><string>sRGB</string>
+      <!-- red, green, blue, alpha components (0-1) -->
+      <key>Red Component</key><real>0.878431</real>
+      <key>Green Component</key><real>0.686275</real>
+      <key>Blue Component</key><real>0.407843</real>
+      <key>Alpha Component</key><real>1</real>
+    </dict>
+    <!-- ansi 12 in TokyoNight Night (#7aa2f7) -->
+    <key>Ansi 12 Color (Dark)</key>
+    <dict>
+      <!-- sRGB color space -->
+      <key>Color Space</key><string>sRGB</string>
+      <!-- red, green, blue, alpha components (0-1) -->
+      <key>Red Component</key><real>0.478431</real>
+      <key>Green Component</key><real>0.635294</real>
+      <key>Blue Component</key><real>0.968627</real>
+      <key>Alpha Component</key><real>1</real>
+    </dict>
+    <!-- ansi 13 in TokyoNight Night (#bb9af7) -->
+    <key>Ansi 13 Color (Dark)</key>
+    <dict>
+      <!-- sRGB color space -->
+      <key>Color Space</key><string>sRGB</string>
+      <!-- red, green, blue, alpha components (0-1) -->
+      <key>Red Component</key><real>0.733333</real>
+      <key>Green Component</key><real>0.603922</real>
+      <key>Blue Component</key><real>0.968627</real>
+      <key>Alpha Component</key><real>1</real>
+    </dict>
+    <!-- ansi 14 in TokyoNight Night (#7dcfff) -->
+    <key>Ansi 14 Color (Dark)</key>
+    <dict>
+      <!-- sRGB color space -->
+      <key>Color Space</key><string>sRGB</string>
+      <!-- red, green, blue, alpha components (0-1) -->
+      <key>Red Component</key><real>0.490196</real>
+      <key>Green Component</key><real>0.811765</real>
+      <key>Blue Component</key><real>1.000000</real>
+      <key>Alpha Component</key><real>1</real>
+    </dict>
+    <!-- ansi 15 in TokyoNight Night (#c0caf5) -->
+    <key>Ansi 15 Color (Dark)</key>
     <dict>
       <!-- sRGB color space -->
       <key>Color Space</key><string>sRGB</string>

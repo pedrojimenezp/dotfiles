@@ -29,3 +29,17 @@ map("n", "<leader>q", "<cmd>quit<CR>", { desc = "Quit window" })
 -- Diagnostics.
 map("n", "<leader>e", vim.diagnostic.open_float, { desc = "Show diagnostic" })
 map("n", "<leader>dq", vim.diagnostic.setloclist, { desc = "Diagnostics to location list" })
+
+-- Toggle light/dark: the `theme` script recolors the terminal, then nvim follows.
+map("n", "<leader>ut", function()
+  if vim.fn.executable("theme") == 1 then -- the script lives in ~/.local/bin
+    local res = vim.system({ "theme", "toggle", "--print" }, { text = true }):wait() -- sync, returns escape codes
+    if res.code == 0 and res.stdout then vim.api.nvim_ui_send(res.stdout) end -- send them to the terminal
+    local state = vim.trim(vim.system({ "theme", "status" }, { text = true }):wait().stdout or "") -- new saved state
+    if state == "dark" or state == "light" then
+      vim.o.background = state -- match the terminal
+      return
+    end
+  end
+  vim.o.background = vim.o.background == "dark" and "light" or "dark" -- fallback: flip only nvim
+end, { desc = "Toggle light/dark theme" })
