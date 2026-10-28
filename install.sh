@@ -137,7 +137,8 @@ install_font() {
     tmp="<tmpdir>" # nothing is downloaded in dry-run
   else
     tmp="$(mktemp -d)"
-    trap 'rm -rf "$tmp"' EXIT # remove the download on exit
+    # shellcheck disable=SC2064 # expand $tmp now: it is local
+    trap "rm -rf '${tmp}'" EXIT # remove the download on exit
   fi
   # download the release archive
   run curl -fsSL -o "$tmp/font.tar.xz" "https://github.com/ryanoasis/nerd-fonts/releases/latest/download/${NERD_FONT}.tar.xz"
