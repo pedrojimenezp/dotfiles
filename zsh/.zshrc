@@ -54,6 +54,7 @@ HISTSIZE=100000                           # entries kept in memory
 SAVEHIST=100000                           # entries saved to the file
 setopt SHARE_HISTORY                      # share history between open shells (implies INC_APPEND)
 setopt HIST_IGNORE_ALL_DUPS               # drop older duplicate commands
+setopt HIST_FIND_NO_DUPS                  # skip duplicate entries while searching history
 setopt HIST_IGNORE_SPACE                  # commands starting with a space are not saved
 setopt HIST_REDUCE_BLANKS                 # trim extra whitespace
 setopt EXTENDED_HISTORY                   # store timestamps
@@ -70,6 +71,14 @@ clear-screen-and-scrollback() {
 }
 zle -N clear-screen-and-scrollback        # register the function as a widget
 bindkey '^L' clear-screen-and-scrollback  # Ctrl-L runs it
+
+autoload -Uz up-line-or-beginning-search down-line-or-beginning-search  # built-in widgets: match history by typed prefix
+zle -N up-line-or-beginning-search        # register the widget
+zle -N down-line-or-beginning-search      # register the widget
+bindkey '^[[A' up-line-or-beginning-search    # Up, normal cursor mode
+bindkey '^[OA' up-line-or-beginning-search    # Up, application mode (tmux, after smkx)
+bindkey '^[[B' down-line-or-beginning-search  # Down, normal cursor mode
+bindkey '^[OB' down-line-or-beginning-search  # Down, application mode (tmux, after smkx)
 
 # --- Completion ---
 # Extra completions from Homebrew must be on fpath before compinit.
