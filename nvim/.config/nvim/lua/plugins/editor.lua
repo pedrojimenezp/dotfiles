@@ -27,6 +27,7 @@ return {
         { "<leader>g", group = "Git" }, -- label for the git group
         { "<leader>h", group = "Hunks" }, -- label for the gitsigns group
         { "<leader>d", group = "Diagnostics/symbols" }, -- label for the d group
+        { "<leader>u", group = "UI" }, -- label for the ui group (theme toggle)
       },
     },
   },

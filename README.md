@@ -139,6 +139,8 @@ vim-tmux-navigator takes `Ctrl+L` without prefix, so clear the screen with `pref
 
 ### Neovim (leader: `Space`)
 
+`<leader>` is the Space key. Press the keys one after another, not together: `<leader>ut` means Space, then `u`, then `t`. After you press Space, the which-key menu appears and lists the next keys. You have 1 second between keys (`timeoutlen`).
+
 | Keys | Action |
 | --- | --- |
 | `jk` | Leave insert mode |
@@ -162,7 +164,7 @@ vim-tmux-navigator takes `Ctrl+L` without prefix, so clear the screen with `pref
 | `Alt+j` / `Alt+k` | Move line or selection |
 | `sa` / `sd` / `sr` | mini.surround: add, delete, replace |
 
-Press `<leader>` and wait: which-key lists the options.
+Press Space and wait: which-key lists the options.
 
 ## Fonts
 
