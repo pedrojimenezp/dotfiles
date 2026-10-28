@@ -136,7 +136,7 @@ Press `<leader>` and wait: which-key lists the options.
 
 - **Ghostty**: `font-family = MonaspiceNe Nerd Font` and `font-family-italic = MonaspiceRn Nerd Font`.
 - **Ghostty CLI**: on macOS the `ghostty` command comes from the app bundle and `.zshrc` adds it to `PATH`. Handy: `ghostty +list-fonts`, `ghostty +show-config`, `ghostty +list-themes`.
-- **iTerm**: the "Dotfiles" profile uses `MonaspiceNeNF-Regular 14`.
+- **iTerm**: the "Dotfiles" profile uses `MonaspiceNeNF 14` (the PostScript name; find it with `mdls -name com_apple_ats_name_postscript <font file>` when switching fonts).
 - **Switch fonts**: change `NERD_FONT` and `NERD_FONT_FAMILY` in `install.sh`, the cask in the `Brewfile`, `font-family` and `font-family-italic` in the Ghostty config, and `Normal Font` in the iTerm plist.
 
 ## Tools

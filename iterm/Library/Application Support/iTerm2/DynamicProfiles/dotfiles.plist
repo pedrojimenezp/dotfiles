@@ -11,8 +11,8 @@
     <key>Name</key><string>Dotfiles</string>
     <!-- fixed id so iTerm keeps the profile and the default setting across reloads -->
     <key>Guid</key><string>06F095D4-D35C-4790-B4C4-4C25662677E9</string>
-    <!-- Monaspace Neon (Nerd Font build) by PostScript name, size 14 -->
-    <key>Normal Font</key><string>MonaspiceNeNF-Regular 14</string>
+    <!-- Monaspace Neon (Nerd Font build), size 14. The value is the PostScript name: find it with `mdls -name com_apple_ats_name_postscript <font file>` -->
+    <key>Normal Font</key><string>MonaspiceNeNF 14</string>
     <!-- one font for all text, no separate non-ASCII font -->
     <key>Use Non-ASCII Font</key><false/>
     <!-- ligatures: needed for Monaspace texture healing -->
