@@ -46,16 +46,6 @@ else
   PACKAGES=(zsh nvim tmux vim git starship mise bin)
 fi
 
-# Ghostty is optional: link its config only if the app or binary exists.
-HAS_GHOSTTY=0                                                      # 1 once Ghostty is found
-for app in "$HOME/Applications/Ghostty.app" /Applications/Ghostty.app; do # Brewfile appdir first, then the old path
-  [[ -d $app ]] && HAS_GHOSTTY=1                                   # app bundle present
-done
-command -v ghostty >/dev/null 2>&1 && HAS_GHOSTTY=1                # Linux package on PATH
-if [[ $SERVER -eq 0 && $HAS_GHOSTTY -eq 1 ]]; then                 # never in server mode
-  PACKAGES+=(ghostty)                                              # stow the Ghostty config
-fi
-
 # iTerm Dynamic Profile: macOS only, never in server mode.
 if [[ $SERVER -eq 0 && "$OSTYPE" == darwin* ]]; then
   PACKAGES+=(iterm)
@@ -76,6 +66,16 @@ On a server without Homebrew, use: ./install.sh --server
 MSG
     exit 1
   fi
+fi
+
+# Ghostty is optional: link its config only if the app or binary exists.
+HAS_GHOSTTY=0                                                      # 1 once Ghostty is found
+for app in "$HOME/Applications/Ghostty.app" /Applications/Ghostty.app; do # Brewfile appdir first, then the old path
+  [[ -d $app ]] && HAS_GHOSTTY=1                                   # app bundle present
+done
+command -v ghostty >/dev/null 2>&1 && HAS_GHOSTTY=1                # Linux package on PATH
+if [[ $SERVER -eq 0 && $HAS_GHOSTTY -eq 1 ]]; then                 # never in server mode
+  PACKAGES+=(ghostty)                                              # stow the Ghostty config
 fi
 
 # True if $1 resolves (through any symlinks) to a file inside this repo.
