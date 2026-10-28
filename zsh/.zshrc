@@ -93,6 +93,10 @@ alias gs='git status -sb'                 # short status
 alias gd='git diff'                       # unstaged diff
 alias gl='git log --oneline --graph -20'  # compact graph log
 alias gp='git pull'                       # pull (rebase by default, see git config)
+if command -v nvim >/dev/null 2>&1; then  # only where Neovim exists; servers keep plain Vim and ~/.vimrc
+  alias vim='nvim'                        # vim opens Neovim; `command vim` still runs the real Vim
+  alias vi='nvim'                         # vi opens Neovim too
+fi
 
 # --- Tool integrations (each guarded: a missing tool never errors) ---
 if command -v fzf >/dev/null 2>&1; then

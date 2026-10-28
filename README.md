@@ -100,6 +100,8 @@ theme status   # print the saved state: dark, light or auto
 tt             # alias for theme toggle
 ```
 
+When Neovim is installed, the `vim` and `vi` aliases open `nvim`; `command vim` runs the real Vim.
+
 Shortcuts: `prefix t` in tmux, `<leader>ut` in Neovim.
 
 **How it works.** `theme` saves the choice in `~/.local/state/theme` and sends OSC escape sequences that change the terminal's own palette, background, foreground and cursor (`auto` sends the OSC resets). Because the colors live in the terminal, not in each program, it works over SSH and in tmux: inside tmux the sequences are wrapped in DCS passthrough (`allow-passthrough on`), and `prefix t` writes straight to the client's tty. New local shells run `theme apply` when the saved state is dark or light (not over SSH). tmux uses palette color names, so its status line adapts. Neovim (tokyonight `night` and `day`) follows `background`, bat uses `BAT_THEME_DARK` / `BAT_THEME_LIGHT`, and delta uses `detect-dark-light`. Ghostty and iTerm switch with macOS on their own.
@@ -139,7 +141,7 @@ vim-tmux-navigator takes `Ctrl+L` without prefix, so clear the screen with `pref
 
 ### Neovim (leader: `Space`)
 
-`<leader>` is the Space key. Press the keys one after another, not together: `<leader>ut` means Space, then `u`, then `t`. After you press Space, the which-key menu appears and lists the next keys. You have 1 second between keys (`timeoutlen`).
+`<leader>` is the Space key. Press the keys one after another, not together: `<leader>ut` means Space, then `u`, then `t`. After you press Space, the which-key menu appears and lists the next keys. The menu waits for you; `timeoutlen` (0.4 s) only limits key sequences that have no menu.
 
 | Keys | Action |
 | --- | --- |
