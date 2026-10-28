@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# Pick a project directory with fzf and open (or switch to) a tmux session for it.
+# Usage: tmux-sessionizer [dir]   (without an argument, pick from $SESSIONIZER_DIRS)
+set -euo pipefail # stop on errors, unset variables and failed pipes
+
+# Roots to search; override with e.g. SESSIONIZER_DIRS="$HOME/work $HOME/projects".
+read -r -a roots <<<"${SESSIONIZER_DIRS:-$HOME/projects}"
+
+if [[ $# -eq 1 ]]; then
+  selected="$1" # directory given on the command line
+else
+  # List directories up to 3 levels deep, skipping hidden folders and worktrees.
+  selected="$(
+    find "${roots[@]}" -mindepth 1 -maxdepth 3 -type d \
+      -not -path '*/.*' -not -path '*/node_modules*' -not -path '*/worktrees/*' 2>/dev/null |
+      fzf --prompt='project> ' || true
+  )"
+fi
+
+[[ -n "$selected" ]] || exit 0 # nothing chosen (Esc)
+
+name="$(basename "$selected" | tr '. ' '__')" # tmux names cannot contain dots or spaces
+
+if [[ -z "${TMUX:-}" ]]; then
+  # Outside tmux: attach to the session, creating it if needed.
+  tmux new-session -A -s "$name" -c "$selected"
+else
+  # Inside tmux: create the session detached if missing, then switch to it.
+  tmux has-session -t "=$name" 2>/dev/null || tmux new-session -ds "$name" -c "$selected"
+  tmux switch-client -t "=$name"
+fi

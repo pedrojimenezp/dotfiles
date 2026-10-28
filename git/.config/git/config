@@ -1,0 +1,66 @@
+# ~/.config/git/config: global git config (loaded after ~/.gitconfig, which must not exist).
+
+[user]
+	name = Pedro Jimenez                  # author name on commits
+	email = pedroj.jimenezp@gmail.com     # author email on commits
+
+[init]
+	defaultBranch = main                  # new repos start on main
+
+[core]
+	pager = delta                         # use delta to page diffs and logs
+	excludesFile = ~/.config/git/ignore   # global ignore list
+	editor = nvim                         # editor for commit messages
+
+[interactive]
+	diffFilter = delta --color-only       # delta also colors `git add -p`
+
+[delta]
+	navigate = true                       # n/N jump between files in a diff
+	side-by-side = false                  # unified view (narrow terminals, tmux panes)
+	line-numbers = true                   # show line numbers in diffs
+
+[pull]
+	rebase = true                         # rebase instead of merge on pull
+
+[rebase]
+	autoStash = true                      # stash dirty changes around a rebase
+	autoSquash = true                     # apply fixup!/squash! commits automatically
+
+[push]
+	autoSetupRemote = true                # first push creates the upstream branch
+
+[fetch]
+	prune = true                          # drop remote branches deleted upstream
+
+[diff]
+	colorMoved = default                  # color moved lines differently from added/removed
+	algorithm = histogram                 # better diffs than the default algorithm
+
+[merge]
+	conflictstyle = zdiff3                # show base text in conflict markers
+
+[rerere]
+	enabled = true                        # remember and reuse conflict resolutions
+
+[url "ssh://git@github.com"]
+	insteadOf = https://github.com        # always use SSH for GitHub
+
+[filter "lfs"]
+	clean = git-lfs clean -- %f           # Git LFS: store big files as pointers
+	smudge = git-lfs smudge -- %f         # Git LFS: restore big files on checkout
+	process = git-lfs filter-process      # Git LFS: faster batch filter
+	required = true                       # fail if git-lfs is missing
+
+[alias]
+	st = status -sb                       # short status
+	co = checkout                         # shorter checkout
+	sw = switch                           # switch branches
+	br = branch -vv                       # branches with upstream info
+	lg = log --oneline --graph --decorate -20  # compact graph log
+	last = log -1 --stat                  # show the last commit
+	unstage = restore --staged            # remove files from the index
+	amend = commit --amend --no-edit      # add staged changes to the last commit
+
+[include]
+	path = ~/.config/git/local            # machine-specific overrides (untracked)

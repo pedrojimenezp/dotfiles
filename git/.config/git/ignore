@@ -1,0 +1,19 @@
+# Global git ignores (comments must be on their own line in ignore files).
+
+# macOS Finder metadata
+.DS_Store
+# Windows thumbnail cache
+Thumbs.db
+# Vim swap and backup files
+*.swp
+*.swo
+*~
+# Editor and IDE settings
+.idea/
+.vscode/
+# Local, machine-specific files
+.env.local
+.zshrc.local
+# Claude Code local files
+.claude/
+CLAUDE.local.md

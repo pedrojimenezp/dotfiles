@@ -1,0 +1,45 @@
+# ~/.config/ghostty/config: Ghostty terminal (https://ghostty.org/docs/config).
+
+# Nerd Font so prompt/nvim icons render
+font-family = JetBrainsMono Nerd Font
+# text size in points
+font-size = 14
+# matches the nvim colorscheme (tokyonight-night)
+theme = TokyoNight Night
+# fully opaque window
+background-opacity = 1
+# horizontal padding in pixels
+window-padding-x = 8
+# vertical padding in pixels
+window-padding-y = 6
+# block cursor
+cursor-style = block
+# hide pointer while typing
+mouse-hide-while-typing = true
+# selecting text copies it to the system clipboard
+copy-on-select = clipboard
+# no prompt when closing a finished shell
+confirm-close-surface = false
+
+# macOS: treat Option as Alt so Alt-j/Alt-k and tmux/nvim Alt maps work.
+# Option sends Alt/Esc+ instead of special characters
+macos-option-as-alt = true
+# native tabs in the titlebar
+macos-titlebar-style = tabs
+
+# Shell integration: cwd tracking, prompt jumping, and SSH helpers.
+# Features: cursor shape at prompt, sudo keeps terminfo, title updates; ssh-terminfo copies
+# Ghostty terminfo to SSH hosts, ssh-env falls back to TERM=xterm-256color when that fails.
+# force zsh integration
+shell-integration = zsh
+shell-integration-features = cursor,sudo,title,ssh-terminfo,ssh-env
+
+# Keybinds (cmd on macOS).
+# Cmd-D: split right
+keybind = cmd+d=new_split:right
+# Cmd-Shift-D: split down
+keybind = cmd+shift+d=new_split:down
+# Cmd-Shift-Enter: zoom the current split
+keybind = cmd+shift+enter=toggle_split_zoom
+# Cmd-Shift-R: reload this config
+keybind = cmd+shift+r=reload_config

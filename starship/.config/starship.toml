@@ -1,0 +1,39 @@
+# ~/.config/starship.toml: prompt config (https://starship.rs/config/).
+
+"$schema" = 'https://starship.rs/config-schema.json' # editor autocompletion for this file
+
+add_newline = true            # blank line between prompts
+command_timeout = 500         # ms to wait for a module before skipping it
+
+# Order and content of the left prompt.
+format = """
+$directory$git_branch$git_status$golang$nodejs$zig$python$cmd_duration
+$character"""
+
+[character]
+success_symbol = "[❯](bold green)"   # prompt symbol after success
+error_symbol = "[❯](bold red)"       # prompt symbol after a failed command
+
+[directory]
+truncation_length = 3         # show at most 3 path segments
+truncate_to_repo = true       # truncate relative to the git repo root
+
+[git_branch]
+symbol = " "                 # branch icon (needs a Nerd Font)
+format = "[$symbol$branch]($style) "  # icon, branch name, trailing space
+
+[git_status]
+format = '([\[$all_status$ahead_behind\]]($style) )' # compact status like [!?⇡]
+
+[cmd_duration]
+min_time = 2000               # only show commands slower than 2s
+format = "[$duration]($style) " # duration text
+
+[golang]
+symbol = " "                 # Go icon
+[nodejs]
+symbol = " "                 # Node icon
+[zig]
+symbol = " "                 # Zig icon
+[python]
+symbol = " "                 # Python icon
