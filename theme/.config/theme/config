@@ -1,0 +1,7 @@
+# ~/.config/theme/config: the light/dark theme pair (tracked in the dotfiles repo).
+# Names come from Ghostty's theme collection: run `theme list`, or pick with `theme pick`.
+# `theme pick` / `theme set` edit this file; commit it afterwards to keep the choice.
+# Theme used in light mode
+light = GitHub Light Default
+# Theme used in dark mode
+dark = TokyoNight Night

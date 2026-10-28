@@ -1,27 +1,56 @@
 #!/usr/bin/env bash
-# theme: switch the terminal between TokyoNight Day (light) and Night (dark) via OSC sequences.
-# Usage: theme dark|light|toggle|auto|apply|status [--tty <path>] [--print]
-set -euo pipefail                                   # stop on errors and unset variables
+# theme: pick terminal color themes from Ghostty's collection and apply them everywhere.
+# The light/dark pair lives in ~/.config/theme/config (tracked); the mode (auto, light, dark)
+# is per machine in ~/.local/state/theme. Works with macOS bash 3.2.
+# Usage: see usage() below, or run `theme help`.
+set -euo pipefail                                   # stop on errors, unset variables and failed pipes
 
-STATE_FILE="${XDG_STATE_HOME:-$HOME/.local/state}/theme"  # saved choice: dark, light or auto
+# --- Paths and constants ---
+CONFIG_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/theme/config"   # tracked light/dark pair (a symlink into the repo)
+STATE_FILE="${XDG_STATE_HOME:-$HOME/.local/state}/theme"       # saved mode: dark, light or auto
+CACHE_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/theme/themes"  # downloaded theme files
+LIST_CACHE="${XDG_CACHE_HOME:-$HOME/.cache}/theme/list"        # cached theme names from GitHub
+GHOSTTY_CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/ghostty" # Ghostty reads its config here
+ITERM_TEMPLATE="${XDG_CONFIG_HOME:-$HOME/.config}/iterm/dotfiles-profile.plist"  # profile without colors
+ITERM_PROFILE="$HOME/Library/Application Support/iTerm2/DynamicProfiles/dotfiles.plist"  # generated profile
+UPSTREAM="mbadolato/iTerm2-Color-Schemes"           # GitHub repo that holds Ghostty's theme collection
+RAW_URL="https://raw.githubusercontent.com/$UPSTREAM/master/ghostty"  # raw theme files
+API_URL="https://api.github.com/repos/$UPSTREAM/contents/ghostty"     # folder listing (JSON)
+DEFAULT_LIGHT="GitHub Light Default"                # used when the config has no light line
+DEFAULT_DARK="TokyoNight Night"                     # used when the config has no dark line
+# Ghostty's bundled themes, first match wins; THEME_GHOSTTY_DIRS (colon-separated) overrides it for tests.
+GHOSTTY_DIRS="${THEME_GHOSTTY_DIRS-$HOME/Applications/Ghostty.app/Contents/Resources/ghostty/themes:/Applications/Ghostty.app/Contents/Resources/ghostty/themes:/usr/share/ghostty/themes:$HOME/.local/share/ghostty/themes}"
+SELF="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"  # absolute path, for fzf callbacks
 ESC=$'\033'                                         # escape character
 BEL=$'\007'                                         # bell, terminates OSC sequences
 ST="${ESC}\\"                                        # string terminator (ESC backslash)
 OUT_TTY=""                                          # target tty (empty = stdout)
+PANE_TTY=0                                          # 1 = OUT_TTY is this pane's own tty (wrap for tmux)
 
-# TokyoNight Night palette (colors 0-15), copied from Ghostty's bundled theme.
-NIGHT_PALETTE=(15161e f7768e 9ece6a e0af68 7aa2f7 bb9af7 7dcfff a9b1d6 414868 f7768e 9ece6a e0af68 7aa2f7 bb9af7 7dcfff c0caf5)
-NIGHT_FG=c0caf5                                     # Night foreground
-NIGHT_BG=1a1b26                                     # Night background
-NIGHT_CURSOR=c0caf5                                 # Night cursor
+usage() {
+  cat <<'EOF'
+usage: theme <command> [--tty <path>] [--print]
+  dark | light | auto      set the mode (auto = terminal profile, follows macOS) and apply it
+  toggle                   flip between light and dark
+  apply                    re-apply the saved mode
+  status                   print the saved mode
+  pick [light|dark]        choose a theme with fzf and live preview (default: the current mode's slot)
+  set light|dark <name>    save <name> as the light or dark theme, sync and apply
+  list                     print every available theme name
+  file <name>              print the path of a theme file (downloads it if needed)
+  sync                     regenerate the Ghostty and iTerm files from ~/.config/theme/config
+EOF
+}
 
-# TokyoNight Day palette (colors 0-15), copied from Ghostty's bundled theme.
-DAY_PALETTE=(e9e9ed f52a65 587539 8c6c3e 2e7de9 9854f1 007197 6172b0 a1a6c5 f52a65 587539 8c6c3e 2e7de9 9854f1 007197 3760bf)
-DAY_FG=3760bf                                       # Day foreground
-DAY_BG=e1e2e7                                       # Day background
-DAY_CURSOR=3760bf                                   # Day cursor
+# Print an error and exit.
+die() {
+  echo "theme: $*" >&2                              # errors go to stderr
+  exit 1                                            # non-zero exit for callers
+}
 
-# Read the saved state; a missing or unknown value means auto.
+# --- Mode (per machine) ---
+
+# Read the saved mode; a missing or unknown value means auto.
 read_state() {
   local value=""                                    # file content
   [[ -r $STATE_FILE ]] && value="$(head -n 1 "$STATE_FILE")"  # first line only
@@ -31,7 +60,7 @@ read_state() {
   esac
 }
 
-# Save the state, creating the directory if needed.
+# Save the mode, creating the directory if needed.
 write_state() {
   mkdir -p "$(dirname "$STATE_FILE")"               # first run: create the state dir
   echo "$1" >"$STATE_FILE"                          # store the choice
@@ -47,21 +76,191 @@ system_appearance() {
   fi
 }
 
-# Print the OSC sequences for a palette: dark or light.
-palette_sequences() {
-  local -a colors                                   # 16 palette entries
-  local fg bg cursor i                              # remaining colors and loop index
-  if [[ $1 == dark ]]; then
-    colors=("${NIGHT_PALETTE[@]}") fg=$NIGHT_FG bg=$NIGHT_BG cursor=$NIGHT_CURSOR
-  else
-    colors=("${DAY_PALETTE[@]}") fg=$DAY_FG bg=$DAY_BG cursor=$DAY_CURSOR
+# Print the mode in effect: the saved choice, or the system appearance in auto.
+effective_mode() {
+  local state                                       # saved mode
+  state="$(read_state)"                             # dark, light or auto
+  if [[ $state == auto ]]; then system_appearance; else echo "$state"; fi
+}
+
+# --- Tracked config (~/.config/theme/config) ---
+
+# Print the theme name for a slot (light or dark), or its default.
+config_get() {
+  local slot=$1 line name=""                        # slot, current line, result
+  local re="^[[:space:]]*${slot}[[:space:]]*=[[:space:]]*(.*[^[:space:]])[[:space:]]*$"  # "slot = name"
+  if [[ -r $CONFIG_FILE ]]; then
+    while IFS= read -r line || [[ -n $line ]]; do   # last line may lack a newline
+      if [[ $line =~ $re ]]; then name="${BASH_REMATCH[1]}"; break; fi  # first match wins
+    done <"$CONFIG_FILE"
   fi
-  for i in "${!colors[@]}"; do
-    printf '%s]4;%d;#%s%s\n' "$ESC" "$i" "${colors[$i]}" "$BEL"  # OSC 4: palette color i
+  if [[ -z $name ]]; then
+    if [[ $slot == light ]]; then name=$DEFAULT_LIGHT; else name=$DEFAULT_DARK; fi  # fallback
+  fi
+  echo "$name"                                      # print the name
+}
+
+# Replace (or add) the line for a slot, writing through the symlink so it stays a link.
+config_set() {
+  local slot=$1 name=$2 line out="" found=0         # slot, new name, line, new content, replaced?
+  local re="^[[:space:]]*${slot}[[:space:]]*="        # matches "slot =" lines
+  if [[ -e $CONFIG_FILE ]]; then
+    while IFS= read -r line || [[ -n $line ]]; do   # keep comments and other lines as they are
+      if ((!found)) && [[ $line =~ $re ]]; then
+        line="$slot = $name"                        # replace the first matching line
+        found=1                                     # only once
+      fi
+      out+="$line"$'\n'                             # collect the file
+    done <"$CONFIG_FILE"
+  else
+    mkdir -p "$(dirname "$CONFIG_FILE")"            # no config yet: create its directory
+  fi
+  ((found)) || out+="$slot = $name"$'\n'            # slot missing: append it
+  printf '%s' "$out" >"$CONFIG_FILE"                # '>' follows a symlink: the repo file changes, the link stays
+}
+
+# --- Theme files ---
+
+# Exit with an error unless the name is safe to use as a file name.
+check_name() {
+  [[ -n $1 ]] || die "empty theme name"             # nothing to look up
+  [[ $1 != */* && $1 != .* ]] || die "invalid theme name: $1"  # no paths, no hidden files
+}
+
+# Print each bundled Ghostty themes directory that exists.
+ghostty_dirs() {
+  local dir                                         # one candidate directory
+  local IFS=:                                       # split the list on colons
+  for dir in $GHOSTTY_DIRS; do
+    [[ -n $dir && -d $dir ]] && echo "$dir"         # only existing folders
   done
-  printf '%s]10;#%s%s\n' "$ESC" "$fg" "$BEL"        # OSC 10: foreground
-  printf '%s]11;#%s%s\n' "$ESC" "$bg" "$BEL"        # OSC 11: background
-  printf '%s]12;#%s%s\n' "$ESC" "$cursor" "$BEL"    # OSC 12: cursor
+  return 0                                          # no bundle is not an error
+}
+
+# Print the path of a theme inside a Ghostty bundle, or fail.
+bundled_file() {
+  local dir                                         # one bundle directory
+  while IFS= read -r dir; do
+    [[ -f "$dir/$1" ]] && { echo "$dir/$1"; return 0; }  # found
+  done < <(ghostty_dirs)
+  return 1                                          # not bundled
+}
+
+# Percent-encode a string for a URL path (spaces, parentheses, plus signs...).
+urlencode() {
+  local LC_ALL=C s=$1 out="" c i                    # byte-wise, input, output, char, index
+  for ((i = 0; i < ${#s}; i++)); do
+    c="${s:i:1}"                                    # one byte
+    case $c in
+      [A-Za-z0-9._~-]) out+=$c ;;                   # unreserved characters stay
+      *) out+="$(printf '%%%02X' "'$c")" ;;         # everything else becomes %XX
+    esac
+  done
+  echo "$out"                                       # print the encoded string
+}
+
+# Download a theme into the cache, keeping only color lines (theme files can set any option).
+download_theme() {
+  local name=$1 dest="$CACHE_DIR/$1" tmp           # name, final path, temporary file
+  command -v curl >/dev/null 2>&1 || return 1       # no curl, no download
+  mkdir -p "$CACHE_DIR"                             # first download: create the cache
+  tmp="$(mktemp "$CACHE_DIR/.download.XXXXXX")"     # partial file, never seen as a theme
+  if curl -fsSL "$RAW_URL/$(urlencode "$name")" 2>/dev/null |
+    grep -E '^[[:space:]]*(palette|background|foreground|cursor-color|cursor-text|selection-background|selection-foreground)[[:space:]]*=' >"$tmp" &&
+    grep -q palette "$tmp"; then                    # a real theme has palette lines
+    chmod 644 "$tmp"                                # mktemp files are private; make it a normal file
+    mv "$tmp" "$dest"                               # publish it in the cache
+    return 0                                      # downloaded
+  fi
+  rm -f "$tmp"                                      # failed: drop the partial file
+  return 1                                          # not found upstream or offline
+}
+
+# Print the path of a theme file: cache, then Ghostty bundles, then a download.
+theme_file() {
+  local name=$1                                     # theme name, e.g. "GitHub Light Default"
+  check_name "$name"                                # refuse paths
+  [[ -f "$CACHE_DIR/$name" ]] && { echo "$CACHE_DIR/$name"; return 0; }  # cached download
+  bundled_file "$name" && return 0                  # Ghostty ships it
+  download_theme "$name" && { echo "$CACHE_DIR/$name"; return 0; }  # fetched from GitHub
+  echo "theme: '$name' not found (no Ghostty bundle has it and the download failed; see 'theme list')" >&2
+  return 1                                          # caller decides whether to stop
+}
+
+# Print every theme name: Ghostty bundle (or GitHub, cached for a day) plus downloaded ones.
+list_themes() {
+  local dir file                                    # bundle directory, one theme file
+  dir="$(ghostty_dirs | head -n 1)"                 # the first bundle found
+  {
+    if [[ -n $dir ]]; then
+      for file in "$dir"/*; do [[ -f $file ]] && echo "${file##*/}"; done  # bundled names
+    else
+      if [[ -z $(find "$LIST_CACHE" -mtime -1 2>/dev/null) ]]; then  # cache missing or older than a day
+        mkdir -p "$(dirname "$LIST_CACHE")"         # first run: create the cache dir
+        curl -fsSL "$API_URL" 2>/dev/null |
+          grep -o '"name": *"[^"]*"' |              # one "name": "..." per file in the folder
+          sed -e 's/^"name": *"//' -e 's/"$//' >"$LIST_CACHE.tmp" || true  # keep only the value
+        if [[ -s "$LIST_CACHE.tmp" ]]; then
+          mv "$LIST_CACHE.tmp" "$LIST_CACHE"        # replace the cache only with a good list
+        else
+          rm -f "$LIST_CACHE.tmp"                   # offline: keep any older list
+          [[ -s $LIST_CACHE ]] || echo "theme: no Ghostty bundle and the GitHub listing failed" >&2
+        fi
+      fi
+      [[ -r $LIST_CACHE ]] && cat "$LIST_CACHE"     # cached names
+    fi
+    if [[ -d $CACHE_DIR ]]; then
+      for file in "$CACHE_DIR"/*; do [[ -f $file ]] && echo "${file##*/}"; done  # downloaded themes
+    fi
+    true                                            # an empty cache dir is not an error
+  } | LC_ALL=C sort -u                              # one sorted list without duplicates
+}
+
+# --- Parsing and OSC sequences ---
+
+# Read a theme file into T_PAL (0-15), T_BG, T_FG, T_CURSOR, T_CTEXT, T_SELBG, T_SELFG (hex, no #).
+parse_theme() {
+  local line key value                              # current line, its key and value
+  local re_line='^[[:space:]]*([a-z-]+)[[:space:]]*=[[:space:]]*(.*)$'     # "key = value"
+  local re_pal='^([0-9]+)[[:space:]]*=[[:space:]]*#?([0-9A-Fa-f]{6})'       # "N=#rrggbb"
+  local re_hex='^#?([0-9A-Fa-f]{6})'                # "#rrggbb"
+  T_PAL=() T_BG="" T_FG="" T_CURSOR="" T_CTEXT="" T_SELBG="" T_SELFG=""  # reset
+  while IFS= read -r line || [[ -n $line ]]; do
+    [[ $line =~ $re_line ]] || continue             # skip comments and blank lines
+    key="${BASH_REMATCH[1]}" value="${BASH_REMATCH[2]}"  # split the line
+    if [[ $key == palette ]]; then
+      [[ $value =~ $re_pal ]] && ((BASH_REMATCH[1] < 16)) &&
+        T_PAL[BASH_REMATCH[1]]="${BASH_REMATCH[2]}"  # palette entry N
+      continue                                      # next line
+    fi
+    [[ $value =~ $re_hex ]] || continue             # ignore non-color values
+    value="${BASH_REMATCH[1]}"                      # the hex digits
+    case $key in
+      background) T_BG=$value ;;                    # window background
+      foreground) T_FG=$value ;;                    # default text
+      cursor-color) T_CURSOR=$value ;;              # cursor block
+      cursor-text) T_CTEXT=$value ;;                # text under the cursor
+      selection-background) T_SELBG=$value ;;       # selected text background
+      selection-foreground) T_SELFG=$value ;;       # selected text color
+    esac
+  done <"$1"
+  [[ -n $T_BG && -n $T_FG ]] || { echo "theme: $1 has no background/foreground" >&2; return 1; }
+  : "${T_CURSOR:=$T_FG}" "${T_CTEXT:=$T_BG}"        # cursor falls back to fg, its text to bg
+  : "${T_SELFG:=$T_FG}"                             # selected text falls back to fg
+  if [[ -z $T_SELBG ]]; then T_SELBG="${T_PAL[8]:-$T_FG}"; fi  # selection falls back to bright black
+}
+
+# Print the OSC sequences for a theme name.
+palette_sequences() {
+  local file i                                      # theme file, palette index
+  file="$(theme_file "$1")" || return 1             # find or download it
+  parse_theme "$file" || return 1                   # fill the T_* variables
+  for ((i = 0; i < 16; i++)); do
+    [[ -n ${T_PAL[i]:-} ]] && printf '%s]4;%d;#%s%s\n' "$ESC" "$i" "${T_PAL[i]}" "$BEL"  # OSC 4: palette color i
+  done
+  printf '%s]10;#%s%s\n' "$ESC" "$T_FG" "$BEL"      # OSC 10: foreground
+  printf '%s]11;#%s%s\n' "$ESC" "$T_BG" "$BEL"      # OSC 11: background
+  printf '%s]12;#%s%s\n' "$ESC" "$T_CURSOR" "$BEL"  # OSC 12: cursor
 }
 
 # Print the OSC resets: the terminal falls back to its own profile.
@@ -76,7 +275,8 @@ reset_sequences() {
 emit_stdout() {
   local seq                                         # one sequence without its newline
   local wrap=0                                      # 1 = wrap for tmux passthrough
-  [[ -n ${TMUX:-} && -z $OUT_TTY ]] && wrap=1       # tmux pane: pass through to the outer terminal
+  # Inside tmux, stdout and /dev/tty are the pane: wrap. A --tty client path bypasses tmux: raw.
+  [[ -n ${TMUX:-} && (-z $OUT_TTY || $PANE_TTY == 1) ]] && wrap=1
   while IFS= read -r seq; do
     if ((wrap)); then
       printf '%sPtmux;%s%s' "$ESC" "${seq//$ESC/$ESC$ESC}" "$ST"  # DCS passthrough, ESC doubled
@@ -89,43 +289,220 @@ emit_stdout() {
 # Send stdin sequences to the --tty target, or to stdout.
 emit() {
   if [[ -n $OUT_TTY ]]; then
-    emit_stdout >"$OUT_TTY"                         # raw sequences straight to the client tty
+    emit_stdout >"$OUT_TTY"                         # straight to a tty
   else
     emit_stdout                                     # stdout (the pane, or the caller with --print)
   fi
 }
 
-# Apply a state: dark, light or auto.
+# Apply a mode: dark, light or auto.
 apply_state() {
+  local seqs                                        # sequences, built first so errors stop early
   case $1 in
-    auto) reset_sequences | emit ;;                 # back to the terminal's own colors
-    *) palette_sequences "$1" | emit ;;             # explicit palette
+    auto) seqs="$(reset_sequences)" ;;              # back to the terminal's own colors
+    *) seqs="$(palette_sequences "$(config_get "$1")")" || return 1 ;;  # the slot's theme
   esac
+  printf '%s\n' "$seqs" | emit                      # send them
   if [[ -n ${TMUX:-} ]]; then
     tmux refresh-client -S 2>/dev/null || true      # redraw tmux, harmless on failure
   fi
 }
 
-# Parse arguments: one command plus optional flags.
-CMD=""                                              # dark, light, toggle, auto, apply or status
+# --- Generated per-machine files ---
+
+# Write ~/.config/ghostty/theme.conf (included by the tracked Ghostty config) and reload Ghostty.
+sync_ghostty() {
+  local light=$1 dark=$2 name file                  # slot names, loop name, theme file
+  [[ -d $GHOSTTY_CONFIG_DIR ]] || return 0          # Ghostty config not installed here
+  for name in "$light" "$dark"; do
+    bundled_file "$name" >/dev/null && continue     # Ghostty already knows bundled themes
+    file="$(theme_file "$name")" || return 1        # downloaded theme
+    mkdir -p "$GHOSTTY_CONFIG_DIR/themes"           # Ghostty also searches ~/.config/ghostty/themes
+    cp "$file" "$GHOSTTY_CONFIG_DIR/themes/$name"   # colors only (filtered on download)
+  done
+  rm -f "$GHOSTTY_CONFIG_DIR/theme.conf.tmp"        # leftover from a failed run
+  {
+    echo "# Generated by 'theme sync' from ~/.config/theme/config: do not edit."  # header
+    echo "theme = light:$light,dark:$dark"          # Ghostty switches with the system appearance
+  } >"$GHOSTTY_CONFIG_DIR/theme.conf.tmp"
+  rm -f "$GHOSTTY_CONFIG_DIR/theme.conf"            # drop a symlink if one is there
+  mv "$GHOSTTY_CONFIG_DIR/theme.conf.tmp" "$GHOSTTY_CONFIG_DIR/theme.conf"  # real file
+  echo "ghostty: $GHOSTTY_CONFIG_DIR/theme.conf" >&2  # report
+  # Ghostty reloads its config on SIGUSR2; THEME_NO_RELOAD=1 skips it (tests).
+  if [[ -z ${THEME_NO_RELOAD:-} ]] && pgrep -x ghostty >/dev/null 2>&1; then
+    pkill -USR2 -x ghostty 2>/dev/null || true      # live reload in every Ghostty window
+  fi
+}
+
+# Print an iTerm color dictionary (JSON) for a hex color.
+iterm_color() {
+  local hex=$1                                      # rrggbb
+  awk -v r=$((16#${hex:0:2})) -v g=$((16#${hex:2:2})) -v b=$((16#${hex:4:2})) 'BEGIN {
+    printf "{\"Color Space\":\"sRGB\",\"Red Component\":%.6f,\"Green Component\":%.6f,\"Blue Component\":%.6f,\"Alpha Component\":1}", r/255, g/255, b/255
+  }'                                                # components are 0-1 floats
+}
+
+# Add every color key for one appearance (Light or Dark) from a theme file to a plist.
+iterm_colors() {
+  local plist=$1 suffix=$2 file=$3 i key hex         # target plist, "Light"/"Dark", theme file, loop vars
+  parse_theme "$file" || return 1                   # fill the T_* variables
+  local -a keys=("Foreground Color" "Background Color" "Cursor Color" "Cursor Text Color"
+    "Selection Color" "Selected Text Color" "Bold Color" "Link Color")  # named colors
+  local -a hexes=("$T_FG" "$T_BG" "$T_CURSOR" "$T_CTEXT" "$T_SELBG" "$T_SELFG" "$T_FG" "${T_PAL[4]:-$T_FG}")  # same order
+  for ((i = 0; i < 16; i++)); do
+    keys+=("Ansi $i Color")                         # palette keys
+    hexes+=("${T_PAL[i]:-$T_FG}")                   # missing entries fall back to fg
+  done
+  for i in "${!keys[@]}"; do
+    key="${keys[i]} ($suffix)"                      # e.g. "Background Color (Light)"
+    hex="${hexes[i]}"                               # its color
+    plutil -replace "Profiles.0.$key" -json "$(iterm_color "$hex")" "$plist"  # set or add the key
+  done
+}
+
+# Generate the iTerm Dynamic Profile: tracked template + colors for both appearances.
+sync_iterm() {
+  local light_file=$1 dark_file=$2 tmp dir          # theme files, temp plist, profile folder
+  [[ $(uname -s) == Darwin && -f $ITERM_TEMPLATE ]] || return 0  # macOS with the iterm package only
+  command -v plutil >/dev/null 2>&1 || return 0     # plutil ships with macOS
+  dir="$(dirname "$ITERM_PROFILE")"                 # DynamicProfiles folder
+  mkdir -p "$dir"                                   # iTerm creates it too; harmless
+  tmp="$(mktemp "${TMPDIR:-/tmp}/dotfiles-iterm.XXXXXX")"  # build outside the watched folder
+  plutil -convert xml1 -o "$tmp" "$ITERM_TEMPLATE"  # copy the template (comments are dropped)
+  plutil -replace "Profiles.0.Use Separate Colors for Light and Dark Mode" -bool YES "$tmp"  # follow macOS
+  iterm_colors "$tmp" Light "$light_file" || { rm -f "$tmp"; return 1; }  # light appearance colors
+  iterm_colors "$tmp" Dark "$dark_file" || { rm -f "$tmp"; return 1; }    # dark appearance colors
+  plutil -lint -s "$tmp" || { rm -f "$tmp"; return 1; }  # never install a broken profile
+  rm -f "$ITERM_PROFILE"                            # drop the old symlink into the repo, if any
+  mv "$tmp" "$ITERM_PROFILE"                        # iTerm watches the folder and reloads it
+  chmod 644 "$ITERM_PROFILE"                        # mktemp files are private; make it a normal file
+  echo "iterm: $ITERM_PROFILE" >&2                  # report
+}
+
+# Regenerate every per-machine file from the tracked config.
+sync_all() {
+  local light dark light_file dark_file             # names and their files
+  light="$(config_get light)" dark="$(config_get dark)"  # tracked pair
+  light_file="$(theme_file "$light")" || return 1   # make sure both exist locally
+  dark_file="$(theme_file "$dark")" || return 1     # (downloads if needed)
+  sync_ghostty "$light" "$dark" || return 1         # Ghostty include file
+  sync_iterm "$light_file" "$dark_file"             # iTerm profile (macOS)
+}
+
+# Save a theme in a slot, regenerate the files and apply the current mode.
+set_theme() {
+  local slot=$1 name=$2                             # light or dark, theme name
+  [[ $slot == light || $slot == dark ]] || die "slot must be light or dark"
+  theme_file "$name" >/dev/null || exit 1           # check (and fetch) before writing anything
+  config_set "$slot" "$name"                        # update the tracked config
+  echo "$slot theme: $name (commit $CONFIG_FILE in your dotfiles repo to keep it)" >&2  # remind
+  sync_all || exit 1                                # Ghostty and iTerm follow
+  apply_state "$(read_state)"                       # recolor this terminal
+}
+
+# --- Picker (fzf) ---
+
+# Print a preview of a theme: the 16 colors as blocks and sample text on its background.
+swatch() {
+  local file cols i                                 # theme file, preview width, loop index
+  file="$(theme_file "$1")" || return 0             # fzf shows the error text
+  parse_theme "$file" || return 0                   # broken file: error already printed
+  cols=${FZF_PREVIEW_COLUMNS:-60}                   # width of the preview pane
+  rgb() { printf '%d;%d;%d' $((16#${1:0:2})) $((16#${1:2:2})) $((16#${1:4:2})); }  # rrggbb -> r;g;b
+  printf '%s\n\n' "$1"                              # the name on top
+  for row in 0 8; do                                # normal colors, then bright ones
+    for ((i = row; i < row + 8; i++)); do
+      printf '%s[48;2;%sm %2d  %s[0m' "$ESC" "$(rgb "${T_PAL[i]:-$T_BG}")" "$i" "$ESC"  # one block
+    done
+    printf '\n'                                     # end of the row
+  done
+  printf '\n'                                       # gap before the sample
+  # sample_line color text color text ...: colored segments on the theme background, padded.
+  sample_line() {
+    local len=0 bg                                  # visible length, background escape
+    bg="${ESC}[48;2;$(rgb "$T_BG")m"                  # theme background
+    printf '%s' "$bg"                               # start the line on it
+    while (($# >= 2)); do
+      printf '%s[38;2;%sm%s' "$ESC" "$(rgb "$1")" "$2"  # text in its color
+      len=$((len + ${#2}))                          # count visible characters
+      shift 2                                       # next segment
+    done
+    printf '%*s%s[0m\n' $((cols > len ? cols - len : 0)) "" "$ESC"  # pad to the pane width, reset
+  }
+  local p0=${T_PAL[0]:-$T_FG} p1=${T_PAL[1]:-$T_FG} p2=${T_PAL[2]:-$T_FG} p3=${T_PAL[3]:-$T_FG}  # palette shortcuts
+  local p4=${T_PAL[4]:-$T_FG} p5=${T_PAL[5]:-$T_FG} p6=${T_PAL[6]:-$T_FG} p8=${T_PAL[8]:-$T_FG}  # more shortcuts
+  sample_line "$T_FG" ""                            # top margin
+  sample_line "$p8" "  // greet prints a friendly message"  # comment
+  sample_line "$p5" "  func " "$p4" "greet" "$T_FG" "(name " "$p6" "string" "$T_FG" ") {"  # signature
+  sample_line "$T_FG" "    fmt.Println(" "$p2" "\"hello, \"" "$T_FG" " + name)"  # string literal
+  sample_line "$T_FG" "    count := " "$p3" "42" "$T_FG" " " "$p8" "// number"  # number
+  sample_line "$T_FG" "  }"                         # closing brace
+  sample_line "$T_FG" ""                            # spacer
+  sample_line "$p1" "  error " "$p3" " warning " "$p2" " ok " "$p6" " info " "$p0" " black"  # status words
+  sample_line "$T_FG" ""                            # bottom margin
+  printf '\n%s[48;2;%sm%s[38;2;%sm selected text %s[0m ' "$ESC" "$(rgb "$T_SELBG")" "$ESC" "$(rgb "$T_SELFG")" "$ESC"  # selection
+  printf '%s[48;2;%sm%s[38;2;%sm cursor %s[0m\n' "$ESC" "$(rgb "$T_CURSOR")" "$ESC" "$(rgb "$T_CTEXT")" "$ESC"  # cursor
+}
+
+# Apply a theme to the terminal fzf runs in (fzf callbacks have no tty on stdout).
+preview_apply() {
+  OUT_TTY=/dev/tty PANE_TTY=1                       # this pane's tty, wrapped inside tmux
+  palette_sequences "$1" 2>/dev/null | emit || true # ignore unknown names while scrolling
+}
+
+# Choose a theme with fzf: live preview on focus, Enter saves, Esc restores.
+pick() {
+  local slot=${1:-} self list pos choice            # slot, quoted script path, names, start row, result
+  [[ -n $slot ]] || slot="$(effective_mode)"        # default: the slot in use now
+  [[ $slot == light || $slot == dark ]] || die "usage: theme pick [light|dark]"
+  command -v fzf >/dev/null 2>&1 || die "fzf not found: use 'theme set $slot <name>' (see 'theme list')"
+  list="$(list_themes)"                             # every theme name
+  [[ -n $list ]] || die "no themes found"           # nothing to pick from
+  pos="$(printf '%s\n' "$list" | grep -nxF -- "$(config_get "$slot")" | cut -d: -f1 || true)"  # current theme's row
+  self="$(printf '%q' "$SELF")"                     # quoted for fzf's shell
+  choice="$(printf '%s\n' "$list" | fzf \
+    --prompt="$slot theme> " \
+    --header="Enter: save as the $slot theme   Esc: cancel" \
+    --preview="$self _swatch {}" \
+    --preview-window=right,60% \
+    --bind="focus:execute-silent($self _preview {})" \
+    --bind="load:pos(${pos:-1})")" || true          # Esc or Ctrl-C: empty choice
+  if [[ -z $choice ]]; then
+    OUT_TTY=/dev/tty PANE_TTY=1                     # restore on the same tty the preview used
+    apply_state "$(read_state)"                     # previous colors back
+    return 0                                        # nothing saved
+  fi
+  set_theme "$slot" "$choice"                       # save, sync and apply
+}
+
+# --- Arguments ---
+CMD=""                                              # the command word
+ARGS=()                                             # its arguments
 PRINT=0                                             # 1 = print to stdout
 while (($#)); do
   case $1 in
     --tty) OUT_TTY="${2:?--tty needs a path}"; shift 2 ;;  # write to this tty
     --print) PRINT=1; shift ;;                      # stdout (the default, kept for callers)
     -h | --help) CMD=help; shift ;;                 # show usage
-    *) CMD=$1; shift ;;                             # the command word
+    *)
+      if [[ -z $CMD ]]; then CMD=$1; else ARGS+=("$1"); fi  # first word is the command
+      shift
+      ;;
   esac
 done
 ((PRINT)) && OUT_TTY=""                             # --print wins over --tty
+# Bash 3.2 treats an empty array as unset under `set -u`; these give safe defaults.
+ARG1="${ARGS[0]:-}"                                 # first argument
+ARG2="${ARGS[1]:-}"                                 # second argument
+if ((${#ARGS[@]} > 2)); then ARG2="${ARGS[*]:1}"; fi  # unquoted names with spaces: join the words
 
 case $CMD in
   dark | light | auto)
     write_state "$CMD"                              # remember the choice
     apply_state "$CMD"                              # show it now
     ;;
-  apply) apply_state "$(read_state)" ;;             # re-apply the saved state
-  status) read_state ;;                             # print the saved state
+  apply) apply_state "$(read_state)" ;;             # re-apply the saved mode
+  status) read_state ;;                             # print the saved mode
   toggle)
     case $(read_state) in
       dark) new=light ;;                            # dark -> light
@@ -135,9 +512,22 @@ case $CMD in
     write_state "$new"                              # remember the choice
     apply_state "$new"                              # show it now
     ;;
+  pick) pick "$ARG1" ;;                             # fzf picker
+  set)
+    [[ -n $ARG1 && -n $ARG2 ]] || die "usage: theme set light|dark <name>"
+    set_theme "$ARG1" "$ARG2"                       # save, sync and apply
+    ;;
+  list) list_themes ;;                              # all names
+  file)
+    [[ -n $ARG1 ]] || die "usage: theme file <name>"
+    theme_file "${ARGS[*]}"                         # path (joined, so quotes are optional)
+    ;;
+  sync) sync_all ;;                                 # regenerate Ghostty/iTerm files
+  _swatch) swatch "$ARG1" ;;                        # fzf preview pane (internal)
+  _preview) preview_apply "$ARG1" ;;                # fzf focus callback (internal)
+  help) usage ;;                                    # help is not an error
   *)
-    echo "usage: theme dark|light|toggle|auto|apply|status [--tty <path>] [--print]" >&2  # help text
-    [[ $CMD == help ]] && exit 0                    # help is not an error
+    usage >&2                                       # help text on stderr
     exit 2                                          # unknown command
     ;;
 esac
