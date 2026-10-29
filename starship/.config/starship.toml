@@ -7,12 +7,41 @@ command_timeout = 500         # ms to wait for a module before skipping it
 
 # Order and content of the left prompt.
 format = """
-${env_var.PROMPT_HOST}$directory$git_branch$git_status$golang$nodejs$zig$python$cmd_duration
-$character"""
+[╭─ ](dimmed)$os${env_var.PROMPT_HOST}$directory$git_branch$git_status$golang$nodejs$zig$python$cmd_duration$fill$status$time
+[╰─](dimmed)$character"""
 
 [character]
 success_symbol = "[❯](bold green)"   # prompt symbol after success
 error_symbol = "[❯](bold red)"       # prompt symbol after a failed command
+
+[os]
+disabled = false              # OS icon only, no name
+format = "[$symbol]($style) " # icon in its style, then a space
+style = "bold cyan"           # palette color, follows the theme
+
+[os.symbols]
+Macos = " "                  # Apple icon (needs a Nerd Font)
+Ubuntu = " "                 # Ubuntu icon
+Linux = " "                  # generic Linux fallback
+
+[fill]
+symbol = "·"                  # dotted line between left and right parts
+style = "dimmed"              # subtle on light and dark (bright-black is too faint on light)
+
+[status]
+disabled = false              # show the last exit status
+success_symbol = "✔"          # shown after a successful command
+symbol = "✘ $status"          # ✘ and exit code after a failed command
+format = "[$symbol]($style) "   # ✔ or ✘ with code, then a space
+success_style = "green"       # ✔ in green
+failure_style = "bold red"    # ✘ and code in red
+style = "bold red"            # fallback style for failures
+
+[time]
+disabled = false              # show the clock
+time_format = "%H:%M:%S"      # 24h with seconds
+format = "at [$time]($style)" # plain "at " connector, then the time
+style = "dimmed"              # subtle on light and dark
 
 [env_var.PROMPT_HOST]
 variable = "PROMPT_HOST"      # exported by zsh/.zshrc over SSH only: HOST_LABEL, else the short hostname
@@ -28,7 +57,10 @@ symbol = " "                 # branch icon (needs a Nerd Font)
 format = "on [$symbol$branch]($style) "  # plain "on " connector, icon, branch name, trailing space
 
 [git_status]
-format = '([\[$all_status$ahead_behind\]]($style) )' # compact status like [!?⇡]
+format = '([$all_status$ahead_behind]($style) )' # compact status like !1?2⇡, no brackets
+untracked = "?${count}"       # ?N untracked files
+modified = "!${count}"        # !N modified files
+staged = "+${count}"          # +N staged files
 
 [cmd_duration]
 min_time = 2000               # only show commands slower than 2s
