@@ -15,3 +15,4 @@ terminal	Cmd+K	clear the tmux pane: sends prefix Ctrl+l (Ghostty, iTerm; Linux G
 terminal	Shift+Enter	new line in Claude Code (tmux passes it on via extended keys)	docs/tmux.md
 nvim	Space, then wait	which-key lists every leader key (leader is Space)	docs/nvim.md
 nvim	Space u t	toggle light/dark	docs/nvim.md
+command	theme toggle / pick / dark / light / auto	light/dark theme; theme help lists every subcommand	docs/theme.md

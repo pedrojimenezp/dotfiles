@@ -4,13 +4,13 @@ Personal, cross-platform (macOS + Linux) shell and editor setup, managed with [G
 
 ## Help
 
-Forgot a key? Press `prefix ?` (`Ctrl+Space`, then `?`) in tmux, or run `dotfiles-help` in a shell. It opens a searchable list of every tmux key, zsh alias, key and command, script and plugin key (like which-key in Neovim). `dotfiles-help --list` prints the same list as a table.
+Forgot a key? Press `prefix ?` (`Ctrl+Space`, then `?`) in tmux, or run `dotfiles-help` in a shell. It opens a searchable list of the tmux keys of this config, zsh aliases, keys and functions, scripts and plugin keys (like which-key in Neovim); tmux's own defaults are on `prefix k`. `dotfiles-help --list` prints the same list as a table.
 
 The list is read from the configs themselves, so adding something means describing it where it is defined:
 
 - tmux key: `bind -N "short description" ...` in `tmux.conf`.
 - zsh alias or key: an end-of-line comment on the `alias` or `bindkey` line in `.zshrc`; a shell function: a comment line above it.
-- script in `bin/.local/bin`: a one-line description on line 2 and `# Usage:` lines (or a `usage()` text).
+- script in `bin/.local/bin`: a one-line description on line 2 and `# Usage:` lines.
 - Only keys no config states (plugin, tool and terminal keys) go in [docs/cheatsheet.tsv](docs/cheatsheet.tsv).
 
 Each top-level folder is a **stow package**: its contents mirror `$HOME`. For example `git/.config/git/config` becomes `~/.config/git/config`.
