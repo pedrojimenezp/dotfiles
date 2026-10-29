@@ -22,7 +22,7 @@ Splits use the Vim defaults: `:split`, `:vsplit`, or `Ctrl+w s` / `Ctrl+w v`.
 - Smart-case search with live matches and highlight.
 - Two-space indent with spaces (`expandtab`), mouse on.
 - Persistent undo in `~/.vim/undo` (created on first start). No swap or backup files.
-- Clipboard: the system clipboard locally; not touched over SSH.
+- Clipboard: the system clipboard locally (on Linux, both the clipboard and the selection); not touched over SSH.
 
 ## Change it
 

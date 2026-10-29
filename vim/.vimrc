@@ -46,7 +46,7 @@ set nobackup                  " no backup files
 set noswapfile                " no swap files
 if !isdirectory(expand('~/.vim/undo')) | call mkdir(expand('~/.vim/undo'), 'p') | endif
                               " create the undo directory if missing
-if $SSH_TTY != '' | set clipboard= | else | set clipboard=unnamed | endif
+if $SSH_TTY != '' | set clipboard= | else | set clipboard=unnamed,unnamedplus | endif
                               " system clipboard locally; leave alone over SSH
 
 " Mappings: comments go on the line above because a trailing " would be part of the mapping.
