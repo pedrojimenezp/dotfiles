@@ -36,7 +36,7 @@ map("n", "<leader>ut", function()
   if vim.fn.executable("theme") == 1 then -- the script lives in ~/.local/bin
     local res = vim.system({ "theme", "toggle", "--print" }, { text = true }):wait() -- sync, returns escape codes
     if res.code == 0 and res.stdout then vim.api.nvim_ui_send(res.stdout) end -- send them to the terminal
-    local state = vim.trim(vim.system({ "theme", "status" }, { text = true }):wait().stdout or "") -- new saved state
+    local state = vim.trim(vim.system({ "theme", "mode" }, { text = true }):wait().stdout or "") -- new saved mode: toggle always saves dark or light
     if state == "dark" or state == "light" then
       vim.o.background = state -- match the terminal
       return

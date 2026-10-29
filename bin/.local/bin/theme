@@ -34,6 +34,7 @@ usage: theme <command> [--tty <path>] [--print]
   toggle                   flip between light and dark
   apply                    re-apply the saved mode
   status                   print the mode and the light/dark picks (* = in use)
+  mode                     print only the saved mode: dark, light or auto (for scripts)
   pick [light|dark]        choose a theme with fzf and live preview (default: the current mode's slot)
   set light|dark <name>    save <name> as the light or dark theme, sync and apply
   list                     print every available theme name
@@ -513,6 +514,7 @@ case $CMD in
     ;;
   apply) apply_state "$(read_state)" ;;             # re-apply the saved mode
   status) status_report ;;                          # mode and both picks
+  mode) read_state ;;                               # one word, stable for parsers
   toggle)
     case $(read_state) in
       dark) new=light ;;                            # dark -> light

@@ -24,6 +24,7 @@ theme dark | light | auto   # set the mode (saved) and apply it
 theme toggle                # flip light/dark. From auto: the opposite of macOS now
 theme apply                 # apply the saved mode again
 theme status                # print the mode and both picks
+theme mode                  # print only the saved mode (dark, light or auto), for scripts
 theme pick                  # choose a theme for the current mode (fzf, live preview)
 theme pick dark             # choose the dark theme, even in light mode
 theme set light "Flexoki Light"   # save a theme without fzf, then sync and apply
@@ -38,6 +39,8 @@ Options (can go anywhere in the command):
 
 - `--tty <path>`: write the color codes to that terminal device instead of the current one. tmux uses it for `prefix t`.
 - `--print`: write the codes to standard output (the default). It wins over `--tty`. Neovim uses it.
+
+Scripts should read `theme mode`: it prints exactly one word. `theme status` is for people and its layout can change. The shell startup and `<leader>ut` use `theme mode`.
 
 `theme status` looks like this (`*` marks the one in use):
 
