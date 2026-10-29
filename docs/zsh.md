@@ -11,7 +11,7 @@ File: `zsh/.zshrc`, linked to `~/.zshrc`. It is plain zsh with no framework, so 
 - **Bell**: rings after commands that run 30 seconds or more (see below).
 - **Options**: `AUTO_CD` (type a folder name to enter it), comments allowed at the prompt, no bell, emacs key style.
 - **Completion**: case-insensitive matching, colored like `ls`, grouped with headers. With fzf-tab installed, Tab opens an fzf list (see below).
-- **Tools**: fzf, zoxide, mise and starship are started only when installed. A missing tool never gives an error.
+- **Tools**: fzf, atuin, zoxide, mise and starship are started only when installed. A missing tool never gives an error.
 - **Plugins** (from Homebrew): fzf-tab, autosuggestions and syntax highlighting.
 - **OS parts**: macOS (`o` = `open`, `ls -G`, Ghostty command added to `PATH`) and Linux (`o` = `xdg-open`, `ls --color=auto`).
 
@@ -45,8 +45,9 @@ Run `alias` to list what is active on this machine.
 
 | Keys | What it does | Source |
 | --- | --- | --- |
-| `Up` / `Down` | Search history for commands that start with what you typed. Empty line: walk the history. | This config |
-| `Ctrl+R` | Fuzzy search the whole history | fzf |
+| `Up` | With atuin: open the history search (all shells). Without atuin: commands that start with what you typed. | atuin / this config |
+| `Down` | Commands that start with what you typed, going forward | This config |
+| `Ctrl+R` | Fuzzy search the whole history | atuin (fzf if atuin is missing) |
 | `Ctrl+T` | Fuzzy pick files and paste the path | fzf |
 | `Alt+C` | Fuzzy pick a folder and `cd` into it | fzf |
 | `Tab` | Fuzzy completion list (`Enter` accepts, `,` / `.` switch group) | fzf-tab |
@@ -72,6 +73,28 @@ Notes:
 - Group headers like `[file]` are on. Press `,` or `.` to jump between groups.
 - Matching stays case-insensitive.
 - Optional: inside tmux, add `zstyle ':fzf-tab:*' fzf-command ftb-tmux-popup` to `~/.zshrc.local` to open the list as a tmux popup (needs tmux 3.2+). Not enabled by default.
+
+## History search with atuin
+
+[atuin](https://docs.atuin.sh/) stores every command (with folder, time, exit code) in a local SQLite database, `~/.local/share/atuin/history.db`. Config: `atuin/.config/atuin/config.toml`, linked to `~/.config/atuin/config.toml`. It is local only: no account, no sync, no update checks (`auto_sync = false`, `update_check = false`). Full mode only; `--server` machines keep the old behavior.
+
+What changes: `Up` and `Ctrl+R` now open the same atuin list under the prompt. Both search the history of **all** shells, tabs and folders (`filter_mode = "global"`), like the shared zsh history before.
+
+Use it:
+
+- Press `Up` or `Ctrl+R`, then type: letters match anywhere, in order (fuzzy).
+- `Up` / `Down` (or `Ctrl+P` / `Ctrl+N`) move in the list. `Esc` or `Ctrl+C` cancels.
+- `Enter` or `Tab` paste the command on the prompt; you press `Enter` again to run it (`enter_accept = false`, so nothing runs by surprise).
+- `Ctrl+R` inside the list cycles the filter: global, host, session, workspace (current git repo), directory. Try `directory` to see only what you ran in this folder.
+- Outside the list, `Down` is still the prefix search from this config (atuin does not bind it).
+
+First install: `install.sh` runs `atuin import zsh` once, when the database does not exist yet. To import again by hand: `atuin import zsh` (it may add duplicates).
+
+Turn off the `Up` takeover (keep `Ctrl+R`): put `export ATUIN_NO_UP=1` in `~/.zshenv` and open a new shell. `.zshrc.local` is read too late for this, because it loads after atuin starts. Up then goes back to the prefix search.
+
+Turn on sync later: run `atuin register` (or `atuin login`), then set `auto_sync = true` in the config and run `atuin sync`. History is end-to-end encrypted. Not enabled by default.
+
+Without atuin installed, `.zshrc` skips it and `Up` and `Ctrl+R` use the prefix search and fzf.
 
 ## Jump to folders with zoxide
 

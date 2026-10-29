@@ -156,6 +156,12 @@ fi
 if command -v fzf >/dev/null 2>&1; then
   source <(fzf --zsh)                     # Ctrl-R history, Ctrl-T files, Alt-C cd, ** completion
 fi
+# atuin comes after fzf (so its Ctrl-R wins) and after our Up/Down bindkeys (so its Up wins).
+# Down stays ours (atuin does not bind it). Without atuin, the prefix search above remains.
+if command -v atuin >/dev/null 2>&1; then
+  # ATUIN_NO_UP=1 (set in ~/.zshenv, which loads before this file) keeps Up on prefix search
+  eval "$(atuin init zsh ${ATUIN_NO_UP:+--disable-up-arrow})"  # history search on Ctrl-R and Up
+fi
 if command -v zoxide >/dev/null 2>&1; then
   eval "$(zoxide init zsh)"               # adds `z` and `zi` jump commands
 fi

@@ -21,6 +21,7 @@ Everything below is installed by the `Brewfile` (`brew bundle`, run by `install.
 | Tool | What it is for | Example |
 | --- | --- | --- |
 | `fzf` | Fuzzy finder | `Ctrl+R` history, `Ctrl+T` files, `Alt+C` folders; `git log --oneline \| fzf` |
+| `atuin` | Searchable shell history in a local database (`Up`, `Ctrl+R`); no sync | `Ctrl+R`, `atuin stats` |
 | `zoxide` | Smart `cd` | `z dotfiles`, `zi` |
 | `eza` | Better `ls` (aliases `ls`, `ll`, `la`, `lt`) | `ll`, `lt` |
 | `bat` | `cat` with colors (alias `cat`) | `bat README.md` |

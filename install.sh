@@ -65,7 +65,7 @@ github_ssh_ok() {
 if [[ $SERVER -eq 1 ]]; then
   PACKAGES=(zsh tmux vim git bin theme)
 else
-  PACKAGES=(zsh nvim tmux vim git starship mise bin theme)
+  PACKAGES=(zsh nvim tmux vim git starship mise atuin bin theme)
 fi
 
 # iTerm Dynamic Profile template (theme sync builds the real profile): macOS only, never in server mode.
@@ -175,6 +175,15 @@ if [[ $SERVER -eq 0 ]]; then
     run mise install # reads ~/.config/mise/config.toml
   else
     echo "==> Skipping mise install: mise not found"
+  fi
+fi
+
+# Step 3b2: import the zsh history into atuin once (full mode only).
+ATUIN_DB="${XDG_DATA_HOME:-$HOME/.local/share}/atuin/history.db" # atuin's default database
+if [[ $SERVER -eq 0 ]] && { command -v atuin >/dev/null 2>&1 || [[ $DRY -eq 1 ]]; }; then # in dry-run atuin may not be installed yet
+  if [[ ! -e "$ATUIN_DB" ]]; then # first run only: a later run never imports again
+    echo "==> Importing the zsh history into atuin"
+    run atuin import zsh || echo "warning: atuin import failed; run 'atuin import zsh' later" >&2 # non-fatal
   fi
 fi
 

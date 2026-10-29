@@ -1,0 +1,14 @@
+# ~/.config/atuin/config.toml: shell history search (https://docs.atuin.sh/configuration/config/).
+# Local only: no account, no sync. The history lives in ~/.local/share/atuin/history.db.
+
+auto_sync = false                          # never talk to a sync server (no account needed)
+update_check = false                       # no network call to look for new versions; `brew upgrade` handles updates
+
+search_mode = "fuzzy"                      # typed letters match anywhere, in order (the default, like fzf)
+filter_mode = "global"                     # Ctrl+R searches the history of every shell, session and folder
+filter_mode_shell_up_key_binding = "global" # Up searches everything too, like zsh's shared history (default is the same; explicit on purpose)
+enter_accept = false                       # Enter and Tab only paste the command on the prompt; you press Enter again to run it
+
+style = "compact"                          # one line per result
+inline_height = 20                         # list uses 20 lines under the prompt instead of the whole screen
+show_preview = true                        # show a long command in full below the list

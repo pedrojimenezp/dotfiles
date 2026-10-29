@@ -68,12 +68,13 @@ Flags can be combined (`--dry-run --server`).
 
 1. Checks that `zsh` exists. Without it the script stops (with `--dry-run` it continues).
 2. **Homebrew packages** (full mode): `brew bundle --no-upgrade`. It installs what is missing and never upgrades. If `brew` is missing it prints the install command and stops.
-3. Decides the package list. Full: `zsh nvim tmux vim git starship mise bin theme`, plus `iterm` on macOS, plus `ghostty` when Ghostty is installed. Server: `zsh tmux vim git bin theme`.
+3. Decides the package list. Full: `zsh nvim tmux vim git starship mise atuin bin theme`, plus `iterm` on macOS, plus `ghostty` when Ghostty is installed. Server: `zsh tmux vim git bin theme`.
 4. Renames an old standalone `~/.local/bin/mise` that would shadow the Homebrew one (full mode).
 5. **Backs up** every real file a package would link: `<file>.backup-YYYYmmdd-HHMMSS`. Files that are already links into this repo are left alone. `~/.gitconfig` is backed up too, because it beats `~/.config/git/config`.
 6. Removes the old iTerm profile link from earlier installs.
 7. **Links** the packages with `stow --restow --no-folding`. `--no-folding` makes each file its own link, so folders like `~/.config/ghostty` stay real folders and generated files never land in the repo. Without `stow` it uses plain symlinks.
 8. `mise install` for the global runtimes (full mode).
+   Then, only when `~/.local/share/atuin/history.db` does not exist yet, `atuin import zsh` copies `~/.zsh_history` into atuin once. A failure only prints a warning.
 9. Removes the old `~/.config/git/local` https override, but only if an older installer wrote it.
 10. Clones **TPM** into `~/.config/tmux/plugins/tpm` and installs the tmux plugins.
 11. Linux desktop only: installs the Monaspace Nerd Font into `~/.local/share/fonts`.
@@ -121,4 +122,4 @@ cd ~/projects/personal/dotfiles && git pull && ./install.sh
 - **Colors did not change after `theme sync`**: see [theme.md](theme.md).
 - **`--with-claude` says "no GitHub SSH access"**: forward or add your GitHub key, see [server.md](server.md), then run it again.
 - **Go back to the old files**: the backups are next to the links: `ls ~/.zshrc.backup-*`. Remove the link and rename the backup.
-- **Remove everything**: `stow --delete --dir=$HOME/projects/personal/dotfiles --target=$HOME zsh nvim tmux vim git starship mise bin theme` (add `ghostty iterm` if linked). It removes only the links.
+- **Remove everything**: `stow --delete --dir=$HOME/projects/personal/dotfiles --target=$HOME zsh nvim tmux vim git starship mise atuin bin theme` (add `ghostty iterm` if linked). It removes only the links.

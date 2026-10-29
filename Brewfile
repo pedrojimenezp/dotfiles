@@ -25,7 +25,7 @@ brew "yq"                      # jq-like processor for YAML/TOML/XML
 brew "btop"                    # resource monitor (CPU, memory, disks, network)
 brew "tealdeer"                # fast tldr client: short command examples (`tldr tar`)
 brew "hyperfine"               # command-line benchmarking
-# brew "atuin"                 # optional: searchable shell history, syncable across machines
+brew "atuin"                  # searchable shell history (Up and Ctrl+R), local only
 # brew "mosh"                  # optional: SSH-like shell that survives roaming and sleep
 
 # --- Git and containers ---

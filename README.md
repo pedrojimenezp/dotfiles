@@ -63,19 +63,20 @@ What each step does, backups, idempotency and troubleshooting: [docs/install.md]
 
 | Package | Links to | What it does |
 | --- | --- | --- |
-| `zsh` | `~/.zshrc` | Plain zsh: history, completion, aliases, fzf, zoxide, mise, starship, autosuggestions, syntax highlighting. Sources `~/.zshrc.local` last. |
+| `zsh` | `~/.zshrc` | Plain zsh: history, completion, aliases, fzf, atuin, zoxide, mise, starship, autosuggestions, syntax highlighting. Sources `~/.zshrc.local` last. |
 | `nvim` | `~/.config/nvim` | Neovim config (lazy.nvim, LSP, treesitter, telescope, conform, blink.cmp). |
 | `tmux` | `~/.config/tmux/tmux.conf` | tmux with prefix `Ctrl+Space`, vi copy mode, TPM plugins, minimal status line that follows the terminal palette, with SSH badge, prefix, bell, zoom and git branch indicators. |
 | `vim` | `~/.vimrc` | Small plugin-free vimrc for servers. |
 | `git` | `~/.config/git/{config,ignore}` | Git defaults, delta pager, aliases, global ignores, `local` include. |
 | `starship` | `~/.config/starship.toml` | Prompt layout. |
+| `atuin` | `~/.config/atuin/config.toml` | Shell history search on `Up` and `Ctrl+R`, local only (no sync). Full mode only. |
 | `ghostty` | `~/.config/ghostty/config` | Ghostty terminal (optional; linked only if Ghostty is installed). Colors come from the generated `theme.conf` next to it. |
 | `iterm` | `~/.config/iterm/dotfiles-profile.plist` | Template for the iTerm2 Dynamic Profile "Dotfiles" (macOS only). `theme sync` adds the colors. |
 | `mise` | `~/.config/mise/config.toml` | Global mise defaults: node (LTS) and go (latest), `.nvmrc` support. |
 | `bin` | `~/.local/bin` | Scripts on PATH: `tmux-sessionizer`, `tmux-popup`, `theme`. |
 | `theme` | `~/.config/theme/config` | The light/dark theme pair (tracked), used by the terminals, tmux and Neovim. |
 
-`./install.sh --server` links only `zsh`, `tmux`, `vim`, `git`, `bin` and `theme`.
+`./install.sh --server` (no `atuin`) links only `zsh`, `tmux`, `vim`, `git`, `bin` and `theme`.
 
 ## Cheat sheet
 
@@ -85,8 +86,10 @@ Details are in the docs above. `prefix` is `Ctrl+Space`. In Neovim, `<leader>` i
 
 | Keys / command | Action |
 | --- | --- |
-| `Up` / `Down` | History that starts with what you typed |
-| `Ctrl+R` / `Ctrl+T` / `Alt+C` | fzf: history / file path / change folder |
+| `Up` | atuin history search, all shells (`Esc` cancels, `Enter` pastes) |
+| `Down` | History that starts with what you typed |
+| `Ctrl+R` | atuin history search (same list; `Ctrl+R` again cycles filter) |
+| `Ctrl+T` / `Alt+C` | fzf: file path / change folder |
 | `Tab` | Fuzzy completion list (fzf-tab) |
 | `Ctrl+X` `Ctrl+E` | Edit the command line in nvim |
 | `Ctrl+L` | Clear screen and scrollback |
