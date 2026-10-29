@@ -95,7 +95,7 @@ Only in files inside a git repo.
 | `gri` | Implementations (telescope) |
 | `<leader>D` | Type definition |
 | `<leader>ds` | Document symbols |
-| `<leader>ws` | Workspace symbols |
+| `<leader>sS` | Workspace symbols |
 | `<leader>rn` | Rename symbol |
 | `<leader>ca` | Code action |
 | `<leader>th` | Toggle inlay hints |

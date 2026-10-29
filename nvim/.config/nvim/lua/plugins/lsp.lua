@@ -26,7 +26,7 @@ return {
           map("gri", tb("lsp_implementations"), "Go to implementation") -- overrides default gri with Telescope
           map("<leader>D", tb("lsp_type_definitions"), "Type definition")
           map("<leader>ds", tb("lsp_document_symbols"), "Document symbols")
-          map("<leader>ws", tb("lsp_dynamic_workspace_symbols"), "Workspace symbols")
+          map("<leader>sS", tb("lsp_dynamic_workspace_symbols"), "Workspace symbols") -- under Search: <leader>w must stay a plain save
           map("<leader>rn", vim.lsp.buf.rename, "Rename symbol")
           map("<leader>ca", vim.lsp.buf.code_action, "Code action")
           map("<leader>th", function()
