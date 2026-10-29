@@ -45,7 +45,7 @@ Open a new terminal, then try:
 
 ## Aliases
 
-Some aliases exist only if the tool is installed. `dotfiles-help` lists every alias, key and shell function with its description, see [tmux.md](tmux.md#help-popup). Keys of tools that bind their own (fzf, atuin, fzf-tab, zoxide, autosuggestions) are in [cheatsheet.tsv](cheatsheet.tsv).
+Some aliases exist only if the tool is installed. `dotfiles-help` lists every alias, key and shell function with its description, see [Find any key](first-day.md#find-any-key). Keys of tools that bind their own (fzf, atuin, fzf-tab, zoxide, autosuggestions) are in [cheatsheet.tsv](cheatsheet.tsv).
 
 | Alias | Runs | Notes |
 | --- | --- | --- |
