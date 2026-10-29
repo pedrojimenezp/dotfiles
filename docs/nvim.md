@@ -1,26 +1,41 @@
 # Neovim
 
-Folder: `nvim/.config/nvim`, linked to `~/.config/nvim`. It needs Neovim 0.12 or newer. `vim` and `vi` open `nvim` when it is installed (see [zsh.md](zsh.md)). On servers without Neovim, see [vim.md](vim.md).
+The editor config: `nvim/.config/nvim`, linked to `~/.config/nvim`. `vim` and `vi` open `nvim` when it is installed (see [zsh.md](zsh.md)).
 
-## How the config is organized
+You'll use it for: editing code with search, git signs, completion, formatting and language-server help.
 
-| File | What is in it |
-| --- | --- |
-| `init.lua` | Entry point: sets the leader key, then loads the files below |
-| `lua/config/options.lua` | Editor options (numbers, indent, search, clipboard) |
-| `lua/config/keymaps.lua` | General keymaps |
-| `lua/config/autocmds.lua` | Automatic actions (highlight on yank, restore cursor, Go tabs, theme sync) |
-| `lua/config/lazy.lua` | Installs lazy.nvim (plugin manager) and loads `lua/plugins/*.lua` |
-| `lua/config/theme.lua` | Colors that follow the dotfiles theme, see [theme.md](theme.md) |
-| `lua/plugins/*.lua` | One file per topic: completion, editor, format, lsp, telescope, theme, treesitter |
+- [Requirements](#requirements)
+- [Quick start](#quick-start)
+- [Leader key and which-key](#leader-key-and-which-key)
+- [Keymaps](#keymaps)
+- [Options worth knowing](#options-worth-knowing)
+- [Plugins](#plugins)
+- [Add a plugin](#add-a-plugin)
+- [Add a language server](#add-a-language-server)
+- [Check that everything works](#check-that-everything-works)
+- [How it works](#how-it-works)
 
-First start: open `nvim` once and wait. lazy.nvim, Mason and treesitter install everything (needs internet and `git`; treesitter needs `tree-sitter-cli`, which is in the Brewfile).
+## Requirements
+
+- Neovim 0.12 or newer.
+- `git` and internet access on the first start.
+- `tree-sitter-cli` (in the Brewfile) for syntax parsers. Also useful: `curl`, `ripgrep`, `fd`, and a C compiler for the telescope fuzzy matcher.
+
+On servers without Neovim, see [vim.md](vim.md).
+
+## Quick start
+
+1. Open `nvim` once and wait. [lazy.nvim](https://github.com/folke/lazy.nvim) (the plugin manager), [Mason](glossary.md#mason) and [treesitter](glossary.md#treesitter) install everything.
+2. Press `Space` and wait: a menu lists the next keys.
+3. Press `<leader>sf` (`Space` then `s f`) to search files.
+4. Press `-` to browse the current folder as a buffer.
+5. Press `<leader>w` to save, `<leader>q` to quit the window.
 
 ## Leader key and which-key
 
-The leader key is **Space**. `<leader>ut` means: press `Space`, then `u`, then `t`, one after another.
+The [leader](glossary.md#leader) key is **Space**. `<leader>ut` means: press `Space`, then `u`, then `t`, one after another.
 
-Press `Space` and wait: the **which-key** menu shows the next keys. Groups:
+The **which-key** menu appears when you press `Space` and wait. Its groups:
 
 | After Space | Group |
 | --- | --- |
@@ -30,9 +45,11 @@ Press `Space` and wait: the **which-key** menu shows the next keys. Groups:
 | `d` | Diagnostics and symbols |
 | `u` | UI (theme toggle) |
 
-The menu waits for you. `timeoutlen` (0.4 s) only limits key sequences that have no menu. Search all keymaps with `Space s k`.
+Search all keymaps with `<leader>sk`.
 
 ## Keymaps
+
+Neovim has modes. In **normal** mode, keys are commands. In **insert** mode, keys type text. In **visual** mode, keys act on a selection. `Esc` (or `jk` in insert mode) returns to normal mode.
 
 ### General
 
@@ -72,21 +89,23 @@ The menu waits for you. `timeoutlen` (0.4 s) only limits key sequences that have
 | `<leader>gc` | Git commits |
 | `<leader>gb` | Git branches |
 
-In the telescope window (defaults): `Ctrl+n` / `Ctrl+p` move, `Enter` opens, `Esc` closes.
+In the telescope window: `Ctrl+n` / `Ctrl+p` move, `Enter` opens, `Esc` closes.
 
 ### Git hunks (gitsigns)
 
-Only in files inside a git repo.
+A [hunk](glossary.md#hunk) is one block of changed lines in a file. These keys work only in files inside a git repo.
 
 | Keys | What it does |
 | --- | --- |
-| `]c` / `[c` | Next / previous hunk (in a diff, the next/previous diff change) |
+| `]c` / `[c` | Next / previous hunk (in a diff, the next / previous change) |
 | `<leader>hs` | Stage hunk |
 | `<leader>hr` | Reset hunk |
 | `<leader>hp` | Preview hunk |
 | `<leader>hb` | Blame line |
 
-### LSP (when a language server is attached)
+### Language server ([LSP](glossary.md#lsp))
+
+A language server gives the editor code help: definitions, rename, errors. These keys work when a server is attached to the file.
 
 | Keys | What it does |
 | --- | --- |
@@ -106,11 +125,17 @@ Only in files inside a git repo.
 
 ### Completion (blink.cmp)
 
-Completion opens while you type in insert mode. `Enter` accepts the selected item. `Ctrl+n` / `Ctrl+p` select the next / previous item. Other keys are the plugin's `enter` preset (for example `Ctrl+e` hides the menu). `Ctrl+Space` is not used here because it is the tmux prefix.
+Completion opens while you type in insert mode.
+
+- `Enter` accepts the selected item.
+- `Ctrl+n` / `Ctrl+p` select the next / previous item.
+- Other keys follow the plugin's `enter` preset. For example, `Ctrl+e` hides the menu.
+
+`Ctrl+Space` is not used here because it is the tmux [prefix](glossary.md#prefix).
 
 ### Format
 
-`<leader>f` formats the buffer. Files are also formatted on every save (timeout 1.5 s), using the LSP when no formatter is set.
+`<leader>f` formats the buffer. Files are also formatted on every save (timeout 1.5 s), using the language server when no formatter is set.
 
 | Language | Formatter |
 | --- | --- |
@@ -130,7 +155,12 @@ Check what is active with `:ConformInfo`.
 
 ## Options worth knowing
 
-Relative line numbers, no line wrap, 2-space indent (Go uses real tabs of width 4), whitespace characters shown, persistent undo, no swap files, mouse on. The system clipboard is used for yank and paste. Over SSH, yanks go to your local clipboard with OSC 52 (paste uses nvim's own register). Files changed outside nvim reload when the window gets focus, and a file reopens at the last cursor position.
+- Relative line numbers, no line wrap, whitespace characters shown, mouse on.
+- 2-space indent. Go uses real tabs of width 4.
+- Persistent undo, no swap files.
+- The system clipboard is used for yank and paste. Over SSH, yanks go to your local clipboard with [OSC 52](glossary.md#osc-52). Paste uses nvim's own register.
+- Files changed outside nvim reload when the window gets focus.
+- A file reopens at the last cursor position.
 
 ## Plugins
 
@@ -150,11 +180,16 @@ Relative line numbers, no line wrap, 2-space indent (Go uses real tabs of width 
 | vim-tmux-navigator | `Ctrl+h/j/k/l` across tmux and nvim |
 | tokyonight.nvim, github-nvim-theme | Colorschemes picked by theme name |
 
-Manage plugins with `:Lazy` (`U` updates, `S` syncs, `q` closes). Auto update checks are off.
+Manage plugins with `:Lazy`: `U` updates, `S` syncs, `q` closes. Automatic update checks are off.
 
-## LSP servers, formatters, linters
+### Language servers, formatters, linters
 
-Installed by Mason on first start: servers `gopls`, `ts_ls` (TypeScript and JavaScript), `bashls`, `lua_ls`; tools `gofumpt`, `goimports`, `prettierd`, `stylua`. `zls` (Zig) comes from Homebrew so it always matches the installed `zig`. `shfmt`, `shellcheck` and `golangci-lint` also come from Homebrew.
+Mason installs these on first start:
+
+- Servers: `gopls`, `ts_ls` (TypeScript and JavaScript), `bashls`, `lua_ls`.
+- Tools: `gofumpt`, `goimports`, `prettierd`, `stylua`.
+
+Homebrew provides `zls` (Zig, so it always matches the installed `zig`), `shfmt`, `shellcheck` and `golangci-lint`.
 
 Open `:Mason` to see, install (`i`) or remove (`X`) tools by hand. `:checkhealth vim.lsp` shows the servers attached to the current buffer.
 
@@ -171,21 +206,49 @@ Open `:Mason` to see, install (`i`) or remove (`X`) tools by hand. `:checkhealth
    }
    ```
 
-2. Restart nvim. lazy.nvim installs it. Check with `:Lazy`.
-3. Put its keymaps in the spec (`keys = { ... }`) with a `desc`, so which-key shows them. If you add a new `<leader>x` group, add its name in the which-key `spec` in `lua/plugins/editor.lua`.
+2. Restart nvim. lazy.nvim installs it.
+3. Put its keymaps in the spec (`keys = { ... }`) with a `desc`, so which-key shows them. For a new `<leader>x` group, add its name to the which-key `spec` in `lua/plugins/editor.lua`.
+
+Check it worked: `:Lazy` lists the plugin without errors.
 
 ## Add a language server
 
 1. Add its Mason name to `ensure_installed` in `lua/plugins/lsp.lua` (the `mason-lspconfig` list). Names are in `:Mason`. Example: `"pyright"`.
 2. Settings are optional: `vim.lsp.config("pyright", { settings = { ... } })`, next to the existing ones.
-3. A server that is not in Mason (like `zls`): install it with Homebrew and enable it with `vim.lsp.enable("name")` when `vim.fn.executable("name") == 1`.
-4. For a formatter, add it to `formatters_by_ft` in `lua/plugins/format.lua` (and to `mason-tool-installer`'s `ensure_installed`). For a linter, add it to `linters_by_ft` in the same file.
+3. For a server that is not in Mason (like `zls`), install it with Homebrew. Enable it with `vim.lsp.enable("name")` when `vim.fn.executable("name") == 1`.
+4. For a formatter, add it to `formatters_by_ft` in `lua/plugins/format.lua` and to `mason-tool-installer`'s `ensure_installed`. For a linter, add it to `linters_by_ft` in the same file.
 5. For a new language's colors, add the parser name to the `parsers` list in `lua/plugins/treesitter.lua`.
 
 ## Check that everything works
 
-Run `:checkhealth` (or `:checkhealth vim.lsp`, `:checkhealth mason`, `:checkhealth nvim-treesitter`). Look for lines marked ERROR or WARNING. Common fixes: install `git`, `curl`, `ripgrep`, `fd`, `tree-sitter-cli`, a C compiler for `make` (telescope-fzf-native).
+Run `:checkhealth`, or a narrower check: `:checkhealth vim.lsp`, `:checkhealth mason`, `:checkhealth nvim-treesitter`. Look for lines marked ERROR or WARNING.
 
-## Theme
+## Troubleshooting
 
-`<leader>ut` toggles light/dark. The colors come from `~/.config/theme/config`, see [theme.md](theme.md).
+- **Plugins or parsers fail on the first start**: install `git`, `curl`, `ripgrep`, `fd` and `tree-sitter-cli`, then run `:checkhealth`.
+- **Telescope fuzzy matching is slow or missing**: install a C compiler and `make`, then run `:Lazy build telescope-fzf-native.nvim`.
+- **`Alt+j` / `Alt+k` do nothing**: set "Option as Alt" in the terminal, see [terminals.md](terminals.md).
+- **No language help in a file**: run `:checkhealth vim.lsp` and check `:Mason` for the server.
+
+## How it works
+
+| File | What is in it |
+| --- | --- |
+| `init.lua` | Entry point: sets the leader key, then loads the files below |
+| `lua/config/options.lua` | Editor options (numbers, indent, search, clipboard) |
+| `lua/config/keymaps.lua` | General keymaps |
+| `lua/config/autocmds.lua` | Automatic actions (highlight on yank, restore cursor, Go tabs, theme sync) |
+| `lua/config/lazy.lua` | Installs lazy.nvim and loads `lua/plugins/*.lua` |
+| `lua/config/theme.lua` | Colors that follow the dotfiles theme, see [theme.md](theme.md) |
+| `lua/plugins/*.lua` | One file per topic: completion, editor, format, lsp, telescope, theme, treesitter |
+
+**Key timeout.** `timeoutlen` is 0.4 s. It only limits key sequences that have no which-key menu, because the menu itself waits for you.
+
+**Theme.** `<leader>ut` runs the `theme` script, which recolors the terminal. Then nvim follows by reading the colors from `~/.config/theme/config`. See [theme.md](theme.md).
+
+## Related
+
+- [vim.md](vim.md): the small config for servers.
+- [theme.md](theme.md): light and dark colors.
+- [tmux.md](tmux.md): panes and the shared `Ctrl+h/j/k/l` keys.
+- [terminals.md](terminals.md): `Alt` and fonts.
