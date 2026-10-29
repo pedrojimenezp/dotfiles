@@ -6,7 +6,6 @@ Files: `git/.config/git/config` (settings) and `git/.config/git/ignore` (global 
 
 | Setting | Value | Why |
 | --- | --- | --- |
-| `user.name`, `user.email` | owner's name and email | Default author. Override per machine in `~/.config/git/local`. |
 | `init.defaultBranch` | `main` | New repos start on `main`. |
 | `core.pager` | `delta` | Colored, readable diffs and logs. Needs `git-delta`. |
 | `core.excludesFile` | `~/.config/git/ignore` | Global ignore list. |
@@ -46,7 +45,7 @@ Shell aliases from `.zshrc` (`gs`, `gd`, `gl`, `gp`, `lg`) are in [zsh.md](zsh.m
 
 ## Per-machine settings: `~/.config/git/local`
 
-This file is included at the end of the config, so it wins over everything above. It is not in the repo. Use it for a work email on a work machine, signing keys, or other local rules:
+This file is included at the end of the config, so it wins over everything above. It is not in the repo. Your name and email live here: `install.sh` asks for them when git has none, and writes them with `git config --file ~/.config/git/local`. Use it also for a work email on a work machine, signing keys, or other local rules:
 
 ```gitconfig
 # ~/.config/git/local

@@ -1,9 +1,5 @@
 # ~/.config/git/config: global git config (read before ~/.gitconfig, which therefore wins and should not exist).
 
-[user]
-	name = Pedro Jimenez                  # author name on commits
-	email = pedroj.jimenezp@gmail.com     # author email on commits
-
 [init]
 	defaultBranch = main                  # new repos start on main
 

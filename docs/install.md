@@ -76,7 +76,8 @@ Flags can be combined (`--dry-run --with-claude`).
 9. Linux desktop only: installs the Monaspace Nerd Font into `~/.local/share/fonts`.
 10. `theme sync`: writes the Ghostty and iTerm theme files. A failure here only prints a warning.
 11. `--with-claude` step, if asked.
-12. Prints the next steps and, if zsh is not your login shell, the `chsh` command.
+12. Asks for your git name and email if none is set (stored in `~/.config/git/local`; piped or `--dry-run` runs print the two commands instead).
+13. Prints the next steps and, if zsh is not your login shell, the `chsh` command.
 
 ## Idempotent and safe
 

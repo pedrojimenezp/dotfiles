@@ -249,13 +249,40 @@ ERR
   fi
 fi
 
+# Make sure git has a commit identity (name and email from any config).
+# GitHub offers a private noreply address (Settings > Emails) if you prefer not to share your email.
+ensure_git_identity() {
+  local name email local_file="$HOME/.config/git/local" # identity lives in the untracked local file
+  name="$(git config --global --includes user.name 2>/dev/null || true)"   # empty when unset
+  email="$(git config --global --includes user.email 2>/dev/null || true)" # empty when unset
+  [[ -n "$name" && -n "$email" ]] && return 0 # already set: stay silent
+  if [[ -t 0 && $DRY -eq 0 ]]; then # only ask a person, never a pipe or a preview
+    echo
+    if [[ -z "$name" ]]; then
+      read -r -p "Name for git commits: " name
+      [[ -n "$name" ]] && git config --file "$local_file" user.name "$name"
+    fi
+    if [[ -z "$email" ]]; then
+      read -r -p "Email for git commits: " email
+      [[ -n "$email" ]] && git config --file "$local_file" user.email "$email"
+    fi
+  else
+    echo
+    echo "Git has no commit identity yet. Set it with:"
+    echo "  git config --file ~/.config/git/local user.name \"Your Name\""
+    echo "  git config --file ~/.config/git/local user.email you@example.com"
+  fi
+  return 0
+}
+ensure_git_identity
+
 cat <<'MSG'
 
 Done. Next steps:
   1. Open tmux; plugins are installed already (prefix + I, Ctrl+Space then Shift+i, retries).
   2. Open nvim once and let lazy.nvim install plugins (run :Mason to check LSP tools).
   3. Move secrets and machine-specific settings into ~/.zshrc.local (loaded near the end, after all other settings).
-  4. Put machine-specific git settings in ~/.config/git/local.
+  4. Put other machine-specific git settings (work email, signing) in ~/.config/git/local.
   5. Start a new shell (exec zsh).
 MSG
 

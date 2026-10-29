@@ -51,7 +51,7 @@ What each step does, backups, idempotency and troubleshooting: [docs/install.md]
 2. tmux plugins are installed already; `Ctrl+Space`, then `Shift+i` retries if one failed.
 3. Open `nvim` once and wait for lazy.nvim, Mason and treesitter to install everything.
 4. Put secrets and machine settings in `~/.zshrc.local` (loaded near the end, after all other settings; not tracked).
-5. Put machine-specific git settings in `~/.config/git/local` (for example a work email).
+5. Set your git name and email in `~/.config/git/local` (the installer asks for them), plus any other machine-specific git settings.
 
 ## Docs
 
