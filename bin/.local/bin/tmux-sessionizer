@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Pick a project directory or git worktree with fzf and open (or switch to) a tmux session for it.
-# Usage: tmux-sessionizer [dir]   (without an argument, pick from $SESSIONIZER_DIRS)
+# Usage: tmux-sessionizer [dir]   (without an argument, pick from the configured roots; see docs/tmux-sessionizer.md)
 #        tmux-sessionizer --list  (print the candidates as "label<TAB>path<TAB>repo" and exit)
 # Default roots: ~/projects if it exists (depth 3), else $HOME (depth 2, skipping go, snap, bin).
 # Per-machine settings: ${XDG_CONFIG_HOME:-~/.config}/sessionizer/config (see docs/tmux-sessionizer.md).
