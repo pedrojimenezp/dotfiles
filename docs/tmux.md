@@ -78,11 +78,30 @@ The mouse is on: click a pane or window name, drag a border to resize, scroll th
 
 ## Status bar
 
-Left: the session name in a blue block. Right: the host name and the time (`HH:MM`). The bar uses the terminal's own colors, so it works in light and dark themes. It updates every 5 seconds. The active window is shown as a reversed block, others as plain `1:name`.
+Left: the session name in a blue block. Right: the git branch of the current pane (with a branch icon, hidden outside a repo), the host name and the time (`HH:MM`). The bar uses the terminal's own colors, so it works in light and dark themes. It updates every 5 seconds. The active window is shown as a reversed block, others as plain `1:name`.
+
+**Indicators**
+
+| Indicator | Meaning |
+| --- | --- |
+| Session block turns **yellow** (green on SSH) | The prefix key was pressed and tmux waits for the next key |
+| 🔔 after a window name, and the label turns a yellow block | A program in that window rang the bell (Claude Code does this when it needs you). It clears when you open the window |
+| 🔍 after a window name | The pane in that window is zoomed (`prefix z`) |
+| `<branch icon> name` on the right | Git branch of the current pane's folder |
+
+Bells from any window are flagged (`monitor-bell on`, `bell-action any`) and no message is shown (`visual-bell off`). `monitor-activity` stays off: it would flag every window that prints anything, which is too noisy.
 
 **Command prompt and messages**: `prefix :` opens the command prompt, and messages such as "tmux.conf reloaded" use the same look. They take over the whole status line as a blue block (`message-style` and `message-command-style`). `fill=blue` paints the rest of the line, because tmux otherwise draws the prompt only over its own text and the right side of the bar stays visible.
 
-**On a remote machine** (the tmux server was started from an SSH session) the look is different so you never mix it up with your local tmux: the left block is **magenta** and starts with the short host name (`host session`), and the right side shows only the time. A server first started locally and later used over SSH keeps the local look.
+**On a remote machine** (the tmux server was started from an SSH session) the look is different so you never mix it up with your local tmux: the left side starts with a yellow **SSH** badge, followed by a **magenta** block with the host label and the session name, and the right side shows the branch and the time without the host name. The badge is enough, so the rest of the bar keeps the terminal colors (a tinted bar would hurt readability in the light theme). A server first started locally and later used over SSH keeps the local look.
+
+**Host label and per-machine settings**: the label defaults to the short host name (`#h`). To change it on one machine, create `~/.config/tmux/local.conf`. It is not part of the dotfiles (untracked, not stowed) and tmux loads it if present, after the status settings and before the plugins, so it can override anything:
+
+```tmux
+set -g @host_label "dev-box"
+```
+
+Reload with `prefix r`.
 
 ## Pane labels
 

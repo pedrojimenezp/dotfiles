@@ -65,7 +65,7 @@ What each step does, backups, idempotency and troubleshooting: [docs/install.md]
 | --- | --- | --- |
 | `zsh` | `~/.zshrc` | Plain zsh: history, completion, aliases, fzf, zoxide, mise, starship, autosuggestions, syntax highlighting. Sources `~/.zshrc.local` last. |
 | `nvim` | `~/.config/nvim` | Neovim config (lazy.nvim, LSP, treesitter, telescope, conform, blink.cmp). |
-| `tmux` | `~/.config/tmux/tmux.conf` | tmux with prefix `Ctrl+Space`, vi copy mode, TPM plugins, minimal status line that follows the terminal palette. |
+| `tmux` | `~/.config/tmux/tmux.conf` | tmux with prefix `Ctrl+Space`, vi copy mode, TPM plugins, minimal status line that follows the terminal palette, with SSH badge, prefix, bell, zoom and git branch indicators. |
 | `vim` | `~/.vimrc` | Small plugin-free vimrc for servers. |
 | `git` | `~/.config/git/{config,ignore}` | Git defaults, delta pager, aliases, global ignores, `local` include. |
 | `starship` | `~/.config/starship.toml` | Prompt layout. |
