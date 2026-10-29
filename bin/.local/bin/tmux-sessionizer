@@ -162,7 +162,7 @@ name="$(printf '%s' "$name" | tr './: ' '----' | tr -s '-')" # tmux rejects dots
 # A same-named session for another directory would be switched to by mistake; add the repo to tell them apart.
 if [[ -n "$repo" ]] && tm has-session -t "=$name" 2>/dev/null; then
   existing="$(tm list-sessions -F '#{session_name}'$'\t''#{session_path}' 2>/dev/null | awk -F'\t' -v n="$name" '$1 == n { print $2; exit }' || true)" # where that session was started
-  if [[ -n "$existing" && "$existing" != "$selected" ]]; then name="$name-$repo"; fi
+  if [[ -n "$existing" && "$existing" != "$selected" ]]; then name="$name-$(printf '%s' "$repo" | tr './: ' '----' | tr -s '-')"; fi # same cleanup as the name above
 fi
 
 if [[ -z "${TMUX:-}" ]]; then
