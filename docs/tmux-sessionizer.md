@@ -34,11 +34,16 @@ inside a `worktrees/` folder (features cover it), and plain folders without
 
 ## Search roots
 
-- `SESSIONIZER_DIRS` (space separated), if set and not empty.
-- Else `~/projects`, if it exists.
-- Else `$HOME`, skipping `~/go`, `~/snap` and `~/bin`.
+One rule, the same on every machine:
 
-Roots that do not exist are skipped silently. The old config file
+- If `SESSIONIZER_DIRS` (space separated) is set and not empty, only those roots.
+- Otherwise `~/projects` (searched deeply, if it exists) plus the repos directly
+  in `~`: each `~/<name>` that has a `.git`, and its `~/<name>/worktrees/*`
+  features.
+
+Repos deeper in `~` (for example `~/development/app`) are not found by default;
+add their parent to `SESSIONIZER_DIRS`. Roots that do not exist are skipped
+silently. The old config file
 (`~/.config/sessionizer/config`) and `SESSIONIZER_EXCLUDE` / `SESSIONIZER_DEPTH`
 are gone; delete the file, it is ignored.
 

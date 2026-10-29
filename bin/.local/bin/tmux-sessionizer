@@ -4,7 +4,8 @@
 #        tmux-sessionizer --list  (print "label<TAB>path" for each candidate and exit)
 # Folder convention: <repo>/worktrees/<branch> or <parent>/worktrees/<feature>/<project>;
 # any <x>/worktrees/<feature> is a feature session. No git calls.
-# Roots: SESSIONIZER_DIRS (space separated), else ~/projects, else $HOME (without go, snap, bin).
+# Roots: SESSIONIZER_DIRS (space separated) if set; otherwise ~/projects (deep search) plus the repos
+# directly in ~ (and their worktrees/). Repos deeper in ~ need SESSIONIZER_DIRS.
 # SESSIONIZER_TMUX_ARGS adds tmux options, e.g. "-L sock" for a separate server.
 set -euo pipefail # stop on errors, unset variables and failed pipes
 
@@ -13,31 +14,41 @@ tm() { tmux ${tmux_args[@]+"${tmux_args[@]}"} "$@"; } # one place to add tmux op
 clean() { printf '%s' "$1" | tr './: ' '----' | tr -s '-'; } # tmux rejects dots and colons
 
 roots=() # only roots that exist
-skip=() # find tests for trees that are not projects
+home_repos=1 # also list the repos directly in $HOME (default roots only)
 if [[ -n "${SESSIONIZER_DIRS:-}" ]]; then
+  home_repos=0
   for d in $SESSIONIZER_DIRS; do [[ -d "$d" ]] && roots+=("$d"); done # missing roots are skipped silently
 elif [[ -d "$HOME/projects" ]]; then
   roots=("$HOME/projects")
-else
-  roots=("$HOME")
-  skip=(-path "$HOME/go" -o -path "$HOME/snap" -o -path "$HOME/bin" -o) # caches, not projects
 fi
 
 # Features first (<x>/worktrees/<feature>, label "feature  [x]"), then repos (a folder with .git, label = path).
 # One find: prune hidden dirs and node_modules, print worktrees/ folders and .git entries without entering them.
 list_candidates() {
   local p d f feats="" repos=""
-  ((${#roots[@]})) || return 0 # find with no path would search the current directory
-  while IFS= read -r p; do
-    if [[ "$p" == */worktrees ]]; then
-      for f in "$p"/*/; do [[ -d "$f" ]] && feats+="$(basename "$f")  [$(basename "$(dirname "$p")")]"$'\t'"${f%/}"$'\n'; done
-    else
-      d="${p%/.git}"
+  add_features() { # $1 = a worktrees/ folder
+    for f in "$1"/*/; do [[ -d "$f" ]] && feats+="$(basename "$f")  [$(basename "$(dirname "$1")")]"$'\t'"${f%/}"$'\n'; done
+  }
+  if ((${#roots[@]})); then # find with no path would search the current directory
+    while IFS= read -r p; do
+      if [[ "$p" == */worktrees ]]; then
+        add_features "$p"
+      else
+        d="${p%/.git}"
+        repos+="$d"$'\t'"$d"$'\n'
+      fi
+    done < <(find -H "${roots[@]}" -mindepth 1 -maxdepth 4 \
+      \( \( -name '.*' ! -name .git \) -o -name node_modules \) -prune -o \
+      \( -name worktrees -type d -print -prune \) -o \( -name .git -print -prune \) 2>/dev/null || true)
+  fi
+  if ((home_repos)); then # glob skips hidden names
+    for d in "$HOME"/*/; do
+      d="${d%/}"
+      [[ -e "$d/.git" ]] || continue
       repos+="$d"$'\t'"$d"$'\n'
-    fi
-  done < <(find -H "${roots[@]}" -mindepth 1 -maxdepth 4 ${skip[@]+"${skip[@]}"} \
-    \( \( -name '.*' ! -name .git \) -o -name node_modules \) -prune -o \
-    \( -name worktrees -type d -print -prune \) -o \( -name .git -print -prune \) 2>/dev/null || true)
+      [[ -d "$d/worktrees" ]] && add_features "$d/worktrees"
+    done
+  fi
   printf '%s%s' "$feats" "$repos"
 }
 
