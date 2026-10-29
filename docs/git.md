@@ -11,6 +11,7 @@ Files: `git/.config/git/config` (settings) and `git/.config/git/ignore` (global 
 | `core.excludesFile` | `~/.config/git/ignore` | Global ignore list. |
 | `interactive.diffFilter` | `delta --color-only` | `git add -p` is colored too. |
 | `delta.*` | navigate, line numbers, unified view, `ansi` syntax theme, auto light/dark | In a diff, `n` / `N` jump between files. `ansi` follows the terminal's colors, so any theme works. |
+| `credential.https://github.com.helper` | `gh auth git-credential` | HTTPS GitHub remotes use the `gh auth login` token. Does nothing without `gh`. SSH is unaffected. |
 | `pull.rebase` | `true` | `git pull` rebases, so a plain update makes no merge commit. |
 | `rebase.autoStash` | `true` | Dirty changes are stashed and restored around a rebase. |
 | `rebase.autoSquash` | `true` | `fixup!` / `squash!` commits are placed automatically in `git rebase -i`. |

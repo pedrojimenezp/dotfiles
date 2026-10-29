@@ -59,5 +59,14 @@
 	unstage = restore --staged            # remove files from the index
 	amend = commit --amend --no-edit      # add staged changes to the last commit
 
+# HTTPS GitHub remotes use the `gh auth login` token. The empty `helper =` drops older
+# helpers (e.g. a stale keychain token). Without gh this does nothing. SSH is unaffected.
+[credential "https://github.com"]
+	helper =
+	helper = "!f() { command -v gh >/dev/null 2>&1 && gh auth git-credential \"$@\"; }; f"
+[credential "https://gist.github.com"]
+	helper =
+	helper = "!f() { command -v gh >/dev/null 2>&1 && gh auth git-credential \"$@\"; }; f"
+
 [include]
 	path = ~/.config/git/local            # machine-specific overrides (untracked)
