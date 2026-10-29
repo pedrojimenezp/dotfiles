@@ -1,0 +1,81 @@
+#!/usr/bin/env bash
+# Persistent tmux popups: a scratch shell or Claude Code that keeps running between opens.
+# Each popup is a hidden session "_popup_<kind>_<parent>" attached inside display-popup.
+# Usage: tmux-popup open <shell|claude> <client> <parent session id> <dir>
+#        tmux-popup cleanup           (kill popup sessions whose parent session is gone)
+#        tmux-popup rescue <client>   (move a normal client out of a popup session)
+# Env: TMUX_POPUP_CLAUDE_CMD replaces the command of the claude popup (e.g. for tests).
+set -euo pipefail # stop on errors, unset variables and failed pipes
+
+prefix="_popup_" # every popup session name starts with this; tmux.conf matches it too
+
+# Print "name<TAB>parent id<TAB>kind" for every popup session (none: no output).
+popup_sessions() {
+  tmux list-sessions -F "#{session_name}"$'\t'"#{@popup_parent}"$'\t'"#{@popup_kind}" 2>/dev/null |
+    awk -F'\t' -v p="$prefix" 'index($1, p) == 1' || true # only names with the prefix
+}
+
+# Create the popup session if missing, then show it in a popup on the client.
+open_popup() {
+  local kind="$1" client="$2" parent="$3" dir="$4" cmd=() name parent_name socket
+  case "$kind" in
+    shell) ;; # no command: the default shell
+    claude) cmd=("${TMUX_POPUP_CLAUDE_CMD:-${SHELL:-sh} -ic claude}") ;; # interactive shell so a claude alias or function applies
+    *) echo "tmux-popup: unknown popup kind '$kind'" >&2; exit 2 ;;
+  esac
+  # Look up by parent id, not by name: the parent can be renamed.
+  name="$(popup_sessions | awk -F'\t' -v p="$parent" -v k="$kind" '$2 == p && $3 == k { print $1; exit }')"
+  if [[ -z "$name" ]]; then
+    parent_name="$(tmux display-message -p -t "$parent" '#{session_name}')"
+    name="${prefix}${kind}_$(printf '%s' "$parent_name" | tr -c 'A-Za-z0-9_-' '-')" # readable in tmux ls; no . or : for targets
+    if tmux has-session -t "=$name" 2>/dev/null; then name="$name-${parent#\$}"; fi # same name for another parent: add its id
+    # One command so cleanup never sees the session without its parent mark; set without -t applies to the new session.
+    # detach-on-destroy on: when the program exits, the popup closes instead of showing another session.
+    tmux new-session -d -s "$name" -c "$dir" ${cmd[@]+"${cmd[@]}"} \; \
+      set @popup_parent "$parent" \; \
+      set @popup_kind "$kind" \; \
+      set status off \; \
+      set detach-on-destroy on
+  fi
+  socket="$(tmux display-message -p '#{socket_path}')" # the inner client must reach this same server
+  # TMUX= lets tmux attach from inside tmux; the popup closes when that client detaches (-E).
+  tmux display-popup -c "$client" -E -w 85% -h 85% -T " ${kind} " \
+    "TMUX= tmux -S '$socket' attach-session -t '=$name'"
+}
+
+# Kill popup sessions whose parent is gone; restored ones (resurrect) have no parent mark at all.
+cleanup() {
+  local name parent _kind live
+  live="$(tmux list-sessions -F '#{session_id}' 2>/dev/null || true)" # ids of all sessions
+  while IFS=$'\t' read -r name parent _kind; do
+    [[ -n "$name" ]] || continue # no popup sessions
+    if [[ -z "$parent" ]] || ! grep -qxF -- "$parent" <<<"$live"; then
+      tmux kill-session -t "=$name" 2>/dev/null || true # may already be gone
+    fi
+  done < <(popup_sessions)
+}
+
+# detach-on-destroy off can move a normal client into a popup session; send it to the most recent normal one.
+rescue() {
+  local client="$1" target pid server
+  # A popup's own client runs under the tmux server (display-popup started it): leave it alone.
+  pid="$(tmux display-message -p -c "$client" '#{client_pid}')" server="$(tmux display-message -p '#{pid}')"
+  while [[ -n "$pid" && "$pid" -gt 1 ]]; do
+    if [[ "$pid" == "$server" ]]; then return 0; fi
+    pid="$(ps -o ppid= -p "$pid" 2>/dev/null | tr -d ' ' || true)" # walk up to the parent process
+  done
+  target="$(tmux list-sessions -F '#{session_activity}'$'\t''#{session_name}' 2>/dev/null |
+    awk -F'\t' -v p="$prefix" 'index($2, p) != 1' | sort -rn | head -n 1 | cut -f2 || true)" # newest activity first
+  if [[ -n "$target" ]]; then
+    tmux switch-client -c "$client" -t "=$target"
+  else
+    tmux detach-client -t "$client" # only popup sessions are left
+  fi
+}
+
+case "${1:-}" in
+  open) [[ $# -eq 5 ]] || { echo "usage: tmux-popup open <shell|claude> <client> <parent id> <dir>" >&2; exit 2; }; open_popup "$2" "$3" "$4" "$5" ;;
+  cleanup) cleanup ;;
+  rescue) [[ $# -eq 2 ]] || { echo "usage: tmux-popup rescue <client>" >&2; exit 2; }; rescue "$2" ;;
+  *) echo "usage: tmux-popup open|cleanup|rescue ..." >&2; exit 2 ;;
+esac
