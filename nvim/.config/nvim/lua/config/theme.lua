@@ -9,6 +9,7 @@ local M = {}
 local defaults = { light = "GitHub Light Default", dark = "TokyoNight Night" } -- same fallbacks as the script
 local loading = false -- guard: a scheme that sets 'background' would reload us while we load
 M.applied = nil -- theme name shown now, to notice changes made in the shell
+M.applied_bg = nil -- background of the last load, set by M.load
 local appearance = { at = nil, value = nil } -- last macOS appearance read; `defaults` is a process per call
 local appearance_ttl = 5000 -- ms; a quick focus switch reuses the answer
 
@@ -141,6 +142,7 @@ function M.load()
   end
   if not ok then pcall(vim.cmd.colorscheme, bg == "light" and "tokyonight-day" or "tokyonight-night") end -- last resort
   M.applied = name -- remember what is shown
+  M.applied_bg = bg -- the mode loaded for; a plugin scheme may force vim.o.background to the other value
   vim.g.dotfiles_theme = name -- for statuslines or :echo
   vim.g.colors_name = nil -- no native reload on 'background' changes (the autocmd below does it)
   loading = false -- end the guard
@@ -161,9 +163,12 @@ end
 
 -- Focus regained: follow a mode or theme change made in the shell (`theme pick`, `tt`, macOS).
 function M.sync()
-  local want = M.mode() or vim.o.background -- desired background
-  if vim.o.background ~= want then
+  -- Compare with the mode we last loaded, not vim.o.background: a plugin colorscheme can force
+  -- 'background' to its own brightness, which would otherwise look like a change on every focus.
+  local want = M.mode() or M.applied_bg or vim.o.background -- desired background
+  if M.applied_bg ~= want then
     vim.o.background = want -- the OptionSet autocmd loads the other slot
+    if M.applied_bg ~= want then M.load() end -- no event fired: 'background' already had that value
   elseif M.read_config()[want] ~= M.applied then
     M.load() -- same slot, new theme name
   end
