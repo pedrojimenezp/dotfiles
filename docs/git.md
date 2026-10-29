@@ -44,7 +44,7 @@ Git aliases (type `git <alias>`):
 
 Shell aliases from `.zshrc` (`gs`, `gd`, `gl`, `gp`, `lg`) are in [zsh.md](zsh.md). The shell `lg` is lazygit, and `git lg` is the log.
 
-lazygit and `gh` use delta too. `lazygit/.config/lazygit/config.yml` sets `git.diffRenderers` (press `|` in lazygit to switch between side by side and inline), and `.zshrc` sets `LG_CONFIG_FILE` so macOS reads that file. `.zshrc` also sets `GH_PAGER="delta -s"`, so `gh pr diff` is side by side.
+lazygit and `gh` use delta too. `lazygit/.config/lazygit/config.yml` sets `git.diffRenderers` (press `|` in lazygit to switch between side by side and inline; delta's light/dark flag comes from `theme effective`, because lazygit can't read the terminal background under tmux), and `.zshrc` sets `LG_CONFIG_FILE` so macOS reads that file. `.zshrc` also sets `GH_PAGER="delta -s"`, so `gh pr diff` is side by side.
 
 ## Per-machine settings: `~/.config/git/local`
 

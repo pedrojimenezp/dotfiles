@@ -1,7 +1,8 @@
 git:
+  # delta's mode comes from `theme`: under tmux lazygit can't read the terminal background.
   # Cycle with `|`. The first one goes side by side only when the panel is wide enough.
   diffRenderers:
-    - command: delta --{{colorScheme}} --paging=never {{if gt .width 160}}--side-by-side{{end}}
+    - command: delta --$(theme effective 2>/dev/null || echo dark) --paging=never {{if gt .width 160}}--side-by-side{{end}}
       name: delta auto
-    - command: delta --{{colorScheme}} --paging=never
+    - command: delta --$(theme effective 2>/dev/null || echo dark) --paging=never
       name: delta inline

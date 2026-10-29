@@ -25,6 +25,7 @@ theme toggle                # flip light/dark. From auto: the opposite of macOS 
 theme apply                 # apply the saved mode again
 theme status                # print the mode and both picks
 theme mode                  # print only the saved mode (dark, light or auto), for scripts
+theme effective             # print the mode in effect (dark or light; auto resolved), for scripts
 theme pick                  # choose a theme for the current mode (fzf, live preview)
 theme pick dark             # choose the dark theme, even in light mode
 theme set light "Flexoki Light"   # save a theme without fzf, then sync and apply
@@ -44,7 +45,7 @@ Options (can go anywhere in the command):
 
 `dark`, `light`, `auto` and `toggle` apply the colors first and save the mode only if that worked, so a theme that cannot be found leaves the saved mode unchanged (and the command exits non-zero).
 
-Scripts should read `theme mode`: it prints exactly one word. `theme status` is for people and its layout can change. `<leader>ut` uses `theme mode`; the shell startup reads the state file directly to save a process.
+Scripts should read `theme mode` (saved) or `theme effective` (dark or light, auto resolved): each prints exactly one word. `theme status` is for people and its layout can change. `<leader>ut` uses `theme mode`; the shell startup reads the state file directly to save a process.
 
 `theme status` looks like this (`*` marks the one in use):
 
