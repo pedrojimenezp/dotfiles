@@ -12,7 +12,7 @@ The leader key is `Space`. Press the keys one after another.
 | `Space` then `w` | normal | Save |
 | `Space` then `q` | normal | Quit |
 | `Space` then `h` | normal | Clear search highlight |
-| `Ctrl+h/j/k/l` | normal | Move between splits |
+| `Ctrl+h/j/k/l` | normal | Move between splits; at the edge, inside tmux, move to the tmux pane there |
 
 Splits use the Vim defaults: `:split`, `:vsplit`, or `Ctrl+w s` / `Ctrl+w v`.
 

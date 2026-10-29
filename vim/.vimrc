@@ -52,11 +52,19 @@ if $SSH_TTY != '' | set clipboard= | else | set clipboard=unnamed | endif
 " Mappings: comments go on the line above because a trailing " would be part of the mapping.
 " jk leaves insert mode
 inoremap jk <Esc>
-" Ctrl-h/j/k/l move between splits
-nnoremap <C-h> <C-w>h
-nnoremap <C-j> <C-w>j
-nnoremap <C-k> <C-w>k
-nnoremap <C-l> <C-w>l
+" Ctrl-h/j/k/l move between splits; at the edge, hand off to the tmux pane there
+function! s:Nav(dir) abort
+  let l:win = winnr()
+  execute 'wincmd ' . a:dir
+  " window unchanged = no split that way; tmux uses -L/-D/-U/-R
+  if winnr() == l:win && $TMUX != ''
+    silent call system('tmux select-pane -' . tr(a:dir, 'hjkl', 'LDUR'))
+  endif
+endfunction
+nnoremap <silent> <C-h> :call <SID>Nav('h')<CR>
+nnoremap <silent> <C-j> :call <SID>Nav('j')<CR>
+nnoremap <silent> <C-k> :call <SID>Nav('k')<CR>
+nnoremap <silent> <C-l> :call <SID>Nav('l')<CR>
 " <leader>w saves, <leader>q quits
 nnoremap <leader>w :w<CR>
 nnoremap <leader>q :q<CR>
