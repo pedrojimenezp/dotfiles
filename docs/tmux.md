@@ -34,12 +34,12 @@ Start tmux: `tmux`. Start or attach to a named session: `tmux new-session -A -s 
 | `prefix t` | Toggle light/dark theme, see [theme.md](theme.md) |
 | `prefix X` | Kill the current session, after a `y/n` question |
 | `prefix r` | Reload `tmux.conf` and show "tmux.conf reloaded" |
-| `prefix Ctrl+l` | Clear the screen of the pane (see the note below) |
+| `prefix Ctrl+l` | Clear the screen and the scrollback of the pane (see the note below) |
 | `prefix Ctrl+s` | Save sessions now (resurrect) |
 | `prefix Ctrl+r` | Restore saved sessions (resurrect) |
 | `prefix I` | (`Shift+i`) Install plugins (TPM) |
 
-Note on `Ctrl+l`: plain `Ctrl+l` belongs to vim-tmux-navigator (move to the right pane; inside vim, nvim or fzf it is sent to the program). `tmux.conf` also defines `prefix Ctrl+l` as "clear screen and scrollback", but vim-tmux-navigator loads later (TPM runs at the end) and sets `prefix Ctrl+l` to a plain clear screen. See "Notes" at the end.
+Note on `Ctrl+l`: plain `Ctrl+l` belongs to vim-tmux-navigator (move to the right pane; inside vim, nvim or fzf it is sent to the program). The plugin also sets `prefix Ctrl+l` to a plain clear screen, so `tmux.conf` defines `prefix Ctrl+l` again at the very end, after TPM, as "clear screen and scrollback".
 
 ### Default keys you will use often
 
@@ -79,6 +79,8 @@ The mouse is on: click a pane or window name, drag a border to resize, scroll th
 
 Left: the session name in a blue block. Right: the host name and the time (`HH:MM`). The bar uses the terminal's own colors, so it works in light and dark themes. It updates every 5 seconds. The active window is shown as a reversed block, others as plain `1:name`.
 
+**Command prompt and messages**: `prefix :` opens the command prompt, and messages such as "tmux.conf reloaded" use the same look. They take over the whole status line as a blue block (`message-style` and `message-command-style`). `fill=blue` paints the rest of the line, because tmux otherwise draws the prompt only over its own text and the right side of the bar stays visible.
+
 **On a remote machine** (the tmux server was started from an SSH session) the look is different so you never mix it up with your local tmux: the left block is **magenta** and starts with the short host name (`host session`), and the right side shows only the time. A server first started locally and later used over SSH keeps the local look.
 
 ## Pane labels
@@ -95,7 +97,7 @@ When a window has 2 or more panes, each pane gets a label row at its top border:
 
 ## Clear the pane: `Cmd+K`
 
-In Ghostty (macOS) and iTerm, `Cmd+K` sends `Ctrl+Space`, then `Ctrl+L`, so it clears the tmux pane. Ghostty on Linux uses `Ctrl+Shift+K`. See [terminals.md](terminals.md).
+In Ghostty (macOS) and iTerm, `Cmd+K` sends `Ctrl+Space`, then `Ctrl+L`, so it clears the tmux pane, scrollback included. Ghostty on Linux uses `Ctrl+Shift+K`. See [terminals.md](terminals.md).
 
 ## Plugins and TPM
 
@@ -132,4 +134,4 @@ Edit `tmux/.config/tmux/tmux.conf` in the repo (the link points there), then `pr
 
 ## Notes
 
-- Today `prefix Ctrl+l` only clears the screen, not the scrollback, because the plugin's binding wins over the config's. `Cmd+K` is affected the same way.
+- Bindings that must override a plugin key go after the `run` line of TPM at the end of `tmux.conf`. `prefix Ctrl+l` is one: it clears the screen and the scrollback, and `Cmd+K` uses it.
