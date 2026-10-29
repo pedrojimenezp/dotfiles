@@ -1,4 +1,4 @@
-# ~/.config/git/config: global git config (loaded after ~/.gitconfig, which must not exist).
+# ~/.config/git/config: global git config (read before ~/.gitconfig, which therefore wins and should not exist).
 
 [user]
 	name = Pedro Jimenez                  # author name on commits
