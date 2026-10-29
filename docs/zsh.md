@@ -11,7 +11,7 @@ File: `zsh/.zshrc`, linked to `~/.zshrc`. It is plain zsh with no framework, so 
 - **Bell**: rings after commands that run 30 seconds or more (see below).
 - **Options**: `AUTO_CD` (type a folder name to enter it), comments allowed at the prompt, no bell, emacs key style.
 - **Completion**: case-insensitive matching, colored like `ls`, grouped with headers. With fzf-tab installed, Tab opens an fzf list (see below).
-- **Tools**: fzf, atuin, zoxide, mise and starship are started only when installed. A missing tool never gives an error.
+- **Tools**: fzf, atuin, zoxide, mise and starship are started only when installed. A missing tool never gives an error. Their init outputs are cached in `~/.cache/zsh` and refresh on a tool upgrade or a `.zshrc` change; delete that folder to force a refresh.
 - **Plugins** (from Homebrew): fzf-tab, autosuggestions and syntax highlighting.
 - **OS parts**: macOS (`o` = `open`, `ls -G`, Ghostty command added to `PATH`) and Linux (`o` = `xdg-open`, `ls --color=auto`).
 

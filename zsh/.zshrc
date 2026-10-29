@@ -175,24 +175,34 @@ if command -v nvim >/dev/null 2>&1; then  # only where Neovim exists; servers ke
 fi
 
 # --- Tool integrations (each guarded: a missing tool never errors) ---
-if command -v fzf >/dev/null 2>&1; then
-  source <(fzf --zsh)                     # Ctrl-R history, Ctrl-T files, Alt-C cd, ** completion
+# Sources the cached output of `<tool> <args>`; forking each tool on every start costs ~30 ms.
+_cache_init() {
+  local rc=${ZDOTDIR:-$HOME}/.zshrc bin=${commands[$1]:A}      # resolve symlinks so brew upgrades count
+  local f=${XDG_CACHE_HOME:-$HOME/.cache}/zsh/$1${2:+.${(j:_:)${@[2,-1]//[^[:alnum:]]/_}}}.zsh  # args are in the name
+  if [[ ! -s $f || $bin -nt $f || ${rc:A} -nt $f ]]; then      # missing, tool upgraded or .zshrc edited
+    mkdir -p ${f:h} && "$@" >$f.$$ 2>/dev/null && mv -f $f.$$ $f || rm -f $f.$$  # tmp + mv: never half-written
+  fi
+  [[ -s $f ]] && source $f
+}
+if (( $+commands[fzf] )); then
+  _cache_init fzf --zsh                   # Ctrl-R history, Ctrl-T files, Alt-C cd, ** completion
 fi
 # atuin comes after fzf (so its Ctrl-R wins) and after our Up/Down bindkeys (so its Up wins).
 # Down stays ours (atuin does not bind it). Without atuin, the prefix search above remains.
-if command -v atuin >/dev/null 2>&1; then
+if (( $+commands[atuin] )); then
   # ATUIN_NO_UP=1 (set in ~/.zshenv, which loads before this file) keeps Up on prefix search
-  eval "$(atuin init zsh ${ATUIN_NO_UP:+--disable-up-arrow})"  # history search on Ctrl-R and Up
+  _cache_init atuin init zsh ${ATUIN_NO_UP:+--disable-up-arrow}  # history search on Ctrl-R and Up
 fi
-if command -v zoxide >/dev/null 2>&1; then
-  eval "$(zoxide init zsh)"               # adds `z` and `zi` jump commands
+if (( $+commands[zoxide] )); then
+  _cache_init zoxide init zsh             # adds `z` and `zi` jump commands
 fi
-if command -v mise >/dev/null 2>&1; then
-  eval "$(mise activate zsh)"             # per-project tool versions
+if (( $+commands[mise] )); then
+  _cache_init mise activate zsh           # per-project tool versions
 fi
-if command -v starship >/dev/null 2>&1; then
-  eval "$(starship init zsh)"             # prompt
+if (( $+commands[starship] )); then
+  _cache_init starship init zsh           # prompt
 fi
+unfunction _cache_init                    # keep the shell namespace clean
 
 # --- Light/dark theme (bin/.local/bin/theme; pair in ~/.config/theme/config, mode in ~/.local/state/theme) ---
 alias tt='theme toggle'                   # flip between light and dark
