@@ -32,7 +32,7 @@ while read -r name; do
   tools="$tools $name"
 done < <(sed -n 's/^brew "\([^"]*\)".*/\1/p' "$ROOT/Brewfile")
 for f in "$ROOT"/bin/.local/bin/*; do tools="$tools ${f##*/}"; done # our own scripts
-logged="$(grep -l 'usage\.log' "$ROOT"/bin/.local/bin/* | sed 's|.*/||' | tr '\n' ' ')" # scripts that log themselves: counted from the log only
+logged="$(grep -l '>> .*usage\.log' "$ROOT"/bin/.local/bin/* | sed 's|.*/||' | tr '\n' ' ')" # scripts that append to the log (not ones that only read it): counted from the log only
 aliases="z=zoxide zi=zoxide $(grep -oE "alias [^= ]+='[^ ']+" "$ROOT/zsh/.zshrc" | sed "s/alias \(.*\)='\(.*\)/\1=\2/" | tr '\n' ' ')" # name=first word
 
 # Data source: custom file, else atuin (global, all folders), else zsh's own history.
