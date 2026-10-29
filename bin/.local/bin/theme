@@ -32,7 +32,7 @@ usage() {
 usage: theme <command> [--tty <path>] [--print] [--no-download]
   dark | light | auto      set the mode (auto = terminal profile, follows macOS) and apply it
   toggle                   flip between light and dark
-  apply                    re-apply the saved mode
+  apply                    re-apply the saved mode (--no-download: fail fast if its theme is not cached or bundled)
   status                   print the mode and the light/dark picks (* = in use)
   mode                     print only the saved mode: dark, light or auto (for scripts)
   pick [light|dark]        choose a theme with fzf and live preview (default: the current mode's slot)

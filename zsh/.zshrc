@@ -205,7 +205,7 @@ if [[ -z ${SSH_CONNECTION:-}${SSH_TTY:-}${TMUX:-} && -t 1 ]] && command -v theme
   theme_mode=""                           # stays empty (auto) when the file is missing
   [[ -r $theme_state ]] && read -r theme_mode <"$theme_state"  # first line only
   case $theme_mode in
-    dark|light) theme apply ;;            # auto needs nothing: the terminal profile follows macOS
+    dark|light) theme apply --no-download ;;  # never wait on curl at startup; auto needs nothing (the profile follows macOS)
   esac
   unset theme_state theme_mode
 fi

@@ -40,7 +40,7 @@ Options (can go anywhere in the command):
 
 - `--tty <path>`: write the color codes to that terminal device instead of the current one. tmux uses it for `prefix t`.
 - `--print`: write the codes to standard output (the default). It wins over `--tty`. Neovim uses it.
-- `--no-download`: for `theme file`, look only in the cache and the Ghostty bundles and fail fast when the theme is missing, instead of waiting on curl. Neovim uses it; if the theme is not there yet, it falls back as for an unknown theme until `theme set`, `pick` or `sync` downloads it.
+- `--no-download`: for `theme file` and `theme apply`, look only in the cache and the Ghostty bundles and fail fast when the theme is missing, instead of waiting on curl. Neovim and the shell startup use it; if the theme is not there yet, it falls back as for an unknown theme until `theme set`, `pick` or `sync` downloads it.
 
 `dark`, `light`, `auto` and `toggle` apply the colors first and save the mode only if that worked, so a theme that cannot be found leaves the saved mode unchanged (and the command exits non-zero).
 
@@ -74,7 +74,7 @@ git commit -m "theme: use Dayfox for light"
 
 ## How each tool follows
 
-- **Any terminal, also over SSH**: `theme dark` / `light` send OSC escape codes that set the palette, background, foreground and cursor from the theme file. `auto` sends the resets. Inside tmux they are wrapped (DCS passthrough, needs `allow-passthrough on`, already set). New local shells run `theme apply` when the saved mode is dark or light (not over SSH, and not inside tmux: the terminal that started tmux was already colored). The shell reads the mode straight from the state file, without running `theme mode`.
+- **Any terminal, also over SSH**: `theme dark` / `light` send OSC escape codes that set the palette, background, foreground and cursor from the theme file. `auto` sends the resets. Inside tmux they are wrapped (DCS passthrough, needs `allow-passthrough on`, already set). New local shells run `theme apply --no-download` (so an offline start never waits) when the saved mode is dark or light (not over SSH, and not inside tmux: the terminal that started tmux was already colored). The shell reads the mode straight from the state file, without running `theme mode`.
 - **Ghostty**: the tracked config has `config-file = ?theme.conf`. `theme sync` writes `~/.config/ghostty/theme.conf` with `theme = light:<light>,dark:<dark>`, so Ghostty switches with macOS by itself. Downloaded themes are copied to `~/.config/ghostty/themes`. `theme sync` also sends Ghostty a reload signal (SIGUSR2). If a window keeps old colors: `Cmd+Shift+R` (set in this config) or `Cmd+Shift+,` (default).
 - **iTerm** (macOS only): `theme sync` writes the Dynamic Profile "Dotfiles" with light and dark colors. See [terminals.md](terminals.md).
 - **tmux**: the status line uses palette color names, so it follows the terminal.
