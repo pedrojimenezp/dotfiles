@@ -64,6 +64,8 @@ When Neovim is installed, the `vim` and `vi` aliases open `nvim`; `command vim` 
 
 `./install.sh --server` skips Homebrew and Ghostty, and stows only `zsh`, `tmux`, `vim`, `git`, `bin` and `theme`. The zsh config guards every tool, so it works with only the tools the server has. Over SSH, tmux (`set-clipboard on`) and nvim (OSC 52) copy to your local clipboard.
 
+`tssh <ssh args>` (any host alias, `user@host`, `-i`, `-p`) connects and attaches to the remote tmux session `main`, creating it if needed. Use one terminal tab per server and run tmux only on the server, never tmux inside tmux. A tmux started from an SSH session shows a magenta status bar with the hostname, so it never looks like the local one.
+
 ## Runtimes (mise)
 
 Global defaults (node LTS, latest go) live in the `mise` package, so `mise use -g <tool>@<version>` edits the repo file through the symlink: commit the change. Zig stays in Homebrew because the zig and zls versions must match.

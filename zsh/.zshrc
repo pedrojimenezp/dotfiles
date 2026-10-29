@@ -91,6 +91,13 @@ zstyle ':completion:*' menu select        # arrow-key menu for completions
 zstyle ':completion:*' matcher-list 'm:{a-z}={A-Za-z}'  # case-insensitive matching
 zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}" # color completions like ls
 
+# --- Remote tmux ---
+# tssh <ssh args>: connect and attach to (or create) the remote tmux session "main".
+# -t forces a tty for tmux; the remote shell is interactive login (-lic) so .zshrc puts Homebrew's tmux on PATH.
+# The single-quoted command is expanded by the remote shell, so $SHELL is the server's.
+tssh() { ssh -t "$@" 'exec $SHELL -lic "tmux new-session -A -s main"'; }
+compdef tssh=ssh                          # complete hosts and options like ssh
+
 # --- Aliases ---
 if command -v eza >/dev/null 2>&1; then
   alias ls='eza --icons --group-directories-first'   # eza instead of ls
