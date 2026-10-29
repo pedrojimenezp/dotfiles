@@ -135,8 +135,8 @@ list_candidates() {
       [[ "$gl" == */worktrees/* ]] && continue # linked worktree: listed from its repo with the branch name
     fi
     plain+="$d"$'\t'"$d"$'\t\n' # label and path are the same for plain dirs
-    # Main checkouts and submodules have a .git entry that is not a linked worktree, so git runs once per repo.
-    if [[ -e "$d/.git" ]]; then wts+="$(worktrees_of "$d")"$'\n'; fi
+    # Only main checkouts have a .git directory (submodules and linked worktrees have a file), so git runs once per repo.
+    if [[ -d "$d/.git" ]]; then wts+="$(worktrees_of "$d")"$'\n'; fi
   done <<<"$dirs"
   printf '%s\n' "$wts" | sed '/^$/d' # drop blank lines left by repos without worktrees
   printf '%s' "$plain"
