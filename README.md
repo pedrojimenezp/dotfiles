@@ -50,7 +50,7 @@ What each step does, backups, idempotency and troubleshooting: [docs/install.md]
 1. Start a new shell (`exec zsh`).
 2. tmux plugins are installed already; `Ctrl+Space`, then `Shift+i` retries if one failed.
 3. Open `nvim` once and wait for lazy.nvim, Mason and treesitter to install everything.
-4. Put secrets and machine settings in `~/.zshrc.local` (sourced last, not tracked).
+4. Put secrets and machine settings in `~/.zshrc.local` (loaded near the end, after all other settings; not tracked).
 5. Put machine-specific git settings in `~/.config/git/local` (for example a work email).
 
 ## Docs
@@ -73,7 +73,7 @@ What each step does, backups, idempotency and troubleshooting: [docs/install.md]
 
 | Package | Links to | What it does |
 | --- | --- | --- |
-| `zsh` | `~/.zshrc` | Plain zsh: history, completion, aliases, fzf, atuin, zoxide, mise, starship, autosuggestions, syntax highlighting. Sources `~/.zshrc.local` last. |
+| `zsh` | `~/.zshrc` | Plain zsh: history, completion, aliases, fzf, atuin, zoxide, mise, starship, autosuggestions, syntax highlighting. Sources `~/.zshrc.local` near the end (only syntax highlighting loads after it). |
 | `nvim` | `~/.config/nvim` | Neovim config (lazy.nvim, LSP, treesitter, telescope, conform, blink.cmp). |
 | `tmux` | `~/.config/tmux/tmux.conf` | tmux with prefix `Ctrl+Space`, vi copy mode, TPM plugins, minimal status line that follows the terminal palette, with SSH badge, prefix, bell, zoom and git branch indicators. |
 | `vim` | `~/.vimrc` | Small plugin-free vimrc for servers. |

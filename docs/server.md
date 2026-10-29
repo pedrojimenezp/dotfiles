@@ -132,7 +132,7 @@ exit
 Then finish the setup:
 
 1. On your laptop, log in again: `ssh my-ec2`. You are now in zsh.
-2. On the server, put your secrets in `~/.zshrc.local` (it is sourced last and not tracked by git), then lock it:
+2. On the server, put your secrets in `~/.zshrc.local` (it loads near the end, after all other settings, and is not tracked by git), then lock it:
    ```sh
    chmod 600 ~/.zshrc.local
    ```

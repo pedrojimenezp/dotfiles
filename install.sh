@@ -275,7 +275,7 @@ cat <<'MSG'
 Done. Next steps:
   1. Open tmux; plugins are installed already (prefix + I, Ctrl+Space then Shift+i, retries).
   2. Open nvim once and let lazy.nvim install plugins (run :Mason to check LSP tools).
-  3. Move secrets and machine-specific settings into ~/.zshrc.local (sourced last).
+  3. Move secrets and machine-specific settings into ~/.zshrc.local (loaded near the end, after all other settings).
   4. Put machine-specific git settings in ~/.config/git/local.
   5. Start a new shell (exec zsh).
 MSG
