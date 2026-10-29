@@ -3,22 +3,95 @@
 # Usage: tmux-sessionizer [dir]   (without an argument, pick from $SESSIONIZER_DIRS)
 #        tmux-sessionizer --list  (print the candidates as "label<TAB>path<TAB>repo" and exit)
 # Default roots: ~/projects if it exists (depth 3), else $HOME (depth 2, skipping go, snap, bin).
+# Per-machine settings: ${XDG_CONFIG_HOME:-~/.config}/sessionizer/config (see docs/tmux-sessionizer.md).
+# Env vars: SESSIONIZER_DIRS, SESSIONIZER_EXCLUDE, SESSIONIZER_DEPTH override the file.
 # Worktrees are named after their branch; other directories after their basename.
 # SESSIONIZER_TMUX_ARGS adds tmux options, e.g. "-L sock" for a separate server.
 set -euo pipefail # stop on errors, unset variables and failed pipes
 
-# Roots to search; override with e.g. SESSIONIZER_DIRS="$HOME/work $HOME/projects".
-depth=3 # how deep find looks under each root
-prune=() # trees find must not enter (it would walk huge caches such as go/pkg/mod)
-if [[ -n "${SESSIONIZER_DIRS:-}" ]]; then
-  read -r -a roots <<<"$SESSIONIZER_DIRS" # explicit roots keep the default depth
+# Settings: env vars > config file > built-in defaults.
+# Config file lines are "key = value" (include, exclude, depth); values are space-separated paths.
+config_file="${XDG_CONFIG_HOME:-$HOME/.config}/sessionizer/config" # per machine, not tracked in the repo
+cfg_include="" cfg_exclude="" cfg_depth="" # stay empty when the file does not set them
+
+warn() { printf 'tmux-sessionizer: %s\n' "$*" >&2; } # stderr keeps --list output clean
+
+# Expand a leading ~, $HOME or ${HOME} by hand; eval would run anything written in the file.
+# shellcheck disable=SC2016,SC2088 # the patterns match the literal text ~ and $HOME
+expand_path() {
+  case "$1" in
+    "~") printf '%s' "$HOME" ;;                      # bare tilde
+    "~/"*) printf '%s' "$HOME/${1#"~/"}" ;;          # tilde prefix
+    '$HOME') printf '%s' "$HOME" ;;                  # bare variable
+    '$HOME/'*) printf '%s' "$HOME/${1#'$HOME/'}" ;;  # variable prefix
+    '${HOME}') printf '%s' "$HOME" ;;                # braced variable
+    '${HOME}/'*) printf '%s' "$HOME/${1#'${HOME}/'}" ;; # braced prefix
+    *) printf '%s' "$1" ;;                           # anything else is used as written
+  esac
+}
+
+# Print the expanded, space-separated form of a list of paths.
+expand_list() {
+  local words=() w out="" # words holds the split input
+  read -r -a words <<<"$1" # split on whitespace without globbing
+  for w in ${words[@]+"${words[@]}"}; do out+="${out:+ }$(expand_path "$w")"; done # join the expanded paths
+  printf '%s' "$out"
+}
+
+# Whitespace trimming with parameter expansion only (no external commands).
+trim() {
+  local s="$1" # value to trim
+  s="${s#"${s%%[![:space:]]*}"}" # drop leading blanks
+  s="${s%"${s##*[![:space:]]}"}" # drop trailing blanks
+  printf '%s' "$s"
+}
+
+if [[ -f "$config_file" ]]; then
+  while IFS= read -r line || [[ -n "$line" ]]; do # last line may lack a newline
+    line="$(trim "${line%%#*}")" # strip comments and blanks
+    [[ -n "$line" ]] || continue # empty or comment-only line
+    if [[ "$line" != *=* ]]; then warn "$config_file: ignoring line without '=': $line"; continue; fi # not key = value
+    key="$(trim "${line%%=*}")" val="$(trim "${line#*=}")" # split at the first =
+    case "$key" in
+      include) cfg_include="$(expand_list "$val")" ;; # replaces the default roots
+      exclude) cfg_exclude="$(expand_list "$val")" ;; # trees to skip
+      depth) cfg_depth="$val" ;;                      # validated below with the env var
+      *) warn "$config_file: unknown key '$key' (ignored)" ;; # typo guard
+    esac
+  done <"$config_file"
+fi
+
+# Roots to search. SESSIONIZER_DIRS > include > ~/projects > $HOME.
+depth_default=3 # how deep find looks under each root
+fallback=0 # 1 when searching $HOME because nothing else is set
+include="$(expand_list "${SESSIONIZER_DIRS:-$cfg_include}")" # explicit roots keep the default depth
+roots=() # only roots that exist
+if [[ -n "$include" ]]; then
+  read -r -a wanted <<<"$include" # one entry per root
+  for d in ${wanted[@]+"${wanted[@]}"}; do
+    if [[ -d "$d" ]]; then roots+=("$d"); fi # missing roots are skipped silently
+  done
 elif [[ -d "$HOME/projects" ]]; then
   roots=("$HOME/projects") # the usual layout
 else
   roots=("$HOME") # servers often keep repos directly in $HOME
-  depth=2 # repos sit at depth 1 or 2 (e.g. ~/development/app); deeper is noise
-  prune=(-path "$HOME/go" -o -path "$HOME/snap" -o -path "$HOME/bin" -o -path "$HOME/*/worktrees") # not projects; worktrees come from git
+  depth_default=2 # repos sit at depth 1 or 2 (e.g. ~/development/app); deeper is noise
+  fallback=1 # enables the built-in prunes below
 fi
+
+depth="$depth_default" # may be overridden below
+want_depth="${SESSIONIZER_DEPTH:-$cfg_depth}" # env wins over the file
+if [[ -n "$want_depth" ]]; then
+  if [[ "$want_depth" =~ ^[1-9][0-9]*$ ]]; then depth="$want_depth"; else warn "bad depth '$want_depth' (use a number >= 1); using $depth_default"; fi # find needs a positive integer
+fi
+
+prune=() # trees find must not enter (it would walk huge caches such as go/pkg/mod)
+add_prune() { if ((${#prune[@]})); then prune+=(-o); fi; prune+=(-path "${1%/}"); } # find ORs the tests together
+if ((fallback)); then
+  add_prune "$HOME/go"; add_prune "$HOME/snap"; add_prune "$HOME/bin"; add_prune "$HOME/*/worktrees" # not projects; worktrees come from git
+fi
+read -r -a excluded <<<"$(expand_list "${SESSIONIZER_EXCLUDE:-$cfg_exclude}")" # env replaces the file's list
+for d in ${excluded[@]+"${excluded[@]}"}; do add_prune "$d"; done # added on top of the built-in prunes
 read -r -a tmux_args <<<"${SESSIONIZER_TMUX_ARGS:-}" # extra tmux options (empty by default)
 
 tm() { tmux ${tmux_args[@]+"${tmux_args[@]}"} "$@"; } # one place to add tmux options
@@ -50,6 +123,7 @@ list_candidates() {
   local dirs d wts="" plain="" # wts and plain collect output so worktrees can print first
   local prune_expr=() # find expression that skips the pruned trees without descending
   if ((${#prune[@]})); then prune_expr=(\( "${prune[@]}" \) -prune -o); fi # empty when nothing to skip
+  if ((${#roots[@]} == 0)); then return 0; fi # find with no path would search the current directory
   dirs="$(find "${roots[@]}" -mindepth 1 -maxdepth "$depth" ${prune_expr[@]+"${prune_expr[@]}"} -type d \
     -not -path '*/.*' -not -path '*/node_modules*' -not -path '*/worktrees/*' -print 2>/dev/null || true)" # linked worktrees come from git instead
   while IFS= read -r d; do
