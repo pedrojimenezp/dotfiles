@@ -15,7 +15,7 @@ dark = TokyoNight Night
 
 If a line is missing, the script uses `GitHub Light Default` (light) and `TokyoNight Night` (dark).
 
-Theme names come from Ghostty's collection (several hundred themes, the [iTerm2-Color-Schemes](https://github.com/mbadolato/iTerm2-Color-Schemes) project). Lookup order: the script's cache (`~/.local/share/theme/themes`), the themes bundled with Ghostty (the macOS app, or `/usr/share/ghostty/themes` on Linux), then a download from GitHub into the cache. So servers without Ghostty work too (they need `curl`).
+Theme names come from Ghostty's collection (several hundred themes, the [iTerm2-Color-Schemes](https://github.com/mbadolato/iTerm2-Color-Schemes) project). Lookup order: the themes bundled with Ghostty (the macOS app, or `/usr/share/ghostty/themes` on Linux), the script's cache (`~/.local/share/theme/themes`), then a download from GitHub into the cache. So servers without Ghostty work too (they need `curl`).
 
 ## Commands
 

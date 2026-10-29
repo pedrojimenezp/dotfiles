@@ -179,12 +179,12 @@ download_theme() {
   return 1                                          # not found upstream or offline
 }
 
-# Print the path of a theme file: cache, then Ghostty bundles, then a download.
+# Print the path of a theme file: Ghostty bundles (as sync_ghostty), then the cache, then a download.
 theme_file() {
   local name=$1                                     # theme name, e.g. "GitHub Light Default"
   check_name "$name"                                # refuse paths
+  bundled_file "$name" && return 0                  # Ghostty ships it: same colors as Ghostty itself
   [[ -f "$CACHE_DIR/$name" ]] && { echo "$CACHE_DIR/$name"; return 0; }  # cached download
-  bundled_file "$name" && return 0                  # Ghostty ships it
   if ((NO_DOWNLOAD)); then                          # --no-download: never wait on the network
     echo "theme: '$name' is not cached or bundled (--no-download)" >&2
     return 1
