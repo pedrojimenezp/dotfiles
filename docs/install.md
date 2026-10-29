@@ -60,7 +60,7 @@ The Nerd Font step is skipped on a headless server (your local terminal draws th
 Flags can be combined (`--dry-run --with-claude`).
 
 - **`--dry-run`**: every action is printed with a `[dry-run]` prefix. Use it first on a new machine.
-- **`--with-claude`**: clones the private `claude-config` repo to `~/.config/claude-shared` (or `$CLAUDE_SHARED_DIR`) and runs its own `install.sh`. It needs GitHub SSH access. If the clone already exists it is not pulled. With no access, the step is skipped, everything else finishes, and the script exits with an error at the end. The zsh config loads `~/.config/claude-shared/zsh/claude.zsh` only if that file exists, so these dotfiles work without it.
+- **`--with-claude`**: clones the private `claude-config` repo to `~/.config/claude-shared` (or `$CLAUDE_SHARED_DIR`) and runs its own `install.sh`. It needs GitHub SSH access. If the clone already exists it is not pulled. With no access, or when the folder exists but is not a git repo, the step is skipped (its `install.sh` does not run), everything else finishes, and the script exits with an error at the end. In `--dry-run` it only prints that it would check GitHub access and clone. The zsh config loads `~/.config/claude-shared/zsh/claude.zsh` only if that file exists, so these dotfiles work without it.
 
 ## What `install.sh` does, in order
 

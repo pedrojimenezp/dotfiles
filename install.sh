@@ -261,6 +261,7 @@ ERR
   elif git -C "$CLAUDE_DIR" rev-parse --git-dir >/dev/null 2>&1; then
     echo "Claude config already there: $CLAUDE_DIR (not pulling)"
   else
+    CLAUDE_SKIPPED=1 # its installer must not run from an unknown folder; reported at the end
     echo "Warning: $CLAUDE_DIR exists but is not a git repo: skipping" >&2
   fi
   # run its own installer once it is there (in dry-run the clone is only printed)
@@ -308,6 +309,6 @@ suggest_login_shell
 
 if [[ $CLAUDE_SKIPPED -eq 1 ]]; then # a skipped step must not look like success
   echo >&2
-  echo "The Claude config was NOT installed (no GitHub SSH access). Fix that and run ./install.sh --with-claude again." >&2
+  echo "The Claude config was NOT installed (see the warning above). Fix that and run ./install.sh --with-claude again." >&2
   exit 1 # visible to scripts and to the eye, after everything else finished
 fi
