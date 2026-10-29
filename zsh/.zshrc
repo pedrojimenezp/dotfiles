@@ -189,8 +189,6 @@ if command -v zoxide >/dev/null 2>&1; then
 fi
 if command -v mise >/dev/null 2>&1; then
   eval "$(mise activate zsh)"             # per-project tool versions
-elif [[ -x $HOME/.local/bin/mise ]]; then
-  eval "$("$HOME/.local/bin/mise" activate zsh)"  # mise installed outside PATH
 fi
 if command -v starship >/dev/null 2>&1; then
   eval "$(starship init zsh)"             # prompt
