@@ -75,7 +75,7 @@ case "${1:-}" in
   *) sed -n '2,7s/^# //p' "$0"; exit 2 ;;                   # unknown option: show the header
 esac
 
-{ mkdir -p "${XDG_STATE_HOME:-$HOME/.local/state}/dotfiles" && printf '%s dotfiles-help\n' "$(date +%s)" >> "${XDG_STATE_HOME:-$HOME/.local/state}/dotfiles/usage.log"; } 2>/dev/null || true # count the run for dotfiles-usage; never fails
+"$(dirname "$0")/dotfiles-log" dotfiles-help >/dev/null 2>&1 || true # count the run for dotfiles-usage
 command -v fzf >/dev/null 2>&1 || { rows | column -t -s $'\t' | "${PAGER:-less}"; exit 0; } # no fzf: plain table
 
 # Padded display column for fzf, then the raw fields (hidden) for the preview.

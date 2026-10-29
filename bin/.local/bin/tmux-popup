@@ -86,7 +86,7 @@ rescue() {
   step 1 "$client" || tmux detach-client -t "$client" # only popup sessions are left
 }
 
-[[ "${1:-}" == open ]] && { mkdir -p "${XDG_STATE_HOME:-$HOME/.local/state}/dotfiles" && printf '%s tmux-popup\n' "$(date +%s)" >> "${XDG_STATE_HOME:-$HOME/.local/state}/dotfiles/usage.log"; } 2>/dev/null || true # count the run for dotfiles-usage; never fails
+[[ "${1:-}" == open ]] && { "$(dirname "$0")/dotfiles-log" tmux-popup >/dev/null 2>&1 || true; } # count the run for dotfiles-usage
 case "${1:-}" in
   open) [[ $# -eq 5 ]] || { echo "usage: tmux-popup open <shell|claude> <client> <parent id> <dir>" >&2; exit 2; }; open_popup "$2" "$3" "$4" "$5" ;;
   cleanup) cleanup ;;

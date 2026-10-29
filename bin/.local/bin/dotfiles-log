@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Append one "<epoch> <tool>" line to the usage log that dotfiles-usage reads; never fails.
+# Usage: dotfiles-log <tool>   (--path prints the log file and exits)
+log="${XDG_STATE_HOME:-$HOME/.local/state}/dotfiles/usage.log" # the one place that names the log
+case "${1:-}" in
+  --path) printf '%s\n' "$log"; exit 0 ;; # for dotfiles-usage
+  "") exit 0 ;;                           # nothing to log
+esac
+{ mkdir -p "${log%/*}" && printf '%s %s\n' "$(date +%s)" "$1" >>"$log"; } 2>/dev/null || true # a read-only disk must not break the caller
+exit 0

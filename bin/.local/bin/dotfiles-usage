@@ -3,7 +3,7 @@
 # Usage: dotfiles-usage [week|2weeks|month]   (uses per tool and last use; default week)
 # Tools: Brewfile brew entries, aliases in zsh/.zshrc, scripts in bin/.local/bin, and tssh. Nothing is listed by hand.
 # Source: atuin history if installed, else ~/.zsh_history (needs EXTENDED_HISTORY). Scripts started by a key
-# (tmux-popup, tmux-sessionizer, dotfiles-help) log "<epoch> <tool>" to $XDG_STATE_HOME/dotfiles/usage.log instead.
+# (tmux-popup, tmux-sessionizer, dotfiles-help) log "<epoch> <tool>" through dotfiles-log (usage.log) instead.
 # Approximate: counts the first word of each command and of each part of a pipe or && chain, after env vars and sudo.
 # Env: DOTFILES_USAGE_HISTFILE reads that zsh history file instead; ATUIN_DB_PATH points atuin at another database.
 set -euo pipefail # stop on errors, unset variables and failed pipes
@@ -31,8 +31,8 @@ while read -r name; do
   esac
   tools="$tools $name"
 done < <(sed -n 's/^brew "\([^"]*\)".*/\1/p' "$ROOT/Brewfile")
-for f in "$ROOT"/bin/.local/bin/*; do tools="$tools ${f##*/}"; done # our own scripts
-logged="$(grep -l '>> .*usage\.log' "$ROOT"/bin/.local/bin/* | sed 's|.*/||' | tr '\n' ' ')" # scripts that append to the log (not ones that only read it): counted from the log only
+for f in "$ROOT"/bin/.local/bin/*; do [[ ${f##*/} == dotfiles-log ]] || tools="$tools ${f##*/}"; done # our own scripts; the log helper is only called by others
+logged="$(grep -lE '^[^#]*dotfiles-log" +[a-z]' "$ROOT"/bin/.local/bin/* | sed 's|.*/||' | tr '\n' ' ')" # scripts that call dotfiles-log (key-launched): counted from the log only
 aliases="z=zoxide zi=zoxide $(grep -oE "alias [^= ]+='[^ ']+" "$ROOT/zsh/.zshrc" | sed "s/alias \(.*\)='\(.*\)/\1=\2/" | tr '\n' ' ')" # name=first word
 
 # Data source: custom file, else atuin (global, all folders), else zsh's own history.
@@ -46,7 +46,7 @@ else
   from="zsh history $hist"
   read_history() { cat "$hist" 2>/dev/null || true; } # ": epoch:duration;command"; missing file: no data
 fi
-log="${XDG_STATE_HOME:-$HOME/.local/state}/dotfiles/usage.log" # one "<epoch> <tool>" line per key-launched run
+log="$("$ROOT/bin/.local/bin/dotfiles-log" --path)" # one "<epoch> <tool>" line per key-launched run
 zone="$(date +%z)" # local offset, so days change at local midnight
 offset=$(( ${zone:0:1}1 * (10#${zone:1:2} * 3600 + 10#${zone:3:2} * 60) ))
 
