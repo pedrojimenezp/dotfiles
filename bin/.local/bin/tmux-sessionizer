@@ -118,9 +118,17 @@ worktrees_of() {
   done < <(git -C "$repo" worktree list --porcelain 2>/dev/null || true; echo) # trailing echo closes the last entry
 }
 
+# True when path $1 is already a path field in the worktree rows $2 (also compares the physical path).
+is_listed() {
+  local p="$1" rows="$2" phys
+  [[ "$rows" == *$'\t'"$p"$'\t'* ]] && return 0 # git prints physical paths, find prints them as written under the root
+  phys="$(CDPATH= cd -- "$p" 2>/dev/null && pwd -P)" || return 1
+  [[ "$rows" == *$'\t'"$phys"$'\t'* ]]
+}
+
 # Print all candidates: worktrees first (what you are usually working on), then plain dirs.
 list_candidates() {
-  local dirs d gl wts="" plain="" # wts and plain collect output so worktrees can print first
+  local dirs d gl wts="" plain="" linked=() # wts and plain collect output so worktrees can print first
   local prune_expr=() # find expression that skips the pruned trees without descending
   if ((${#prune[@]})); then prune_expr=(\( "${prune[@]}" \) -prune -o); fi # empty when nothing to skip
   if ((${#roots[@]} == 0)); then return 0; fi # find with no path would search the current directory
@@ -133,12 +141,23 @@ list_candidates() {
     [[ -n "$d" ]] || continue # find printed nothing
     if [[ -f "$d/.git" ]]; then
       IFS= read -r gl <"$d/.git" || true # "gitdir: <path>": linked worktrees point into .../worktrees/<name>, submodules into .../modules/<name>
-      [[ "$gl" == */worktrees/* ]] && continue # linked worktree: listed from its repo with the branch name
+      if [[ "$gl" == */worktrees/* ]]; then linked+=("$d"$'\t'"${gl#gitdir: }"); continue; fi # checked below, once every repo has been asked
     fi
     plain+="$d"$'\t'"$d"$'\t\n' # label and path are the same for plain dirs
     # Only main checkouts have a .git directory (submodules and linked worktrees have a file), so git runs once per repo.
     if [[ -d "$d/.git" ]]; then wts+="$(worktrees_of "$d")"$'\n'; fi
   done <<<"$dirs"
+  # A linked worktree is listed from its repo. If that repo was not walked (outside the roots, hidden, bare,
+  # too deep), no repo listed it: add it here, with its own branch.
+  local entry gitdir common branch repo_name
+  for entry in ${linked[@]+"${linked[@]}"}; do
+    d="${entry%%$'\t'*}" gitdir="${entry#*$'\t'}"
+    if is_listed "$d" "$wts"; then continue; fi
+    common="${gitdir%/worktrees/*}" # the shared git dir (.git or .bare)
+    repo_name="$(basename "$(dirname "$common")")" # same rule as the session naming below
+    branch="$(git -C "$d" branch --show-current 2>/dev/null || true)"
+    wts+="${branch:-$(basename "$d")}  [$repo_name]"$'\t'"$d"$'\t'"$repo_name"$'\n'
+  done
   printf '%s\n' "$wts" | sed '/^$/d' # drop blank lines left by repos without worktrees
   printf '%s' "$plain"
 }
