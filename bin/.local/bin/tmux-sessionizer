@@ -143,7 +143,8 @@ if [[ "${1:-}" == "--list" ]]; then
   list_candidates
   exit 0
 elif [[ $# -eq 1 ]]; then
-  selected="$1" # directory given on the command line
+  [[ -d "$1" ]] || { warn "not a directory: $1"; exit 1; }
+  selected="$(cd "$1" && pwd -P)" # absolute and symlink-free, so names and the path check agree ('.' would be named '-')
 else
   line="$(list_candidates | fzf --prompt='project> ' --delimiter=$'\t' --with-nth=1 || true)" # show only the label
   [[ -n "$line" ]] || exit 0 # nothing chosen (Esc)
@@ -165,6 +166,7 @@ name="$(printf '%s' "$name" | tr './: ' '----' | tr -s '-')" # tmux rejects dots
 # or the parent folder (plain dirs) to tell them apart.
 if tm has-session -t "=$name" 2>/dev/null; then
   existing="$(tm list-sessions -F '#{session_name}'$'\t''#{session_path}' 2>/dev/null | awk -F'\t' -v n="$name" '$1 == n { print $2; exit }' || true)" # where that session was started
+  if [[ -d "$existing" ]]; then existing="$(cd "$existing" && pwd -P)"; fi # sessions made elsewhere may hold /var vs /private/var spellings
   if [[ -n "$existing" && "$existing" != "$selected" ]]; then
     extra="${repo:-$(basename "$(dirname "$selected")")}" # the repo for worktrees, else the folder that holds the directory
     name="$name-$(printf '%s' "$extra" | tr './: ' '----' | tr -s '-')" # same cleanup as the name above
