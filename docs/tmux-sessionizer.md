@@ -21,6 +21,8 @@ Each line has a label:
 Hidden folders, `node_modules` and `worktrees/` folders are not listed as
 projects. Worktrees come from `git worktree list`, so they are found for every
 repo under your search roots, wherever the worktree folder lives.
+A worktree folder inside a search root is listed once, by its branch, and gets
+the branch name however you open it (picker or argument).
 
 ## Session names
 
