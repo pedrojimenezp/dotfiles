@@ -152,6 +152,7 @@ Shortcuts: `prefix t` in tmux and `<leader>ut` in Neovim toggle the mode.
 | `prefix [` then `v`, `y` | Copy mode: select, copy (also to the system clipboard) |
 | `prefix f` | Project session picker (fzf over `~/projects`, or `$SESSIONIZER_DIRS`); git worktrees are listed first as `branch  [repo]` and open a session named after the branch |
 | `prefix t` | Toggle light/dark mode |
+| `prefix X` | Kill the current session (asks first); tmux switches to another session and exits only when none are left |
 | `prefix r` | Reload `tmux.conf` |
 | `prefix I` | Install TPM plugins |
 | `prefix Ctrl+s` / `Ctrl+r` | Save / restore sessions (resurrect); continuum also saves every 15 minutes and restores on tmux start, so sessions survive `tmux kill-server` and reboots (panes running `ssh` re-run it) |
