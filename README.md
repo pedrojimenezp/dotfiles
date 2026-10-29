@@ -177,7 +177,7 @@ Shortcuts: `prefix t` in tmux and `<leader>ut` in Neovim toggle the mode.
 | `prefix H/J/K/L` | Resize pane (repeatable) |
 | `Ctrl+h/j/k/l` | Move between panes and nvim splits (no prefix) |
 | `prefix [` then `v`, `y` | Copy mode: select, copy (also to the system clipboard) |
-| `prefix f` | Project session picker (fzf over `~/projects`, or `$SESSIONIZER_DIRS`); git worktrees are listed first as `branch  [repo]` and open a session named after the branch |
+| `prefix f` | Project session picker (fzf over `~/projects`, else `$HOME` two levels deep, or `$SESSIONIZER_DIRS`); git worktrees are listed first as `branch  [repo]` and open a session named after the branch |
 | `prefix t` | Toggle light/dark mode |
 | `prefix X` | Kill the current session (asks first); tmux switches to another session and exits only when none are left |
 | `prefix r` | Reload `tmux.conf` |
