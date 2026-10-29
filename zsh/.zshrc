@@ -27,7 +27,7 @@ export LESS='-R -F -X'                    # colors, quit if one screen, no scree
 
 # --- Go ---
 export GOPATH="$HOME/go"                  # Go workspace and `go install` target
-path=("$GOPATH/bin" $path)                # make installed Go tools available
+path+=("$GOPATH/bin")                    # Go tools, after ~/.local/bin so those win
 
 # --- OS-specific settings ---
 case $OSTYPE in
