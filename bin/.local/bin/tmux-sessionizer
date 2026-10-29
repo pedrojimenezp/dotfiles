@@ -204,6 +204,7 @@ session_dir() {
 session_for_path() {
   local n p
   while IFS=$'\t' read -r n p; do
+    if [[ "$n" == _popup_* ]]; then continue; fi # hidden popup sessions share the project path; never switch into one
     if [[ -d "$p" ]]; then p="$(CDPATH='' cd -- "$p" && pwd -P)"; fi # same spelling fix as session_dir
     if [[ "$p" == "$1" ]]; then printf '%s' "$n"; return 0; fi
   done < <(tm list-sessions -F '#{session_name}'$'\t''#{session_path}' 2>/dev/null || true)
