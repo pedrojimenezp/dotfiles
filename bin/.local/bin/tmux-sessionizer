@@ -145,6 +145,10 @@ if [[ "${1:-}" == "--list" ]]; then
 elif [[ $# -eq 1 ]]; then
   [[ -d "$1" ]] || { warn "not a directory: $1"; exit 1; }
   selected="$(cd "$1" && pwd -P)" # absolute and symlink-free, so names and the path check agree ('.' would be named '-')
+  # A linked worktree (its git dir differs from the shared one) is named like on the fzf path: by branch, repo = main folder.
+  gd="$(git -C "$selected" rev-parse --path-format=absolute --git-dir 2>/dev/null || true)"
+  cd_="$(git -C "$selected" rev-parse --path-format=absolute --git-common-dir 2>/dev/null || true)"
+  if [[ -n "$gd" && -n "$cd_" && "$gd" != "$cd_" ]]; then repo="$(basename "$(dirname "$cd_")")"; fi
 else
   line="$(list_candidates | fzf --prompt='project> ' --delimiter=$'\t' --with-nth=1 || true)" # show only the label
   [[ -n "$line" ]] || exit 0 # nothing chosen (Esc)

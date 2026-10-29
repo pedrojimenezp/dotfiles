@@ -28,6 +28,8 @@ repo under your search roots, wherever the worktree folder lives.
   HEAD) it uses the folder name. A plain directory uses its folder name.
 - A directory given as an argument is resolved to its real absolute path
   first, so `tmux-sessionizer .` is named after the folder, not `-`.
+  A linked worktree given as an argument is named after its branch, like in
+  the picker, so both ways reuse one session.
 - The characters `/`, `.`, `:` and spaces become `-`. Repeated `-` collapse
   into one. (tmux does not allow `.` and `:` in names.)
 - If a session with that name already exists for another directory, a suffix
