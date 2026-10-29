@@ -39,6 +39,7 @@ aliases="z=zoxide zi=zoxide $(grep -oE "alias [^= ]+='[^ ']+" "$ROOT/zsh/.zshrc"
 hist="${DOTFILES_USAGE_HISTFILE:-}"
 if [[ -z "$hist" ]] && command -v atuin >/dev/null 2>&1; then
   from="atuin"
+  export ATUIN_SESSION="${ATUIN_SESSION:-$(atuin uuid)}" # atuin search refuses to run without a session (unset outside atuin-hooked zsh)
   read_history() { atuin search --filter-mode global --after "$days days ago" --format '{time} {command}' || true; } # "YYYY-MM-DD HH:MM:SS command"
 else
   hist="${hist:-$HOME/.zsh_history}"
@@ -91,4 +92,5 @@ printf '%-20s %5s  %s\n' tool uses "last used"
   mark=""; [[ "$uses" -gt 0 ]] || mark="  ← unused"
   printf '%-20s %5s  %s%s\n' "$name" "$uses" "$when" "$mark"
 done
-printf '\nPeriod: last %s days · Source: %s + %s\n' "$days" "$from" "$log"
+tilde="~"
+printf '\nPeriod: last %s days · Source: %s + %s\n' "$days" "$from" "${log/#"$HOME"/$tilde}"
