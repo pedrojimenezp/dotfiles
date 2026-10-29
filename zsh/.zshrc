@@ -114,11 +114,15 @@ autoload -Uz add-zsh-hook                 # safe way to add preexec/precmd hooks
 LONG_CMD_BELL_IGNORE=${LONG_CMD_BELL_IGNORE:-"nvim vim vi less man lazygit lg lzd tmux ssh tssh claude top btop htop fzf"}  # long by nature; override in ~/.zshrc.local
 long_cmd_first_word() {                   # sets long_cmd_name to the real program of a command line (no fork)
   local -a words=(${(z)1})                # split like the shell would (one word stays an array)
-  local w
+  local w wrapped= skip=
   long_cmd_name=
   for w in $words; do
+    if [[ -n $skip ]]; then skip=; continue; fi  # value of -u/-g
     case $w in
-      [A-Za-z_]*=*|sudo|command|env|nocorrect|noglob|time|nohup) ;;  # assignments and wrappers hide the program
+      [A-Za-z_]*=*) ;;                    # assignments hide the program
+      sudo|command|env|nocorrect|noglob|time|nohup) wrapped=1 ;;  # wrappers hide the program
+      -u|-g) [[ -n $wrapped ]] && skip=1 || { long_cmd_name=$w; return; } ;;  # sudo -u USER: skip the value too
+      -*) [[ -n $wrapped ]] || { long_cmd_name=$w; return; } ;;   # wrapper options (-E, -i)
       *) long_cmd_name=$w; return ;;
     esac
   done
