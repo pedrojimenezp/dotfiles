@@ -166,7 +166,8 @@ download_theme() {
   command -v curl >/dev/null 2>&1 || return 1       # no curl, no download
   mkdir -p "$CACHE_DIR"                             # first download: create the cache
   tmp="$(mktemp "$CACHE_DIR/.download.XXXXXX")"     # partial file, never seen as a theme
-  if curl -fsSL "$RAW_URL/$(urlencode "$name")" 2>/dev/null |
+  # --connect-timeout/--max-time: an unreachable network must not hang the shell or tmux
+  if curl -fsSL --connect-timeout 3 --max-time 10 "$RAW_URL/$(urlencode "$name")" 2>/dev/null |
     grep -E '^[[:space:]]*(palette|background|foreground|cursor-color|cursor-text|selection-background|selection-foreground)[[:space:]]*=' >"$tmp" &&
     grep -q palette "$tmp"; then                    # a real theme has palette lines
     chmod 644 "$tmp"                                # mktemp files are private; make it a normal file
@@ -198,7 +199,7 @@ list_themes() {
     else
       if [[ -z $(find "$LIST_CACHE" -mtime -1 2>/dev/null) ]]; then  # cache missing or older than a day
         mkdir -p "$(dirname "$LIST_CACHE")"         # first run: create the cache dir
-        curl -fsSL "$API_URL" 2>/dev/null |
+        curl -fsSL --connect-timeout 3 --max-time 10 "$API_URL" 2>/dev/null |
           grep -o '"name": *"[^"]*"' |              # one "name": "..." per file in the folder
           sed -e 's/^"name": *"//' -e 's/"$//' >"$LIST_CACHE.tmp" || true  # keep only the value
         if [[ -s "$LIST_CACHE.tmp" ]]; then
