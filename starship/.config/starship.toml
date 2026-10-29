@@ -20,9 +20,9 @@ format = "[$symbol]($style) " # icon in its style, then a space
 style = "bold cyan"           # palette color, follows the theme
 
 [os.symbols]
-Macos = " "                  # Apple icon (needs a Nerd Font)
-Ubuntu = " "                 # Ubuntu icon
-Linux = " "                  # generic Linux fallback
+Macos = "\uf179 "                  # Apple icon (needs a Nerd Font)
+Ubuntu = "\uf31b "                 # Ubuntu icon
+Linux = "\uf17c "                  # generic Linux fallback
 
 [fill]
 symbol = "·"                  # dotted line between left and right parts
@@ -53,7 +53,7 @@ truncation_length = 3         # show at most 3 path segments
 truncate_to_repo = true       # truncate relative to the git repo root
 
 [git_branch]
-symbol = " "                 # branch icon (needs a Nerd Font)
+symbol = "\ue0a0 "                 # branch icon (needs a Nerd Font)
 format = "on [$symbol$branch]($style) "  # plain "on " connector, icon, branch name, trailing space
 
 [git_status]
@@ -67,10 +67,10 @@ min_time = 2000               # only show commands slower than 2s
 format = "[$duration]($style) " # duration text
 
 [golang]
-symbol = " "                 # Go icon
+symbol = "\ue627 "                 # Go icon
 [nodejs]
-symbol = " "                 # Node icon
+symbol = "\ue718 "                 # Node icon
 [zig]
-symbol = " "                 # Zig icon
+symbol = "\ue6a9 "                 # Zig icon
 [python]
-symbol = " "                 # Python icon
+symbol = "\ue73c "                 # Python icon
