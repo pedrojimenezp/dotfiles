@@ -32,7 +32,7 @@ while read -r name; do
   tools="$tools $name"
 done < <(sed -n 's/^brew "\([^"]*\)".*/\1/p' "$ROOT/Brewfile")
 for f in "$ROOT"/bin/.local/bin/*; do [[ ${f##*/} == dotfiles-log ]] || tools="$tools ${f##*/}"; done # our own scripts; the log helper is only called by others
-logged="$(grep -lE '^[^#]*dotfiles-log" +[a-z]' "$ROOT"/bin/.local/bin/* | sed 's|.*/||' | tr '\n' ' ')" # scripts that call dotfiles-log (key-launched): counted from the log only
+logged="$(grep -lE '^[^#]*dotfiles-log" +[a-z]' "$ROOT"/bin/.local/bin/* | sed 's|.*/||' | tr '\n' ' ' || true)" # scripts that call dotfiles-log (key-launched): counted from the log only
 aliases="z=zoxide zi=zoxide $(grep -oE "alias [^= ]+='[^ ']+" "$ROOT/zsh/.zshrc" | sed "s/alias \(.*\)='\(.*\)/\1=\2/" | tr '\n' ' ')" # name=first word
 
 # Data source: custom file, else atuin (global, all folders), else zsh's own history.
