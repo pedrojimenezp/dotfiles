@@ -1,5 +1,5 @@
 -- Treesitter: fast, accurate syntax highlighting and indentation.
--- Uses the `main` branch (Neovim 0.11+); it compiles parsers with the tree-sitter CLI.
+-- Uses the `main` branch (Neovim 0.12+); it compiles parsers with the tree-sitter CLI.
 return {
   "nvim-treesitter/nvim-treesitter",
   branch = "main", -- the maintained rewrite

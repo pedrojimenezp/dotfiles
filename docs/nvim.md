@@ -1,6 +1,6 @@
 # Neovim
 
-Folder: `nvim/.config/nvim`, linked to `~/.config/nvim`. It needs Neovim 0.11 or newer (the README says 0.12 is the tested version). `vim` and `vi` open `nvim` when it is installed (see [zsh.md](zsh.md)). On servers without Neovim, see [vim.md](vim.md).
+Folder: `nvim/.config/nvim`, linked to `~/.config/nvim`. It needs Neovim 0.12 or newer. `vim` and `vi` open `nvim` when it is installed (see [zsh.md](zsh.md)). On servers without Neovim, see [vim.md](vim.md).
 
 ## How the config is organized
 
