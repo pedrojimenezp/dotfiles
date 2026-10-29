@@ -156,6 +156,19 @@ if [[ $SERVER -eq 0 ]]; then
   fi
 fi
 
+# Step 3c: the git config rewrites GitHub https URLs to SSH; without any SSH key, clones (lazy.nvim, TPM) fail.
+GIT_LOCAL="$HOME/.config/git/local" # machine-specific git overrides (untracked, included by the git config)
+if [[ ! -e "$GIT_LOCAL" && -z "${SSH_AUTH_SOCK:-}" ]] && ! compgen -G "$HOME/.ssh/id_*" >/dev/null; then # no key and no agent
+  echo "==> No SSH key found: keeping GitHub on https in $GIT_LOCAL"
+  if [[ $DRY -eq 0 ]]; then
+    mkdir -p "$(dirname "$GIT_LOCAL")" # the git package normally created it
+    cat >"$GIT_LOCAL" <<'CFG' # longer prefix beats the SSH rewrite in the main config; delete this once you add a key
+[url "https://github.com/"]
+	insteadOf = https://github.com/
+CFG
+  fi
+fi
+
 # Step 4: tmux plugin manager.
 TPM="$HOME/.config/tmux/plugins/tpm"
 if [[ ! -d "$TPM" ]] && command -v git >/dev/null 2>&1; then
