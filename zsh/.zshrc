@@ -199,4 +199,4 @@ fi
 [[ -f $HOME/.config/claude-shared/zsh/claude.zsh ]] && source "$HOME/.config/claude-shared/zsh/claude.zsh"  # optional
 
 # --- Local, untracked overrides (secrets, machine settings): keep last ---
-[[ -f $HOME/.zshrc.local ]] && source "$HOME/.zshrc.local"
+if [[ -f $HOME/.zshrc.local ]]; then source "$HOME/.zshrc.local"; fi  # an if keeps $? at 0 when the file is missing (a failed [[ ]] would turn the prompt red)
