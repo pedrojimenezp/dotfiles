@@ -53,15 +53,6 @@ nnoremap <C-h> <C-w>h
 nnoremap <C-j> <C-w>j
 nnoremap <C-k> <C-w>k
 nnoremap <C-l> <C-w>l
-" Terminal Vim does not decode Esc+j as <A-j> by itself; teach it (ttimeoutlen above keeps this safe)
-execute "set <A-j>=\ej"
-execute "set <A-k>=\ek"
-" Alt-j / Alt-k move the current line down / up (Alt may need Option-as-Esc+ in the terminal)
-nnoremap <A-j> :m .+1<CR>==
-nnoremap <A-k> :m .-2<CR>==
-" Alt-j / Alt-k move the visual selection down / up
-vnoremap <A-j> :m '>+1<CR>gv=gv
-vnoremap <A-k> :m '<-2<CR>gv=gv
 " <leader>w saves, <leader>q quits
 nnoremap <leader>w :w<CR>
 nnoremap <leader>q :q<CR>
