@@ -151,7 +151,7 @@ Then finish the setup:
    tssh my-ec2
    ```
    `tssh` connects and attaches to the tmux session `main` (it creates it if needed).
-3. Look at the status bar. A **magenta** block with the server name means you are on the server.
+3. Look at the status bar. A red **SSH** badge with the server name at the left of the bar means you are on the server (the session block after it is blue, yellow while the prefix is pressed).
 
 Rules:
 
