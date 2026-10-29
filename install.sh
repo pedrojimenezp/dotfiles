@@ -30,6 +30,21 @@ for arg in "$@"; do # parse command-line flags
   esac
 done
 
+# Prerequisite: zsh must exist (the configs are zsh-only). This script never uses sudo, so it only prints the command.
+if ! command -v zsh >/dev/null 2>&1; then # nothing to link against without zsh
+  if [[ "$OSTYPE" == linux* ]] && command -v apt-get >/dev/null 2>&1; then # Debian/Ubuntu
+    echo "zsh was not found. Install it first (this script never uses sudo):" >&2 # tell the user what to run
+    echo "  sudo apt-get update && sudo apt-get install -y zsh" >&2             # exact command
+  else
+    echo "zsh was not found. Install zsh with your package manager, then run this script again." >&2 # no known installer
+  fi
+  if [[ $DRY -eq 1 ]]; then # a preview should still show the rest of the plan
+    echo "[dry-run] continuing without zsh" >&2 # make the skipped exit visible
+  else
+    exit 1 # stop before any change
+  fi
+fi
+
 # Run a command, or only print it in dry-run mode.
 run() {
   if [[ $DRY -eq 1 ]]; then
@@ -229,6 +244,33 @@ Done. Next steps:
   4. Put machine-specific git settings in ~/.config/git/local.
   5. Start a new shell (exec zsh).
 MSG
+
+# Print the command that makes zsh the login shell; prints nothing if it already is.
+suggest_login_shell() {
+  local current zsh_path=""                                                     # current login shell, zsh to recommend
+  if [[ "$OSTYPE" == darwin* ]]; then                                           # macOS keeps users in Directory Services
+    current="$(dscl . -read ~/ UserShell 2>/dev/null | awk '{print $2}')"       # $SHELL can be stale
+    zsh_path="/bin/zsh"                                                         # always shipped with macOS
+  else
+    current="$(getent passwd "${USER:-$(id -un)}" 2>/dev/null | cut -d: -f7)"   # passwd entry, not the current process
+    if [[ -x /usr/bin/zsh ]] && grep -qx /usr/bin/zsh /etc/shells 2>/dev/null; then # chsh only accepts listed shells
+      zsh_path="/usr/bin/zsh"                                                   # the system zsh
+    else
+      zsh_path="$(grep -m1 '/zsh$' /etc/shells 2>/dev/null || true)"            # first listed zsh (empty if none)
+    fi
+  fi
+  current="${current:-${SHELL:-unknown}}"                                       # fall back when the lookup failed
+  [[ "$(basename "$current")" == zsh ]] && return 0                             # already zsh: say nothing
+  [[ -n "$zsh_path" ]] || return 0                                              # no usable zsh to suggest
+  echo
+  echo "Your login shell is $current. Make zsh the default (then log out and back in):"
+  if [[ "$OSTYPE" == darwin* ]]; then                                           # no sudo needed on macOS
+    echo "  chsh -s $zsh_path"                                                  # changes the current user
+  else
+    echo "  sudo chsh -s $zsh_path \"\$USER\""                                    # EC2-style users have no password
+  fi
+}
+suggest_login_shell
 
 # Step 6: optional private Claude config (opt-in, full mode only).
 if [[ $WITH_CLAUDE -eq 1 ]]; then

@@ -25,7 +25,7 @@ Install [Homebrew](https://brew.sh) first if `brew` is missing (`install.sh` pri
 2. Install Homebrew for Linux (no sudo needed after its prerequisites):
    `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"`, then follow the "Next steps" it prints.
 3. Clone this repo and run `./install.sh`.
-4. Make zsh your login shell: `chsh -s "$(command -v zsh)"`, then log out and back in.
+4. Make zsh your login shell: `chsh -s "$(command -v zsh)"` (on Ubuntu, `sudo chsh -s /usr/bin/zsh "$USER"`), then log out and back in. The installer prints this command when needed.
 
 ### Ubuntu server
 
