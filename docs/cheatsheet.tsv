@@ -1,0 +1,17 @@
+# Keys that dotfiles-help cannot read from the config: plugin, tool and terminal keys.
+# One per line: area<TAB>keys<TAB>description<TAB>doc. Lines starting with # are skipped.
+# tmux keys get bind -N in tmux.conf and zsh aliases/keys an end-of-line comment in .zshrc instead.
+tmux plugin	Ctrl+h/j/k/l	move between tmux panes and nvim splits, no prefix (vim-tmux-navigator)	docs/tmux.md
+tmux plugin	prefix Ctrl+s	save sessions now (tmux-resurrect)	docs/tmux.md
+tmux plugin	prefix Ctrl+r	restore saved sessions (tmux-resurrect)	docs/tmux.md
+tmux plugin	prefix Space	copy with hints: press a letter to copy a URL, path or hash (tmux-fingers)	docs/tmux.md
+tmux plugin	prefix Shift+I	install plugins (TPM); prefix Shift+U updates them	docs/tmux.md
+zsh tool	Up / Ctrl+R	history search in all shells (atuin; fzf Ctrl+R without atuin)	docs/zsh.md
+zsh tool	Ctrl+T / Alt+C	fzf: paste a file path / cd into a folder	docs/zsh.md
+zsh tool	Tab	fuzzy completion list (fzf-tab; , and . switch group)	docs/zsh.md
+zsh tool	Right	accept the grey suggestion (zsh-autosuggestions)	docs/zsh.md
+zsh tool	z name / zi	jump to a frequent folder / pick one with fzf (zoxide)	docs/zsh.md
+terminal	Cmd+K	clear the tmux pane: sends prefix Ctrl+l (Ghostty, iTerm; Linux Ghostty: Ctrl+Shift+K)	docs/terminals.md
+terminal	Shift+Enter	new line in Claude Code (tmux passes it on via extended keys)	docs/tmux.md
+nvim	Space, then wait	which-key lists every leader key (leader is Space)	docs/nvim.md
+nvim	Space u t	toggle light/dark	docs/nvim.md

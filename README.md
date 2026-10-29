@@ -2,6 +2,17 @@
 
 Personal, cross-platform (macOS + Linux) shell and editor setup, managed with [GNU Stow](https://www.gnu.org/software/stow/). Every config line has a short comment, and every part has a doc in [docs/](docs/), so the repo is also a learning reference.
 
+## Help
+
+Forgot a key? Press `prefix ?` (`Ctrl+Space`, then `?`) in tmux, or run `dotfiles-help` in a shell. It opens a searchable list of every tmux key, zsh alias, key and command, script and plugin key (like which-key in Neovim). `dotfiles-help --list` prints the same list as a table.
+
+The list is read from the configs themselves, so adding something means describing it where it is defined:
+
+- tmux key: `bind -N "short description" ...` in `tmux.conf`.
+- zsh alias or key: an end-of-line comment on the `alias` or `bindkey` line in `.zshrc`; a shell function: a comment line above it.
+- script in `bin/.local/bin`: a one-line description on line 2 and `# Usage:` lines (or a `usage()` text).
+- Only keys no config states (plugin, tool and terminal keys) go in [docs/cheatsheet.tsv](docs/cheatsheet.tsv).
+
 Each top-level folder is a **stow package**: its contents mirror `$HOME`. For example `git/.config/git/config` becomes `~/.config/git/config`.
 
 ## Install
@@ -73,14 +84,14 @@ What each step does, backups, idempotency and troubleshooting: [docs/install.md]
 | `ghostty` | `~/.config/ghostty/config` | Ghostty terminal (optional; linked only if Ghostty is installed). Colors come from the generated `theme.conf` next to it. |
 | `iterm` | `~/.config/iterm/dotfiles-profile.plist` | Template for the iTerm2 Dynamic Profile "Dotfiles" (macOS only). `theme sync` adds the colors. |
 | `mise` | `~/.config/mise/config.toml` | Global mise defaults: node (LTS) and go (latest), `.nvmrc` support. |
-| `bin` | `~/.local/bin` | Scripts on PATH: `tmux-sessionizer`, `tmux-popup`, `theme`. |
+| `bin` | `~/.local/bin` | Scripts on PATH: `tmux-sessionizer`, `tmux-popup`, `theme`, `dotfiles-help`. |
 | `theme` | `~/.config/theme/config` | The light/dark theme pair (tracked), used by the terminals, tmux and Neovim. |
 
 `./install.sh --server` (no `atuin`) links only `zsh`, `tmux`, `vim`, `git`, `bin` and `theme`.
 
 ## Cheat sheet
 
-Details are in the docs above. `prefix` is `Ctrl+Space`. In Neovim, `<leader>` is `Space`.
+The full, searchable list is `prefix ?` or `dotfiles-help` (see [Help](#help)); this is a short selection. Details are in the docs above. `prefix` is `Ctrl+Space`. In Neovim, `<leader>` is `Space`.
 
 ### Shell
 
@@ -101,11 +112,14 @@ Details are in the docs above. `prefix` is `Ctrl+Space`. In Neovim, `<leader>` i
 | `lg`, `lzd` | lazygit, lazydocker |
 | `ll`, `la`, `lt` | eza: long, with hidden, tree |
 | `theme pick` | Choose a theme with live preview |
+| `dotfiles-help` | Search every shortcut (fzf) |
 
 ### tmux
 
 | Keys | Action |
 | --- | --- |
+| `prefix ?` | Search every shortcut (this list and more) |
+| `prefix k` | tmux's own key list (the old `prefix ?`) |
 | `prefix \|` / `prefix -` | Split left/right, top/bottom (current path) |
 | `prefix c` | New window (current path) |
 | `prefix H/J/K/L` | Resize pane (repeatable) |

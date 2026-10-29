@@ -22,8 +22,12 @@ Start tmux: `tmux`. Start or attach to a named session: `tmux new-session -A -s 
 
 ## Keys from this config
 
+Forgot one? `prefix ?` opens a searchable list of every key (this config, plugins, tmux defaults, plus the zsh keys and aliases), see [Help popup](#help-popup).
+
 | Keys | What it does |
 | --- | --- |
+| `prefix ?` | Search all shortcuts in a popup (`dotfiles-help`) |
+| `prefix k` | tmux's own list of keys with notes (`list-keys -N`), the old `prefix ?` |
 | `prefix \|` | Split left/right, in the current folder |
 | `prefix -` | Split top/bottom, in the current folder |
 | `prefix c` | New window, in the current folder |
@@ -63,11 +67,33 @@ These are tmux defaults, not set in this config.
 | `prefix $` | Rename the session |
 | `prefix (` / `)` | Previous / next session |
 | `prefix w` | Pick a window from a tree |
-| `prefix ?` | List all key bindings |
+| `prefix /` | Describe one key: press it and tmux shows its note |
 | `prefix :` | tmux command prompt (vi keys) |
 | `prefix ]` | Paste the tmux buffer |
 
 The mouse is on: click a pane or window name, drag a border to resize, scroll the wheel to enter copy mode.
+
+## Help popup
+
+`prefix ?` runs `bin/.local/bin/dotfiles-help` (linked to `~/.local/bin/dotfiles-help`) in a popup of 80% of the window. Type to filter (fuzzy; start a word with `'` for an exact match), `Esc` closes. The bottom pane shows the selected entry and the doc to read.
+
+The list is built at every open, from:
+
+| Area | Source |
+| --- | --- |
+| `tmux` | The notes of the running server (`bind -N "..."` in `tmux.conf`), so `local.conf` changes show up too |
+| `tmux default` | tmux's own default keys that have a note, listed last |
+| `zsh key`, `zsh alias`, `zsh command` | End-of-line comments of `bindkey` and `alias` lines in `zsh/.zshrc`, and the comment above each function |
+| `command` | Line 2 and the `# Usage:` lines of each script in `bin/.local/bin`, and the `usage()` text (`theme`) |
+| `tmux plugin`, `zsh tool`, `terminal`, `nvim` | [cheatsheet.tsv](cheatsheet.tsv): keys that no config file states |
+
+Keys are shown readable: `C-l` becomes `Ctrl+l`, an uppercase letter becomes `Shift+A`. The script finds the repo by following its own symlink, so it works wherever the repo is cloned.
+
+Outside tmux run `dotfiles-help` (the same list, without the popup) or `dotfiles-help --list` (a plain table: `area`, `keys`, `description`, `doc`, separated by tabs). Without a running tmux server it reads the `bind -N` lines of the repo's `tmux.conf` instead. `DOTFILES_HELP_TMUX_ARGS="-L name"` points it at another tmux server (used in tests).
+
+**Rule for new keys**: every `bind` in `tmux.conf` gets `-N "short description"`. Plugin keys cannot carry a note (the plugins bind them), so they go in `docs/cheatsheet.tsv`. Check with `grep -E '^\s*bind' tmux/.config/tmux/tmux.conf | grep -v -- ' -N '` (no output means every binding has a note).
+
+**Why `prefix k` for the raw list**: `prefix ?` is the help popup now. `Shift+?` is no separate key on a US keyboard (`?` already needs `Shift`), `prefix /` stays tmux's "describe one key", and `k` (keys) is free in the defaults.
 
 ## Behavior settings
 
@@ -191,7 +217,7 @@ Other TPM keys (defaults): `prefix U` updates plugins, `prefix Alt+u` removes pl
 
 ## Change a key or option
 
-Edit `tmux/.config/tmux/tmux.conf` in the repo (the link points there), then `prefix r`. For options only for this machine, add `source-file -q ~/.config/tmux/local.conf` at the end of the file yourself, and keep that file untracked (this line is not in the config today).
+Edit `tmux/.config/tmux/tmux.conf` in the repo (the link points there), then `prefix r`. Give every new binding a note, `bind -N "what it does" key command`, so it shows in `prefix ?`. For options only for this machine, add `source-file -q ~/.config/tmux/local.conf` at the end of the file yourself, and keep that file untracked (this line is not in the config today).
 
 ## Related
 

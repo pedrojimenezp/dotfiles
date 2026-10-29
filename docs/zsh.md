@@ -17,7 +17,9 @@ File: `zsh/.zshrc`, linked to `~/.zshrc`. It is plain zsh with no framework, so 
 
 ## Aliases
 
-Some aliases exist only if the tool is installed.
+Some aliases exist only if the tool is installed. `dotfiles-help` (or `prefix ?` in tmux) lists every alias, key and shell function with its description, see [tmux.md](tmux.md#help-popup).
+
+The help list is read from the comments in `.zshrc`: keep an end-of-line comment on every `alias` and `bindkey` line, and a comment line above every function (for example `# tssh <ssh args>: ...`). A line without a comment is left out of the list. Keys of tools that bind their own (fzf, atuin, fzf-tab, zoxide, autosuggestions) are in [cheatsheet.tsv](cheatsheet.tsv).
 
 | Alias | Runs | Notes |
 | --- | --- | --- |

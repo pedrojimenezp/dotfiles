@@ -70,18 +70,18 @@ clear-screen-and-scrollback() {
   zle clear-screen                          # then the normal clear + prompt redraw
 }
 zle -N clear-screen-and-scrollback        # register the function as a widget
-bindkey '^L' clear-screen-and-scrollback  # Ctrl-L runs it
+bindkey '^L' clear-screen-and-scrollback  # clear the screen and the scrollback
 
 autoload -Uz up-line-or-beginning-search down-line-or-beginning-search  # built-in widgets: match history by typed prefix
 zle -N up-line-or-beginning-search        # register the widget
 zle -N down-line-or-beginning-search      # register the widget
-bindkey '^[[A' up-line-or-beginning-search    # Up, normal cursor mode
+bindkey '^[[A' up-line-or-beginning-search    # without atuin: earlier command that starts with the typed text (normal cursor mode)
 bindkey '^[OA' up-line-or-beginning-search    # Up, application mode (tmux, after smkx)
-bindkey '^[[B' down-line-or-beginning-search  # Down, normal cursor mode
+bindkey '^[[B' down-line-or-beginning-search  # later command that starts with the typed text (normal cursor mode)
 bindkey '^[OB' down-line-or-beginning-search  # Down, application mode (tmux, after smkx)
 autoload -Uz edit-command-line            # built-in widget: edit the current line in $VISUAL
 zle -N edit-command-line                  # register the widget
-bindkey '^X^E' edit-command-line          # Ctrl-X Ctrl-E opens the line in the editor
+bindkey '^X^E' edit-command-line          # edit the command line in $VISUAL
 
 # --- Completion ---
 # Extra completions from Homebrew must be on fpath before compinit.

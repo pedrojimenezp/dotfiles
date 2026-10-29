@@ -1,0 +1,266 @@
+#!/usr/bin/env bash
+# Search every shortcut of these dotfiles in fzf: tmux keys, zsh aliases, keys and commands, scripts, cheat sheet.
+# Usage: dotfiles-help          (fzf list; tmux opens it in a popup with prefix + ?)
+#        dotfiles-help --list   (print the table as "area<TAB>keys<TAB>description<TAB>doc" and exit)
+# Sources, read at every run (nothing to keep in sync by hand):
+#   tmux: notes of the live server (bind -N); without a server, the bind -N lines of the repo's tmux.conf.
+#   zsh: end-of-line comments of alias and bindkey lines, and the comment above each function, in zsh/.zshrc.
+#   scripts: the second line and "# Usage:" lines of bin/.local/bin/*, and the usage() text if any.
+#   docs/cheatsheet.tsv: plugin, tool and terminal keys that no config file states.
+# Env: DOTFILES_HELP_TMUX_ARGS adds tmux options, e.g. "-L sock" for a separate server.
+# Works with macOS bash 3.2.
+set -euo pipefail # stop on errors, unset variables and failed pipes
+
+# --- Repo root: follow the stow symlink (~/.local/bin/dotfiles-help) back into the repo ---
+# A loop instead of readlink -f, which old macOS readlink lacks; stow links are relative to their folder.
+src="${BASH_SOURCE[0]}" # path this script was started as
+while [[ -L "$src" ]]; do
+  dir="$(cd -P "$(dirname "$src")" && pwd)" # folder that holds the link
+  src="$(readlink "$src")"                  # one hop
+  [[ "$src" == /* ]] || src="$dir/$src"     # relative target: resolve from the link's folder
+done
+ROOT="$(cd -P "$(dirname "$src")/../../.." && pwd)" # bin/.local/bin -> repo root
+
+read -r -a TMUX_ARGS <<<"${DOTFILES_HELP_TMUX_ARGS:-}" # split on whitespace; empty means the default server
+TAB=$'\t'                                               # field separator of every row
+
+warn() { printf 'dotfiles-help: %s\n' "$*" >&2; } # stderr keeps --list output clean
+
+# Live tmux, with the extra options; an empty array is safe under set -u in bash 3.2.
+tm() { tmux ${TMUX_ARGS[@]+"${TMUX_ARGS[@]}"} "$@"; }
+
+# awk helper shared by the parsers: tmux key names to readable text (C-l -> Ctrl+l, A -> Shift+A).
+# shellcheck disable=SC2016 # awk code, not shell expansions
+AWK_TMUX_KEY='
+function tmux_key(k,   mods, name) {
+  mods = ""
+  while (length(k) > 2 && k ~ /^[CMS]-/) {     # modifier prefixes; "-" alone is a key
+    mods = mods (substr(k, 1, 1) == "C" ? "Ctrl+" : substr(k, 1, 1) == "M" ? "Alt+" : "Shift+")
+    k = substr(k, 3)
+  }
+  sub(/^\\/, "", k)                            # tmux escapes some keys: \; \# \$
+  if (k == "Escape") name = "Esc"
+  else if (k == "BSpace") name = "Backspace"
+  else if (k == "PPage" || k == "PgUp") name = "PageUp"
+  else if (k == "NPage" || k == "PgDn") name = "PageDown"
+  else if (k == "DC") name = "Delete"
+  else if (k == "IC") name = "Insert"
+  else if (k ~ /^[A-Z]$/) name = "Shift+" k   # uppercase letter: typed with Shift
+  else name = k
+  return mods name
+}
+function tmux_row(table, key, note, area,   keys) {
+  keys = tmux_key(key)
+  if (table == "prefix") keys = "prefix " keys
+  else if (table == "copy-mode-vi") keys = "copy mode: " keys
+  else if (table in entry) keys = entry[table] " then " keys  # e.g. the move table: prefix g, then the key
+  else if (table != "root") keys = table " table: " keys
+  printf "%s\t%s\t%s\t%s\n", area, keys, note, "docs/tmux.md"
+}'
+
+FMT="#{key_table}${TAB}#{key_string}${TAB}#{key_note}${TAB}#{key_command}" # one binding per line
+
+# Print every binding of tmux's built-in defaults in FMT.
+default_keys() {
+  local dir
+  dir="$(mktemp -d "${TMPDIR:-/tmp}/dotfiles-help.XXXXXX")" # private socket folder, never the user's server
+  tmux -S "$dir/sock" -f /dev/null start-server \; list-keys -F "$FMT" 2>/dev/null || true # no tmux: no defaults
+  tmux -S "$dir/sock" kill-server 2>/dev/null || true # it exits by itself (no sessions); just in case
+  rm -rf "$dir"                                       # drop the socket file too
+}
+
+# True when a tmux server is running; list-keys and show-options would start one (with the user's config) otherwise.
+server_up() { tm list-sessions >/dev/null 2>&1; }
+
+# tmux rows: our notes first ("tmux"), then the defaults ("tmux default").
+tmux_rows() {
+  command -v tmux >/dev/null 2>&1 || return 0 # no tmux: nothing to show
+  local live defaults
+  defaults="$(default_keys)"
+  if ! { server_up && live="$(tm list-keys -F "$FMT" 2>/dev/null)"; }; then
+    # No server: read the bind -N lines of the repo config, plus the defaults it does not rebind (no plugins, no local.conf).
+    live="$(conf_notes "$ROOT/tmux/.config/tmux/tmux.conf")"
+    live="$(printf '%s\n%s\n' "$live" "$(printf '%s\n' "$defaults" |
+      awk -F'\t' 'NR == FNR { ours[$1 FS $2] = 1; next } !(($1 FS $2) in ours)' <(printf '%s\n' "$live") -)")"
+  fi
+  # A key whose table, key and note all match a default is a default; everything else with a note is ours.
+  printf '%s\n' "$live" | awk -F'\t' "$AWK_TMUX_KEY"'
+    NR == FNR { if ($3 != "") def[$1 FS $2 FS $3] = 1; next }
+    $1 == "" { next }
+    match($4, /^switch-client -T [^ ]+$/) {                    # key that enters another table
+      entry[substr($4, 18)] = ($1 == "prefix" ? "prefix " : "") tmux_key($2)
+    }
+    $3 == "" { next }                                          # no note: not listed
+    { r[++n] = $0; isdef[n] = (($1 FS $2 FS $3) in def) }
+    END {
+      for (i = 1; i <= n; i++) if (!isdef[i]) { split(r[i], f, "\t"); tmux_row(f[1], f[2], f[3], "tmux") }
+      for (i = 1; i <= n; i++) if (isdef[i]) { split(r[i], f, "\t"); tmux_row(f[1], f[2], f[3], "tmux default") }
+    }
+  ' <(printf '%s\n' "$defaults") -
+}
+
+# Print "table<TAB>key<TAB>note<TAB>" (no command) for each bind -N line of a tmux config file.
+conf_notes() {
+  [[ -f "$1" ]] || return 0 # missing config: nothing
+  awk '
+    /^[ \t]*bind(-key)?[ \t]/ && / -N "/ {
+      note = $0; sub(/.* -N "/, "", note); sub(/".*/, "", note)  # text between the quotes after -N
+      rest = $0; sub(/ -N "[^"]*"/, "", rest)                     # the line without the note
+      n = split(rest, w, /[ \t]+/); table = "prefix"; key = ""
+      for (i = 2; i <= n && key == ""; i++) {                     # first word after the flags is the key
+        if (w[i] == "" || w[i] == "-r") continue
+        else if (w[i] == "-n") table = "root"
+        else if (w[i] == "-T") table = w[++i]
+        else key = w[i]
+      }
+      if (key != "") printf "%s\t%s\t%s\t\n", table, key, note
+    }' "$1"
+}
+
+# zsh rows from .zshrc comments: aliases, bindkey lines and functions (not widgets or hooks).
+zsh_rows() {
+  local rc="$ROOT/zsh/.zshrc"
+  [[ -f "$rc" ]] || { warn "no $rc"; return 0; }
+  awk -v doc="docs/zsh.md" -v q="'" '
+    function comment(s) { return match(s, /[ \t]#[ \t]/) ? substr(s, RSTART + 3) : "" } # end-of-line comment
+    # zsh key notation to readable text: ^X^E -> Ctrl+X Ctrl+E, ^[[A -> Up, ^[x -> Alt+x.
+    function zkey(k,   out, c) {
+      if (k == "^[[A" || k == "^[OA") return "Up"
+      if (k == "^[[B" || k == "^[OB") return "Down"
+      if (k == "^[[C" || k == "^[OC") return "Right"
+      if (k == "^[[D" || k == "^[OD") return "Left"
+      out = ""
+      while (k != "") {
+        if (substr(k, 1, 2) == "^[") { c = "Alt+" substr(k, 3, 1); k = substr(k, 4) }
+        else if (substr(k, 1, 1) == "^") { c = "Ctrl+" toupper(substr(k, 2, 1)); k = substr(k, 3) }
+        else { c = substr(k, 1, 1); k = substr(k, 2) }
+        out = out (out == "" ? "" : " ") c
+      }
+      return out
+    }
+    # From a comment block: the line that starts with the name, else the first one that is not a "--- section ---" title.
+    function pick(block, name,   n, l, i, first) {
+      n = split(block, l, "\n"); first = ""
+      for (i = 1; i <= n; i++) {
+        if (index(l[i], name " ") == 1 || index(l[i], name ":") == 1) return l[i]
+        if (first == "" && l[i] !~ /^---/) first = l[i]
+      }
+      return first
+    }
+    FNR == NR {                                                  # first pass: widgets and hooks to skip
+      if ($1 == "zle" && $2 == "-N") skip[$3] = 1
+      if ($1 == "add-zsh-hook") skip[$3] = 1
+      next
+    }
+    {                                                            # comment block right above this line, if any
+      cur_above = above
+      if (/^[ \t]*# /) above = above (above == "" ? "" : "\n") substr($0, index($0, "# ") + 2); else above = ""
+    }
+    match($0, /alias [A-Za-z0-9_.-]+=/) {                        # alias name=value  # comment
+      name = substr($0, RSTART + 6, RLENGTH - 7); c = comment($0)
+      if (c == "") next
+      if (!(name in adesc)) { order[++na] = name; adesc[name] = c; aline[name] = FNR }
+      else if (index(adesc[name], c) == 0) adesc[name] = adesc[name] "; or " c   # OS or tool variants
+      next
+    }
+    /^[ \t]*bindkey [^-]/ {                                      # bindkey KEYS widget  # comment
+      k = $2; gsub(q, "", k); gsub(/"/, "", k); c = comment($0); key = zkey(k)
+      if (c != "" && !(key in seen)) { seen[key] = 1; printf "zsh key\t%s\t%s\t%s, zsh/.zshrc:%d\n", key, c, doc, FNR }
+      next
+    }
+    /^[A-Za-z_][A-Za-z0-9_-]*\(\)/ {                             # name() { ... }
+      name = $0; sub(/\(.*/, "", name)
+      c = comment($0); if (c == "") c = pick(cur_above, name)
+      if (c != "" && !(name in skip)) {
+        keys = name
+        if (index(c, name) == 1 && index(c, ": ")) { keys = substr(c, 1, index(c, ": ") - 1); c = substr(c, index(c, ": ") + 2) }
+        printf "zsh command\t%s\t%s\t%s, zsh/.zshrc:%d\n", keys, c, doc, FNR
+      }
+    }
+    END { for (i = 1; i <= na; i++) printf "zsh alias\t%s\t%s\t%s, zsh/.zshrc:%d\n", order[i], adesc[order[i]], doc, aline[order[i]] }
+  ' "$rc" "$rc"
+}
+
+# Script rows from bin/.local/bin: each script's description line, "# Usage:" lines and usage() text.
+script_rows() {
+  local f name doc
+  for f in "$ROOT"/bin/.local/bin/*; do
+    [[ -f "$f" ]] || continue # empty folder: the glob stays literal
+    name="$(basename "$f")"
+    doc="docs/$name.md"
+    [[ -f "$ROOT/$doc" ]] || doc="bin/.local/bin/$name" # no doc of its own: point at the script
+    awk -v name="$name" -v doc="$doc" '
+      function row(keys, desc) { gsub(/[ \t]+$/, "", keys); printf "command\t%s\t%s\t%s\n", keys, desc, doc }
+      FNR == 2 && /^# / {                                        # one-line description under the shebang
+        d = substr($0, 3); if (index(d, name ": ") == 1) d = substr(d, length(name) + 3)
+        row(name, d)
+      }
+      /^# Usage:/ { inuse = 1 }
+      inuse && /^#/ && match($0, /  +\(.*\)[ \t]*$/) {           # "# Usage: cmd args  (what it does)"
+        k = substr($0, 2, RSTART - 2); sub(/^ *(Usage:)? */, "", k)
+        d = substr($0, RSTART); sub(/^ *\(/, "", d); sub(/\)[ \t]*$/, "", d)
+        if (k != name) row(k, d)
+        next
+      }
+      inuse && !/^#        / && !/^# Usage:/ { inuse = 0 }
+      /^usage\(\)/ { inusage = 1 }
+      inusage && /^EOF/ { inusage = 0 }
+      inusage && /^  [^ ]/ && match($0, /[^ ]   +[^ ]/) {        # "  subcommand    description" in usage()
+        row(name " " substr($0, 3, RSTART - 2), substr($0, RSTART + RLENGTH - 1))
+      }
+    ' "$f"
+  done
+}
+
+# Cheat sheet rows, without comment and blank lines.
+cheatsheet_rows() {
+  local file="$ROOT/docs/cheatsheet.tsv"
+  [[ -f "$file" ]] || { warn "no $file"; return 0; }
+  awk -F'\t' '!/^#/ && NF >= 3' "$file"
+}
+
+# All rows: our tmux keys, zsh, scripts and cheat sheet, then tmux defaults last.
+all_rows() {
+  local tmux_all
+  tmux_all="$(tmux_rows)"
+  printf '%s\n' "$tmux_all" | awk -F'\t' '$1 == "tmux"'
+  zsh_rows
+  script_rows
+  cheatsheet_rows
+  printf '%s\n' "$tmux_all" | awk -F'\t' '$1 == "tmux default"'
+}
+
+# Readable form of the tmux prefix, e.g. Ctrl+Space; empty without a server.
+prefix_label() {
+  local p
+  server_up || return 0 # no server: the header leaves the prefix out
+  p="$(tm show-options -gv prefix 2>/dev/null || true)"
+  [[ -n "$p" ]] || return 0
+  printf '%s\n' "$p" | awk "$AWK_TMUX_KEY"' { print tmux_key($0) }'
+}
+
+case "${1:-}" in
+  --list) all_rows; exit 0 ;;                                 # plain table for scripts and tests
+  "") ;;                                                      # interactive
+  -h|--help) sed -n '2,11s/^# \{0,1\}//p' "$0"; exit 0 ;;     # the header above
+  *) warn "unknown option '$1' (try --help)"; exit 2 ;;
+esac
+
+if ! command -v fzf >/dev/null 2>&1; then # no fzf: show the table in the pager
+  all_rows | column -t -s "$TAB" | "${PAGER:-less}"
+  exit 0
+fi
+
+pfx="$(prefix_label)"
+# Display column padded to the widest area and keys (keys capped so long ones do not push the text away);
+# the raw fields follow, hidden, for the preview.
+all_rows | awk -F'\t' '
+  { n++; a[n] = $1; k[n] = $2; d[n] = $3; doc[n] = $4
+    if (length($1) > wa) wa = length($1); if (length($2) > wk) wk = length($2) }
+  END { if (wk > 26) wk = 26
+    for (i = 1; i <= n; i++) printf "%-*s  %-*s  %s\t%s\t%s\t%s\t%s\n", wa, a[i], wk, k[i], d[i], a[i], k[i], d[i], doc[i] }
+' | fzf --delimiter="$TAB" --with-nth=1 --layout=reverse --tiebreak=index \
+  --prompt="keys> " \
+  --header="${pfx:+prefix = $pfx · }type to filter · Esc closes · prefix / describes one key" \
+  --preview='printf "%s  |  %s\n\n%s\n\nMore: %s\n" {2} {3} {4} {5}' \
+  --preview-window=down,6,wrap >/dev/null || true # Esc or Enter: just close (fzf exits 130 on Esc)
