@@ -508,6 +508,9 @@ ARG1="${ARGS[0]:-}"                                 # first argument
 ARG2="${ARGS[1]:-}"                                 # second argument
 if ((${#ARGS[@]} > 2)); then ARG2="${ARGS[*]:1}"; fi  # unquoted names with spaces: join the words
 
+# Count the runs a person starts (keys, tt) for dotfiles-usage; apply, status and the rest run by themselves.
+case $CMD in dark | light | auto | toggle | pick | set) "$(dirname "$0")/dotfiles-log" theme >/dev/null 2>&1 || true ;; esac
+
 case $CMD in
   dark | light | auto)
     write_state "$CMD"                              # remember the choice
