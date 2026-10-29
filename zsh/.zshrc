@@ -94,7 +94,8 @@ zcompfresh=( ${ZDOTDIR:-$HOME}/.zcompdump(N.mh-24) )  # matches only if the dump
 if (( $#zcompfresh )); then
   compinit -C -d "$zcompdump"             # reuse it, skipping the security scan for speed
 else
-  compinit -d "$zcompdump"                # missing or stale: full scan, rewrites the dump
+  compinit -d "$zcompdump"                # missing or stale: full scan
+  touch "$zcompdump"                      # compinit leaves the dump untouched when nothing changed, so renew its age here
 fi
 unset zcompdump zcompfresh
 zstyle ':completion:*' menu no            # fzf-tab needs the built-in menu off
