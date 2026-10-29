@@ -47,12 +47,31 @@ function M.mode()
   return nil -- auto elsewhere: the terminal background decides
 end
 
--- Path of a theme file, via the `theme` script (cache or Ghostty bundle; never downloads, so startup cannot wait on curl).
+-- Path of a theme file: Ghostty bundles, then the download cache (never downloads, so startup cannot wait on curl).
+-- Mirrors theme_file() in bin/.local/bin/theme (same folders and order) without spawning it.
 local function theme_file(name)
-  if vim.fn.executable("theme") ~= 1 then return nil end -- script not installed
-  local res = vim.system({ "theme", "file", "--no-download", name }, { text = true }):wait()
-  if res.code ~= 0 then return nil end -- unknown or not cached yet
-  return vim.trim(res.stdout or "") -- the path
+  if name == "" or name:find("/", 1, true) or name:sub(1, 1) == "." then return nil end -- the script refuses paths
+  local home = vim.env.HOME or ""
+  local dirs = vim.uv.os_getenv("THEME_GHOSTTY_DIRS") -- the script's test override; set (even empty) replaces the list
+  if dirs == nil then
+    dirs = table.concat({
+      home .. "/Applications/Ghostty.app/Contents/Resources/ghostty/themes",
+      "/Applications/Ghostty.app/Contents/Resources/ghostty/themes",
+      "/usr/share/ghostty/themes",
+      home .. "/.local/share/ghostty/themes",
+    }, ":")
+  end
+  local data = vim.env.XDG_DATA_HOME
+  if data == nil or data == "" then data = home .. "/.local/share" end -- bash ${VAR:-default}
+  local candidates = vim.split(dirs, ":", { plain = true })
+  candidates[#candidates + 1] = data .. "/theme/themes" -- cached downloads
+  for _, dir in ipairs(candidates) do
+    if dir ~= "" then
+      local stat = vim.uv.fs_stat(dir .. "/" .. name)
+      if stat and stat.type == "file" then return dir .. "/" .. name end
+    end
+  end
+  return nil -- unknown or not cached yet
 end
 
 -- Parse a Ghostty theme file into { palette = { [0..15] = "#rrggbb" }, bg = ..., fg = ... }.
