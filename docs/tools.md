@@ -14,6 +14,7 @@ Everything below is installed by the `Brewfile` (`brew bundle`, run by `install.
 | `zsh-autosuggestions` | Grey history suggestion while you type | Press `Right arrow` to accept |
 | `zsh-syntax-highlighting` | Colors valid and invalid commands | Type `foo` (red) vs `ls` (green) |
 | `zsh-completions` | More Tab completions | `git <Tab>` |
+| `fzf-tab` | Tab completion through fzf, with a folder preview for `cd` | `cd <Tab>` |
 
 ## Shell productivity
 

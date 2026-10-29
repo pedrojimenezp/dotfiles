@@ -11,6 +11,7 @@ brew "starship"                # fast, customizable shell prompt
 brew "zsh-autosuggestions"     # fish-style suggestions from history while typing
 brew "zsh-syntax-highlighting" # colors valid/invalid commands as you type
 brew "zsh-completions"         # extra tab-completion definitions for zsh
+brew "fzf-tab"                 # Tab completion through fzf (needs fzf)
 
 # --- Shell productivity ---
 brew "fzf"                     # fuzzy finder: Ctrl-R history, Ctrl-T files, Alt-C dirs

@@ -9,9 +9,9 @@ File: `zsh/.zshrc`, linked to `~/.zshrc`. It is plain zsh with no framework, so 
 - **Editor**: `EDITOR` and `VISUAL` are `nvim` if installed, else `vim`. `PAGER` is `less`.
 - **History**: 100000 entries in `~/.zsh_history`, shared between open shells, no duplicates. A command that starts with a space is not saved (handy for secrets).
 - **Options**: `AUTO_CD` (type a folder name to enter it), comments allowed at the prompt, no bell, emacs key style.
-- **Completion**: arrow-key menu, case-insensitive matching, colored like `ls`.
+- **Completion**: case-insensitive matching, colored like `ls`, grouped with headers. With fzf-tab installed, Tab opens an fzf list (see below).
 - **Tools**: fzf, zoxide, mise and starship are started only when installed. A missing tool never gives an error.
-- **Plugins** (from Homebrew): autosuggestions and syntax highlighting.
+- **Plugins** (from Homebrew): fzf-tab, autosuggestions and syntax highlighting.
 - **OS parts**: macOS (`o` = `open`, `ls -G`, Ghostty command added to `PATH`) and Linux (`o` = `xdg-open`, `ls --color=auto`).
 
 ## Aliases
@@ -48,6 +48,7 @@ Run `alias` to list what is active on this machine.
 | `Ctrl+R` | Fuzzy search the whole history | fzf |
 | `Ctrl+T` | Fuzzy pick files and paste the path | fzf |
 | `Alt+C` | Fuzzy pick a folder and `cd` into it | fzf |
+| `Tab` | Fuzzy completion list (`Enter` accepts, `,` / `.` switch group) | fzf-tab |
 | `**` then `Tab` | Fuzzy completion, for example `vim **<Tab>` | fzf |
 | `Ctrl+L` | Clear the screen **and** the scrollback | This config |
 | `Right arrow` | Accept the grey suggestion | Default of zsh-autosuggestions (`End` also works) |
@@ -59,6 +60,16 @@ Notes:
 - On macOS, `Alt` is the `Option` key. Ghostty and the iTerm profile are set so `Option` works as `Alt`, see [terminals.md](terminals.md).
 - Inside tmux, `Ctrl+L` (no prefix) moves to the pane on the right, unless the pane runs vim, nvim or fzf (vim-tmux-navigator). To clear a tmux pane, press `Ctrl+Space`, then `Ctrl+L` (or `Cmd+K` in Ghostty/iTerm). See [tmux.md](tmux.md). Outside tmux, `Ctrl+L` clears.
 - To change a binding, edit the `bindkey` lines in `zsh/.zshrc`, then run `exec zsh`.
+
+## Tab completion with fzf-tab
+
+[fzf-tab](https://github.com/Aloxaf/fzf-tab) replaces the completion menu with fzf. It comes from the Brewfile (`brew "fzf-tab"`), and `.zshrc` sources it from `$HOMEBREW_PREFIX/opt/fzf-tab` only if the file exists. Without it Tab still works, but as a plain list: the config sets `menu no`, which fzf-tab requires. On a `--server` machine (no Homebrew) the plugin is not installed.
+
+- Load order: after `compinit` and fzf, before autosuggestions and syntax highlighting (they wrap widgets).
+- `cd <Tab>` previews the folder with `eza` (only if eza is installed).
+- Group headers like `[file]` are on. Press `,` or `.` to jump between groups.
+- Matching stays case-insensitive.
+- Optional: inside tmux, add `zstyle ':fzf-tab:*' fzf-command ftb-tmux-popup` to `~/.zshrc.local` to open the list as a tmux popup (needs tmux 3.2+). Not enabled by default.
 
 ## Jump to folders with zoxide
 

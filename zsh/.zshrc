@@ -87,9 +87,15 @@ if [[ -n ${HOMEBREW_PREFIX:-} && -d $HOMEBREW_PREFIX/share/zsh-completions ]]; t
 fi
 autoload -Uz compinit                     # load the completion system loader
 compinit -C                               # init, skipping the security scan for speed
-zstyle ':completion:*' menu select        # arrow-key menu for completions
+zstyle ':completion:*' menu no            # fzf-tab needs the built-in menu off
+zstyle ':completion:*:descriptions' format '[%d]'  # group headers, shown by fzf-tab
+zstyle ':fzf-tab:*' switch-group ',' '.'  # move between groups with , and .
 zstyle ':completion:*' matcher-list 'm:{a-z}={A-Za-z}'  # case-insensitive matching
 zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}" # color completions like ls
+
+if command -v eza >/dev/null 2>&1; then
+  zstyle ':fzf-tab:complete:cd:*' fzf-preview 'eza -1 --color=always $realpath'  # list the folder while choosing
+fi
 
 # --- Remote tmux ---
 # tssh <ssh args>: connect and attach to (or create) the remote tmux session "main".
@@ -150,8 +156,10 @@ if [[ -z ${SSH_CONNECTION:-}${SSH_TTY:-} && -t 1 ]] && command -v theme >/dev/nu
   esac
 fi
 
-# --- Plugins from Homebrew (syntax-highlighting must load last) ---
+# --- Plugins from Homebrew (fzf-tab after compinit and fzf, before the widget wrappers; syntax-highlighting last) ---
 if [[ -n ${HOMEBREW_PREFIX:-} ]]; then
+  [[ -f $HOMEBREW_PREFIX/opt/fzf-tab/share/fzf-tab/fzf-tab.zsh ]] &&
+    source "$HOMEBREW_PREFIX/opt/fzf-tab/share/fzf-tab/fzf-tab.zsh"                   # Tab completion through fzf
   [[ -f $HOMEBREW_PREFIX/share/zsh-autosuggestions/zsh-autosuggestions.zsh ]] &&
     source "$HOMEBREW_PREFIX/share/zsh-autosuggestions/zsh-autosuggestions.zsh"       # grey history suggestions
   [[ -f $HOMEBREW_PREFIX/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ]] &&

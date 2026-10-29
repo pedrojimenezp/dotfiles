@@ -87,6 +87,7 @@ Details are in the docs above. `prefix` is `Ctrl+Space`. In Neovim, `<leader>` i
 | --- | --- |
 | `Up` / `Down` | History that starts with what you typed |
 | `Ctrl+R` / `Ctrl+T` / `Alt+C` | fzf: history / file path / change folder |
+| `Tab` | Fuzzy completion list (fzf-tab) |
 | `Ctrl+L` | Clear screen and scrollback |
 | `z name`, `zi` | Jump to a frequent folder (zoxide) |
 | `Right arrow` | Accept the grey suggestion |
