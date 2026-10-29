@@ -27,6 +27,29 @@ Install [Homebrew](https://brew.sh) first if `brew` is missing (`install.sh` pri
 3. Clone this repo and run `./install.sh`.
 4. Make zsh your login shell: `chsh -s "$(command -v zsh)"`, then log out and back in.
 
+### Ubuntu server
+
+A headless Ubuntu Server (for example an EC2 instance, 22.04 or 24.04) uses the full install. The Nerd Font step is skipped there (your local terminal renders the font). Run as a normal user with sudo; `install.sh` itself never uses sudo. The git config rewrites GitHub URLs to SSH; if the machine has no SSH key or agent, `install.sh` writes `~/.config/git/local` to keep GitHub on https (delete that file once you add a key).
+
+```sh
+# 1. Prerequisites (the only step that needs sudo)
+sudo apt-get update && sudo apt-get install -y build-essential procps curl file git zsh
+
+# 2. Homebrew (non-interactive) and its PATH
+NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+
+# 3. Clone and install (add --with-claude if you have GitHub SSH access)
+git clone https://github.com/pedrojimenezp/dotfiles ~/dotfiles
+cd ~/dotfiles && ./install.sh
+
+# 4. Make zsh the login shell, then log out and back in
+chsh -s "$(command -v zsh)"
+
+# 5. Claude Code (optional): see the Claude Code docs for the current install command
+curl -fsSL https://claude.ai/install.sh | bash
+```
+
 ### After installing
 
 1. In tmux press `Ctrl+Space`, then `Shift+i` to install the plugins.
