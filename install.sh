@@ -191,10 +191,12 @@ install_font() {
 }
 
 if [[ $SERVER -eq 0 && "$OSTYPE" == linux* ]]; then
-  if command -v fc-cache >/dev/null 2>&1; then # needs fontconfig
+  if [[ -z "${DISPLAY:-}${WAYLAND_DISPLAY:-}" ]]; then # headless: the local terminal renders fonts
+    echo "==> Skipping Nerd Font: no graphical session (headless server)"
+  elif command -v fc-cache >/dev/null 2>&1 && command -v fc-list >/dev/null 2>&1; then # needs fontconfig
     install_font
   else
-    echo "==> Skipping Nerd Font: fc-cache not found"
+    echo "==> Skipping Nerd Font: fontconfig (fc-cache, fc-list) not found"
   fi
 fi
 
