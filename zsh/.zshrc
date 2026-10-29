@@ -184,12 +184,17 @@ fi
 # --- Light/dark theme (bin/.local/bin/theme; pair in ~/.config/theme/config, mode in ~/.local/state/theme) ---
 alias tt='theme toggle'                   # flip between light and dark
 export BAT_THEME=ansi                     # bat uses the terminal's 16 colors, so it follows any theme
-# Re-apply a saved dark/light choice in new local terminals. Skipped over SSH: the local
-# terminal already has the colors, and a remote shell must not override them.
-if [[ -z ${SSH_CONNECTION:-}${SSH_TTY:-} && -t 1 ]] && command -v theme >/dev/null 2>&1; then
-  case $(theme mode) in                   # one word: dark, light or auto
+# Re-apply a saved dark/light choice in new local terminals. Skipped over SSH (the local terminal
+# already has the colors, a remote shell must not override them) and inside tmux (the outer
+# terminal was colored by the shell that started tmux, so every pane would repeat the work).
+if [[ -z ${SSH_CONNECTION:-}${SSH_TTY:-}${TMUX:-} && -t 1 ]] && command -v theme >/dev/null 2>&1; then
+  theme_state=${XDG_STATE_HOME:-$HOME/.local/state}/theme  # same file as bin/.local/bin/theme; no process spawned
+  theme_mode=""                           # stays empty (auto) when the file is missing
+  [[ -r $theme_state ]] && read -r theme_mode <"$theme_state"  # first line only
+  case $theme_mode in
     dark|light) theme apply ;;            # auto needs nothing: the terminal profile follows macOS
   esac
+  unset theme_state theme_mode
 fi
 
 # --- Plugins from Homebrew (fzf-tab after compinit and fzf, before the widget wrappers; syntax-highlighting last) ---

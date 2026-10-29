@@ -40,7 +40,7 @@ Options (can go anywhere in the command):
 - `--tty <path>`: write the color codes to that terminal device instead of the current one. tmux uses it for `prefix t`.
 - `--print`: write the codes to standard output (the default). It wins over `--tty`. Neovim uses it.
 
-Scripts should read `theme mode`: it prints exactly one word. `theme status` is for people and its layout can change. The shell startup and `<leader>ut` use `theme mode`.
+Scripts should read `theme mode`: it prints exactly one word. `theme status` is for people and its layout can change. `<leader>ut` uses `theme mode`; the shell startup reads the state file directly to save a process.
 
 `theme status` looks like this (`*` marks the one in use):
 
@@ -70,7 +70,7 @@ git commit -m "theme: use Dayfox for light"
 
 ## How each tool follows
 
-- **Any terminal, also over SSH**: `theme dark` / `light` send OSC escape codes that set the palette, background, foreground and cursor from the theme file. `auto` sends the resets. Inside tmux they are wrapped (DCS passthrough, needs `allow-passthrough on`, already set). New local shells run `theme apply` when the saved mode is dark or light (not over SSH).
+- **Any terminal, also over SSH**: `theme dark` / `light` send OSC escape codes that set the palette, background, foreground and cursor from the theme file. `auto` sends the resets. Inside tmux they are wrapped (DCS passthrough, needs `allow-passthrough on`, already set). New local shells run `theme apply` when the saved mode is dark or light (not over SSH, and not inside tmux: the terminal that started tmux was already colored). The shell reads the mode straight from the state file, without running `theme mode`.
 - **Ghostty**: the tracked config has `config-file = ?theme.conf`. `theme sync` writes `~/.config/ghostty/theme.conf` with `theme = light:<light>,dark:<dark>`, so Ghostty switches with macOS by itself. Downloaded themes are copied to `~/.config/ghostty/themes`. `theme sync` also sends Ghostty a reload signal (SIGUSR2). If a window keeps old colors: `Cmd+Shift+R` (set in this config) or `Cmd+Shift+,` (default).
 - **iTerm** (macOS only): `theme sync` writes the Dynamic Profile "Dotfiles" with light and dark colors. See [terminals.md](terminals.md).
 - **tmux**: the status line uses palette color names, so it follows the terminal.
