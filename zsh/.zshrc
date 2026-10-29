@@ -210,12 +210,23 @@ export BAT_THEME=ansi                     # bat uses the terminal's 16 colors, s
 # Re-apply a saved dark/light choice in new local terminals. Skipped over SSH (the local terminal
 # already has the colors, a remote shell must not override them) and inside tmux (the outer
 # terminal was colored by the shell that started tmux, so every pane would repeat the work).
+# Also skipped in Ghostty on macOS when the saved mode equals the macOS appearance: Ghostty already
+# shows that theme by itself (`theme = light:X,dark:Y`), so only a forced opposite mode needs it.
+# Other terminals (iTerm) and Linux always apply.
 if [[ -z ${SSH_CONNECTION:-}${SSH_TTY:-}${TMUX:-} && -t 1 ]] && command -v theme >/dev/null 2>&1; then
   theme_state=${XDG_STATE_HOME:-$HOME/.local/state}/theme  # same file as bin/.local/bin/theme; no process spawned
   theme_mode=""                           # stays empty (auto) when the file is missing
   [[ -r $theme_state ]] && read -r theme_mode <"$theme_state"  # first line only
   case $theme_mode in
-    dark|light) theme apply --no-download ;;  # never wait on curl at startup; auto needs nothing (the profile follows macOS)
+    dark|light)
+      if [[ $OSTYPE == darwin* && ${TERM_PROGRAM:-} == ghostty ]]; then
+        theme_sys=light                   # AppleInterfaceStyle exists only in dark mode
+        [[ $(defaults read -g AppleInterfaceStyle 2>/dev/null) == Dark ]] && theme_sys=dark
+        [[ $theme_sys == $theme_mode ]] || theme apply --no-download  # forced opposite of macOS
+        unset theme_sys
+      else
+        theme apply --no-download         # never wait on curl at startup
+      fi ;;                               # auto needs nothing (the profile follows macOS)
   esac
   unset theme_state theme_mode
 fi
