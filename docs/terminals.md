@@ -1,20 +1,40 @@
 # Terminals: Ghostty and iTerm
 
-Both terminals use the same font and the same colors (from [theme.md](theme.md)). The configs are in the repo, linked by `install.sh`.
+A terminal app is the window you type commands in. This repo configures two: Ghostty and iTerm2. Both use the same font and colors (from [theme.md](theme.md)).
+
+You'll use this page to choose a terminal, change its settings, and fix font or key problems.
+
+- [Which terminal should I use?](#which-terminal-should-i-use)
+- [Requirements](#requirements)
+- [Ghostty](#ghostty)
+- [iTerm2 (macOS only)](#iterm2-macos-only)
+- [SSH config tips](#ssh-config-tips)
+- [How it works](#how-it-works)
+
+## Which terminal should I use?
+
+**macOS:** Ghostty or iTerm2. Both are supported and look the same. Ghostty is the simpler choice: one text config file. iTerm2 has a graphical settings window, but this repo manages its profile for you.
+
+**Linux:** Ghostty. iTerm2 is macOS only.
+
+If you have neither, install one and run `./install.sh` again: it links the config of the terminal it finds.
 
 | Package | File | Platform |
 | --- | --- | --- |
 | `ghostty` | `~/.config/ghostty/config` | macOS and Linux. Linked only if Ghostty is installed. |
-| `iterm` | `~/.config/iterm/dotfiles-profile.plist` (template) | **macOS only**. |
+| `iterm` | `~/.config/iterm/dotfiles-profile.plist` (template) | **macOS only** |
 
-## Font
+## Requirements
 
-[Monaspace](https://monaspace.githubnext.com) (GitHub Next), installed as the **Monaspice Nerd Font** (Nerd Fonts renames Monaspace). It has the icons that `eza`, starship and nvim draw.
+The **Monaspice Nerd Font**. A [Nerd Font](glossary.md#nerd-font) is a font patched with extra icons. Without it, `eza`, starship and nvim show empty boxes instead of icons. The font is [Monaspace](https://monaspace.githubnext.com) (GitHub Next) with Nerd Fonts' icons added.
 
-- **Neon** for code, **Radon** (handwriting style) for italics.
-- **macOS**: installed by the Brewfile cask `font-monaspice-nerd-font`.
-- **Linux desktop**: `install.sh` downloads it into `~/.local/share/fonts` and runs `fc-cache`. It skips this on a headless server (your local terminal draws the font).
-- **Switch fonts**: change `NERD_FONT` and `NERD_FONT_FAMILY` in `install.sh`, the cask in the `Brewfile`, `font-family` and `font-family-italic` in the Ghostty config, and `Normal Font` in the iTerm template.
+The terminal uses **Neon** for code and **Radon** (handwriting style) for italics.
+
+**macOS:** the Brewfile cask `font-monaspice-nerd-font` installs it.
+
+**Linux desktop:** `install.sh` downloads it into `~/.local/share/fonts` and runs `fc-cache`. It skips this on a headless server, because your local terminal draws the font.
+
+Check it worked: open a new terminal tab and run `ls`. Folder and file icons should appear, not boxes.
 
 ## Ghostty
 
@@ -33,15 +53,10 @@ Docs: <https://ghostty.org/docs/config>. Handy commands: `ghostty +show-config`,
 | `mouse-hide-while-typing` | true | Hide the pointer while you type |
 | `copy-on-select` | clipboard | Selecting text copies it to the system clipboard |
 | `confirm-close-surface` | false | No question when closing a finished shell |
-| `macos-option-as-alt` | true | **macOS only.** `Option` works as `Alt` (Alt-j/k in nvim, tmux Alt maps). |
+| `macos-option-as-alt` | true | **macOS only.** `Option` works as `Alt` (`Alt+j` and `Alt+k` in nvim, tmux Alt keys). |
 | `macos-titlebar-style` | tabs | **macOS only.** Native tabs in the title bar |
 | `shell-integration` | zsh | Force zsh integration |
-| `shell-integration-features` | cursor, sudo, title, ssh-terminfo, ssh-env | See below |
-
-Shell integration features:
-
-- `cursor`: cursor shape at the prompt. `title`: window title updates. `sudo`: `sudo` keeps the terminfo.
-- `ssh-terminfo`: when you `ssh` to a server, Ghostty installs its terminfo there (`xterm-ghostty`). If that fails, `ssh-env` falls back to `TERM=xterm-256color`. So you need no `SetEnv TERM` in `~/.ssh/config`.
+| `shell-integration-features` | cursor, sudo, title, ssh-terminfo, ssh-env | See [How it works](#how-it-works) |
 
 ### Keybinds in the config
 
@@ -70,7 +85,7 @@ Profile settings from the template:
 
 | Setting | Value |
 | --- | --- |
-| Font | `MonaspiceNeNF 14` (PostScript name; find it with `mdls -name com_apple_ats_name_postscript <font file>`) |
+| Font | `MonaspiceNeNF 14` |
 | Ligatures | on (needed for Monaspace texture healing) |
 | Left Option | Esc+ (works as Alt) |
 | Right Option | normal, to type accents (Spanish) |
@@ -101,3 +116,27 @@ Host *
 ```
 
 For flaky networks, install `mosh` (uncomment it in the `Brewfile`): `mosh myserver` survives sleep and IP changes. Run tmux inside it.
+
+## How it works
+
+**Switch fonts.** Change these together: `NERD_FONT` and `NERD_FONT_FAMILY` in `install.sh`, the cask in the `Brewfile`, `font-family` and `font-family-italic` in the Ghostty config, and `Normal Font` in the iTerm template.
+
+**iTerm font name.** iTerm wants the PostScript name of the font (`MonaspiceNeNF`), not the family name. Find it with:
+
+```sh
+mdls -name com_apple_ats_name_postscript <font file>
+```
+
+**Ghostty shell integration.**
+
+- `cursor` sets the cursor shape at the prompt. `title` updates the window title. `sudo` keeps the terminfo under `sudo`.
+- `ssh-terminfo`: when you `ssh` to a server, Ghostty installs its terminfo there (`xterm-ghostty`). If that fails, `ssh-env` falls back to `TERM=xterm-256color`. So you need no `SetEnv TERM` in `~/.ssh/config`.
+
+**Generated files.** `theme sync` writes `~/.config/ghostty/theme.conf` and the iTerm profile `~/Library/Application Support/iTerm2/DynamicProfiles/dotfiles.plist`. Never edit them.
+
+## Related pages
+
+- [theme.md](theme.md): colors for both terminals
+- [tmux.md](tmux.md): `Cmd+K` and `prefix Ctrl+l`
+- [server.md](server.md): SSH setup
+- [glossary.md](glossary.md#nerd-font)
