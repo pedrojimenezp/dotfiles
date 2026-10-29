@@ -10,7 +10,6 @@
 [core]
 	pager = delta                         # use delta to page diffs and logs
 	excludesFile = ~/.config/git/ignore   # global ignore list
-	editor = nvim                         # editor for commit messages
 
 [interactive]
 	diffFilter = delta --color-only       # delta also colors `git add -p`

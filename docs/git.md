@@ -9,7 +9,6 @@ Files: `git/.config/git/config` (settings) and `git/.config/git/ignore` (global 
 | `user.name`, `user.email` | owner's name and email | Default author. Override per machine in `~/.config/git/local`. |
 | `init.defaultBranch` | `main` | New repos start on `main`. |
 | `core.pager` | `delta` | Colored, readable diffs and logs. Needs `git-delta`. |
-| `core.editor` | `nvim` | Commit messages open in Neovim. |
 | `core.excludesFile` | `~/.config/git/ignore` | Global ignore list. |
 | `interactive.diffFilter` | `delta --color-only` | `git add -p` is colored too. |
 | `delta.*` | navigate, line numbers, unified view, `ansi` syntax theme, auto light/dark | In a diff, `n` / `N` jump between files. `ansi` follows the terminal's colors, so any theme works. |
@@ -80,12 +79,6 @@ git rerere diff            # show what rerere remembers
 lg                         # lazygit (shell alias)
 ```
 
-## Notes for servers
+## Editor
 
-`core.pager = delta` and `core.editor = nvim` are fixed in the config. A machine without delta or nvim (for example `./install.sh --server`, which does not install Homebrew packages) needs overrides in `~/.config/git/local`:
-
-```gitconfig
-[core]
-	pager = less
-	editor = vim
-```
+`core.editor` is not set, so git uses `$VISUAL`, then `$EDITOR`. `.zshrc` sets both to `nvim` (or `vim` when nvim is missing). Override per machine with `core.editor` in `~/.config/git/local`.
