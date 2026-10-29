@@ -24,17 +24,38 @@ Host my-ec2
 
 `ForwardAgent yes` lets the server use your Mac's GitHub key without copying the key to the server. You need it for `--with-claude` and for `git push` from the server.
 
-The key must be loaded in the Mac's SSH agent. On your Mac, check:
+You do not need `SetEnv TERM=...` or `RequestTTY` in the entry. Ghostty's ssh-terminfo and `tssh -t` already cover them.
 
-```sh
-ssh-add -l
-```
+### Share your GitHub key with the server
 
-If your GitHub key is not in the list, add it:
+Why: on your Mac, `ssh` can read a key file directly, so GitHub works even if the key is not in the agent. But `ForwardAgent` only shares keys that are loaded in the agent. If the key is not loaded, the server gets "Permission denied (publickey)" even though GitHub works on your Mac. `gh auth login` does not help here: it sets up https tokens, and `ssh -T` only uses SSH keys.
 
-```sh
-ssh-add --apple-use-keychain ~/.ssh/<your github key>
-```
+1. On your Mac, find which key GitHub uses:
+   ```sh
+   ssh -vT git@github.com 2>&1 | grep -E "Offering public key|Authenticated to"
+   ```
+   The path printed just before "Authenticated to github.com" is your GitHub key. Only file names are printed, never the key itself.
+2. On your Mac, load that key into the agent. Use your own path:
+   ```sh
+   ssh-add --apple-use-keychain ~/.ssh/id_ed25519
+   ```
+   It asks for the passphrase once and saves it in the macOS Keychain.
+3. On your Mac, keep the key loaded after a reboot. Add this at the END of `~/.ssh/config`:
+   ```
+   Host *
+     AddKeysToAgent yes
+     UseKeychain yes
+   ```
+4. On your Mac, check that the agent lists the key:
+   ```sh
+   ssh-add -l
+   ```
+5. On the server, after you connect with `ForwardAgent yes` (section 3), check two things:
+   ```sh
+   echo $SSH_AUTH_SOCK
+   ssh -T git@github.com
+   ```
+   The first prints a path (forwarding works). The second says "Hi <your-user>! You've successfully authenticated".
 
 ## 3. On the server, once
 
@@ -134,7 +155,7 @@ cd ~/dotfiles && git pull && ./install.sh
 ## 6. Troubleshooting
 
 - **`tssh` says tmux not found.** Your login shell is not zsh. On the server, run the `chsh` step from section 3, then log out and in.
-- **GitHub clone asks for a password, or "permission denied".** On your Mac, run `ssh-add -l` and check that your GitHub key is listed. Check that `ForwardAgent yes` is in the host entry. Then reconnect.
+- **GitHub clone asks for a password, or "permission denied".** Follow "Share your GitHub key with the server" in section 2, then reconnect.
 - **`--with-claude` says "no GitHub SSH access on this machine" and exits with an error.** The installer tested `ssh git@github.com` and GitHub did not accept a key. It skips the Claude step and finishes the rest. Fix the forwarding as in the item above, reconnect, then run `./install.sh --with-claude` again.
-- **Homebrew install or `git pull` says "Permission denied (publickey)".** This only happens with the old git config, which sent all GitHub traffic over SSH. Run `git pull` in the dotfiles clone (or re-run `./install.sh`) to get the current config. Now only pushes use SSH. Where SSH is needed (`--with-claude`, `git push`), check that `echo $SSH_AUTH_SOCK` on the server is not empty (agent forwarded) and that `ssh-add -l` on the Mac lists the key.
+- **Homebrew install or `git pull` says "Permission denied (publickey)".** This only happens with the old git config, which sent all GitHub traffic over SSH. Run `git pull` in the dotfiles clone (or re-run `./install.sh`) to get the current config. Now only pushes use SSH. Where SSH is needed (`--with-claude`, `git push`), see "Share your GitHub key with the server" in section 2: if `echo $SSH_AUTH_SOCK` on the server is set but access is denied, the key is not in the Mac agent; if it is empty, `ForwardAgent yes` is missing.
 - **Colors or icons look wrong.** This is the Mac terminal font or profile, not the server. The server sends text only; your Mac terminal draws the icons.
