@@ -37,6 +37,8 @@ A search root may be a symlink; symlinks below a root are not followed.
   the picker, so both ways reuse one session.
 - The characters `/`, `.`, `:` and spaces become `-`. Repeated `-` collapse
   into one. (tmux does not allow `.` and `:` in names.)
+- A directory that already has a session (found by its start path) always
+  reuses it, even when the name came from a suffix (`api-b`).
 - If a session with that name already exists for another directory, a suffix
   is added (cleaned the same way): the repo name for a worktree
   (`fix-login-api`), the parent folder name for a plain directory (`api-b`).

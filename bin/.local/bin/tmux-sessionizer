@@ -200,10 +200,24 @@ session_dir() {
   printf '%s' "$p"
 }
 
-# A same-named session for another directory would be switched to by mistake; add the repo (worktrees)
-# or the parent folder (plain dirs) to tell them apart, then a counter if that name is taken too.
+# Name of a session already started in physical directory $1; empty when there is none.
+session_for_path() {
+  local n p
+  while IFS=$'\t' read -r n p; do
+    if [[ -d "$p" ]]; then p="$(cd "$p" && pwd -P)"; fi # same spelling fix as session_dir
+    if [[ "$p" == "$1" ]]; then printf '%s' "$n"; return 0; fi
+  done < <(tm list-sessions -F '#{session_name}'$'\t''#{session_path}' 2>/dev/null || true)
+}
+
+# Reuse the session already started in this directory, whatever its name (it may have got a suffix
+# earlier). Otherwise a same-named session for another directory would be switched to by mistake:
+# add the repo (worktrees) or the parent folder (plain dirs) to tell them apart, then a counter if
+# that name is taken too.
+found="$(session_for_path "$selected")"
 existing="$(session_dir "$name")"
-if [[ -n "$existing" && "$existing" != "$selected" ]]; then
+if [[ -n "$found" ]]; then
+  name="$found"
+elif [[ -n "$existing" && "$existing" != "$selected" ]]; then
   extra="${repo:-$(basename "$(dirname "$selected")")}" # the repo for worktrees, else the folder that holds the directory
   name="$name-$(printf '%s' "$extra" | tr './: ' '----' | tr -s '-')" # same cleanup as the name above
   base="$name" n=2
