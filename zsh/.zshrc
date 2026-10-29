@@ -89,7 +89,14 @@ if [[ -n ${HOMEBREW_PREFIX:-} && -d $HOMEBREW_PREFIX/share/zsh-completions ]]; t
   fpath=("$HOMEBREW_PREFIX/share/zsh-completions" $fpath)
 fi
 autoload -Uz compinit                     # load the completion system loader
-compinit -C                               # init, skipping the security scan for speed
+zcompdump=${ZDOTDIR:-$HOME}/.zcompdump   # where compinit keeps its cache
+zcompfresh=( ${ZDOTDIR:-$HOME}/.zcompdump(N.mh-24) )  # matches only if the dump exists and is under 24h old
+if (( $#zcompfresh )); then
+  compinit -C -d "$zcompdump"             # reuse it, skipping the security scan for speed
+else
+  compinit -d "$zcompdump"                # missing or stale: full scan, rewrites the dump
+fi
+unset zcompdump zcompfresh
 zstyle ':completion:*' menu no            # fzf-tab needs the built-in menu off
 zstyle ':completion:*:descriptions' format '[%d]'  # group headers, shown by fzf-tab
 zstyle ':fzf-tab:*' switch-group ',' '.'  # move between groups with , and .
