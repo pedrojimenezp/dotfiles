@@ -16,9 +16,13 @@ function M.read_config()
   local names = vim.deepcopy(defaults) -- start from the defaults
   local ok, lines = pcall(vim.fn.readfile, dir .. "/theme/config") -- missing file: keep defaults
   if not ok then return names end
+  local seen = {} -- the first line of each slot wins, like in the script
   for _, line in ipairs(lines) do
     local slot, name = line:match("^%s*(%a+)%s*=%s*(.-)%s*$") -- "slot = name"
-    if (slot == "light" or slot == "dark") and name ~= "" then names[slot] = name end
+    if (slot == "light" or slot == "dark") and name ~= "" and not seen[slot] then
+      names[slot] = name
+      seen[slot] = true
+    end
   end
   return names
 end
