@@ -14,7 +14,11 @@ set signcolumn=yes            " always show the sign column (no text jumping)
 set showcmd                   " show partial commands while typing
 set wildmenu                  " menu for command-line completion
 set laststatus=2              " always show the status line
-if has('termguicolors') | set termguicolors | endif  " true color when supported
+if has('termguicolors')
+  let &t_8f = "\<Esc>[38;2;%lu;%lu;%lum"  " true-color escapes: TERM=tmux-256color does not announce them
+  let &t_8b = "\<Esc>[48;2;%lu;%lu;%lum"
+  set termguicolors                       " true color when supported
+endif
 
 set ignorecase                " case-insensitive search...
 set smartcase                 " ...unless the pattern has capitals
