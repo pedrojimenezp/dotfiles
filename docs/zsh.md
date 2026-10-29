@@ -8,6 +8,7 @@ File: `zsh/.zshrc`, linked to `~/.zshrc`. It is plain zsh with no framework, so 
 - **PATH**: `~/.local/bin` first (the `theme` and `tmux-sessionizer` scripts), then `~/go/bin`.
 - **Editor**: `EDITOR` and `VISUAL` are `nvim` if installed, else `vim`. `PAGER` is `less`.
 - **History**: 100000 entries in `~/.zsh_history`, shared between open shells, no duplicates. A command that starts with a space is not saved (handy for secrets).
+- **Bell**: rings after commands that run 30 seconds or more (see below).
 - **Options**: `AUTO_CD` (type a folder name to enter it), comments allowed at the prompt, no bell, emacs key style.
 - **Completion**: case-insensitive matching, colored like `ls`, grouped with headers. With fzf-tab installed, Tab opens an fzf list (see below).
 - **Tools**: fzf, zoxide, mise and starship are started only when installed. A missing tool never gives an error.
@@ -84,6 +85,15 @@ z dotfiles<Space><Tab>   # type "z", a word, Space, then Tab: pick a match with 
 ```
 
 `z` and `zi` are added by `zoxide init zsh` (default commands of zoxide). Space+Tab is zoxide's own completion and needs fzf.
+
+## Bell after long commands
+
+When a command takes `LONG_CMD_BELL_SECONDS` or more (default 30) and stdout is a terminal, the prompt rings the bell (`\a`). tmux's `monitor-bell` then marks the window with a bell icon, so you can switch away while a build or test runs. Commands that are long by nature are skipped: the list is `LONG_CMD_BELL_IGNORE` (default: `nvim vim vi less man lazygit lg lzd tmux ssh tssh claude top btop htop fzf`, matched on the first word). Change either in `~/.zshrc.local`:
+
+```sh
+export LONG_CMD_BELL_SECONDS=10
+export LONG_CMD_BELL_IGNORE="nvim vim less man ssh"
+```
 
 ## Remote tmux: `tssh`
 

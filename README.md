@@ -92,6 +92,7 @@ Details are in the docs above. `prefix` is `Ctrl+Space`. In Neovim, `<leader>` i
 | `Ctrl+L` | Clear screen and scrollback |
 | `z name`, `zi` | Jump to a frequent folder (zoxide) |
 | `Right arrow` | Accept the grey suggestion |
+| long command ends | Bell (30 s or more); tmux flags the window |
 | `tssh host` | SSH and attach to remote tmux session `main` |
 | `tt` | Toggle light/dark |
 | `lg`, `lzd` | lazygit, lazydocker |

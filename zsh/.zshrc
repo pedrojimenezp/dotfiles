@@ -100,6 +100,25 @@ if command -v eza >/dev/null 2>&1; then
   zstyle ':fzf-tab:complete:cd:*' fzf-preview 'eza -1 --color=always $realpath'  # list the folder while choosing
 fi
 
+# --- Bell after long commands (tmux monitor-bell then flags the window) ---
+zmodload zsh/datetime                     # provides $EPOCHSECONDS
+autoload -Uz add-zsh-hook                 # safe way to add preexec/precmd hooks
+LONG_CMD_BELL_IGNORE=${LONG_CMD_BELL_IGNORE:-"nvim vim vi less man lazygit lg lzd tmux ssh tssh claude top btop htop fzf"}  # long by nature; override in ~/.zshrc.local
+long_cmd_start() {
+  long_cmd_name=${${(z)1}[1]}             # first word of the command line
+  long_cmd_t0=$EPOCHSECONDS               # start time in seconds
+}
+long_cmd_bell() {
+  local t0=$long_cmd_t0 name=$long_cmd_name  # copy, then reset so an empty prompt never rings
+  long_cmd_t0= long_cmd_name=             # forget this command
+  [[ -n $t0 && -t 1 ]] || return          # nothing ran, or output is not a terminal
+  (( EPOCHSECONDS - t0 >= ${LONG_CMD_BELL_SECONDS:-30} )) || return  # too quick to bother
+  [[ " $LONG_CMD_BELL_IGNORE " == *" ${name:t} "* ]] && return       # skip full-screen programs
+  printf '\a'                             # ring the terminal bell
+}
+add-zsh-hook preexec long_cmd_start       # runs just before each command
+add-zsh-hook precmd long_cmd_bell         # runs just before each prompt
+
 # --- Remote tmux ---
 # tssh <ssh args>: connect and attach to (or create) the remote tmux session "main".
 # -t forces a tty for tmux; the remote shell is interactive login (-lic) so .zshrc puts Homebrew's tmux on PATH.
