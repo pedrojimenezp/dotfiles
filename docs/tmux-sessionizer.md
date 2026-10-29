@@ -31,7 +31,7 @@ A search root may be a symlink; symlinks below a root are not followed.
 
 - A worktree session is named after its branch. Without a branch (detached
   HEAD) it uses the folder name. A plain directory uses its folder name.
-- A directory given as an argument is resolved to its real absolute path
+- A directory given as an argument is resolved (ignoring `CDPATH`) to its real absolute path
   first, so `tmux-sessionizer .` is named after the folder, not `-`.
   A linked worktree given as an argument is named after its branch, like in
   the picker, so both ways reuse one session.

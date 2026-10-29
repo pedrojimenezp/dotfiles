@@ -122,7 +122,7 @@ worktrees_of() {
 is_listed() {
   local p="$1" rows="$2" phys
   [[ "$rows" == *$'\t'"$p"$'\t'* ]] && return 0 # git prints physical paths, find prints them as written under the root
-  phys="$(CDPATH= cd -- "$p" 2>/dev/null && pwd -P)" || return 1
+  phys="$(CDPATH='' cd -- "$p" 2>/dev/null && pwd -P)" || return 1
   [[ "$rows" == *$'\t'"$phys"$'\t'* ]]
 }
 
@@ -168,12 +168,12 @@ if [[ "${1:-}" == "--list" ]]; then
   exit 0
 elif [[ $# -eq 1 ]]; then
   [[ -d "$1" ]] || { warn "not a directory: $1"; exit 1; }
-  selected="$(cd "$1" && pwd -P)" # absolute and symlink-free, so names and the path check agree ('.' would be named '-')
+  selected="$(CDPATH='' cd -- "$1" && pwd -P)" # absolute and symlink-free, so names and the path check agree ('.' would be named '-')
 else
   line="$(list_candidates | fzf --prompt='project> ' --delimiter=$'\t' --with-nth=1 || true)" # show only the label
   [[ -n "$line" ]] || exit 0 # nothing chosen (Esc)
   IFS=$'\t' read -r _ selected repo <<<"$line" # hidden columns: path and repo
-  selected="$(cd "$selected" && pwd -P)" # physical path too, so it compares equal to the session paths below
+  selected="$(CDPATH='' cd -- "$selected" && pwd -P)" # physical path too, so it compares equal to the session paths below
 fi
 
 [[ -n "$selected" ]] || exit 0 # empty argument
@@ -196,7 +196,7 @@ name="$(printf '%s' "$name" | tr './: ' '----' | tr -s '-')" # tmux rejects dots
 session_dir() {
   local p
   p="$(tm list-sessions -F '#{session_name}'$'\t''#{session_path}' 2>/dev/null | awk -F'\t' -v n="$1" '$1 == n { print $2; exit }' || true)" # where that session was started
-  if [[ -d "$p" ]]; then p="$(cd "$p" && pwd -P)"; fi # sessions made elsewhere may hold /var vs /private/var spellings
+  if [[ -d "$p" ]]; then p="$(CDPATH='' cd -- "$p" && pwd -P)"; fi # sessions made elsewhere may hold /var vs /private/var spellings
   printf '%s' "$p"
 }
 
@@ -204,7 +204,7 @@ session_dir() {
 session_for_path() {
   local n p
   while IFS=$'\t' read -r n p; do
-    if [[ -d "$p" ]]; then p="$(cd "$p" && pwd -P)"; fi # same spelling fix as session_dir
+    if [[ -d "$p" ]]; then p="$(CDPATH='' cd -- "$p" && pwd -P)"; fi # same spelling fix as session_dir
     if [[ "$p" == "$1" ]]; then printf '%s' "$n"; return 0; fi
   done < <(tm list-sessions -F '#{session_name}'$'\t''#{session_path}' 2>/dev/null || true)
 }
