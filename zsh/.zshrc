@@ -1,5 +1,5 @@
 # ~/.zshrc: interactive zsh config. Plain zsh, no framework, so startup stays fast.
-# Secrets and machine-specific settings go in ~/.zshrc.local (sourced last, not tracked).
+# Secrets and machine-specific settings go in ~/.zshrc.local (sourced just before syntax highlighting, not tracked).
 
 # --- Homebrew (macOS Apple Silicon/Intel, Linux) ---
 # Find brew in the usual locations and export its PATH, MANPATH, etc.
@@ -210,18 +210,21 @@ if [[ -z ${SSH_CONNECTION:-}${SSH_TTY:-}${TMUX:-} && -t 1 ]] && command -v theme
   unset theme_state theme_mode
 fi
 
-# --- Plugins from Homebrew (fzf-tab after compinit and fzf, before the widget wrappers; syntax-highlighting last) ---
+# --- Plugins from Homebrew (fzf-tab after compinit and fzf, before the widget wrappers; syntax-highlighting is at the end of the file) ---
 if [[ -n ${HOMEBREW_PREFIX:-} ]]; then
   [[ -f $HOMEBREW_PREFIX/opt/fzf-tab/share/fzf-tab/fzf-tab.zsh ]] &&
     source "$HOMEBREW_PREFIX/opt/fzf-tab/share/fzf-tab/fzf-tab.zsh"                   # Tab completion through fzf
   [[ -f $HOMEBREW_PREFIX/share/zsh-autosuggestions/zsh-autosuggestions.zsh ]] &&
     source "$HOMEBREW_PREFIX/share/zsh-autosuggestions/zsh-autosuggestions.zsh"       # grey history suggestions
-  [[ -f $HOMEBREW_PREFIX/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ]] &&
-    source "$HOMEBREW_PREFIX/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" # command coloring
 fi
 
 # --- Claude Code shared shell helpers ---
 [[ -f $HOME/.config/claude-shared/zsh/claude.zsh ]] && source "$HOME/.config/claude-shared/zsh/claude.zsh"  # optional
 
-# --- Local, untracked overrides (secrets, machine settings): keep last ---
+# --- Local, untracked overrides (secrets, machine settings): keep it after the plugins, before syntax highlighting ---
 if [[ -f $HOME/.zshrc.local ]]; then source "$HOME/.zshrc.local"; fi  # an if keeps $? at 0 when the file is missing (a failed [[ ]] would turn the prompt red)
+
+# --- Syntax highlighting: must load after everything that defines widgets, so keep it last ---
+if [[ -n ${HOMEBREW_PREFIX:-} && -f $HOMEBREW_PREFIX/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ]]; then
+  source "$HOMEBREW_PREFIX/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"  # command coloring
+fi

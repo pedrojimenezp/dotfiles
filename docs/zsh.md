@@ -70,7 +70,7 @@ Notes:
 
 [fzf-tab](https://github.com/Aloxaf/fzf-tab) replaces the completion menu with fzf. It comes from the Brewfile (`brew "fzf-tab"`), and `.zshrc` sources it from `$HOMEBREW_PREFIX/opt/fzf-tab` only if the file exists. Without it Tab still works, but as a plain list: the config sets `menu no`, which fzf-tab requires.
 
-- Load order: after `compinit` and fzf, before autosuggestions and syntax highlighting (they wrap widgets).
+- Load order: after `compinit` and fzf, before autosuggestions (they wrap widgets). Syntax highlighting loads at the very end of `.zshrc`, after `claude.zsh` and `~/.zshrc.local`.
 - `cd <Tab>` previews the folder with `eza` (only if eza is installed).
 - Group headers like `[file]` are on. Press `,` or `.` to jump between groups.
 - Matching stays case-insensitive.
@@ -134,7 +134,7 @@ In a new local terminal, if you saved `dark` or `light`, `.zshrc` runs `theme ap
 
 ## Per-machine settings: `~/.zshrc.local`
 
-The last line of `.zshrc` sources `~/.zshrc.local` if it exists. That file is **not** in the repo (it is also in the global git ignore). Put here:
+`.zshrc` sources `~/.zshrc.local` if it exists, just before the last step (loading syntax highlighting, which must come after everything that defines widgets). That file is **not** in the repo (it is also in the global git ignore). Put here:
 
 - secrets and API keys (`export TOKEN=...`)
 - machine paths (`export PATH="$HOME/tools/bin:$PATH"`)
