@@ -520,8 +520,8 @@ case $CMD in dark | light | auto | toggle | pick | set) "$(dirname "$0")/dotfile
 
 case $CMD in
   dark | light | auto)
+    apply_state "$CMD"                              # show it first: a failed apply must not change the saved mode
     write_state "$CMD"                              # remember the choice
-    apply_state "$CMD"                              # show it now
     ;;
   apply) apply_state "$(read_state)" ;;             # re-apply the saved mode
   status) status_report ;;                          # mode and both picks
@@ -532,8 +532,8 @@ case $CMD in
       light) new=dark ;;                            # light -> dark
       *) if [[ $(system_appearance) == dark ]]; then new=light; else new=dark; fi ;;  # auto: opposite of macOS
     esac
+    apply_state "$new"                              # show it first: a failed apply must not change the saved mode
     write_state "$new"                              # remember the choice
-    apply_state "$new"                              # show it now
     ;;
   pick) pick "$ARG1" ;;                             # fzf picker
   set)

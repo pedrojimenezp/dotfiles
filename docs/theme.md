@@ -42,6 +42,8 @@ Options (can go anywhere in the command):
 - `--print`: write the codes to standard output (the default). It wins over `--tty`. Neovim uses it.
 - `--no-download`: for `theme file`, look only in the cache and the Ghostty bundles and fail fast when the theme is missing, instead of waiting on curl. Neovim uses it; if the theme is not there yet, it falls back as for an unknown theme until `theme set`, `pick` or `sync` downloads it.
 
+`dark`, `light`, `auto` and `toggle` apply the colors first and save the mode only if that worked, so a theme that cannot be found leaves the saved mode unchanged (and the command exits non-zero).
+
 Scripts should read `theme mode`: it prints exactly one word. `theme status` is for people and its layout can change. `<leader>ut` uses `theme mode`; the shell startup reads the state file directly to save a process.
 
 `theme status` looks like this (`*` marks the one in use):
