@@ -40,7 +40,7 @@
 	algorithm = histogram                 # better diffs than the default algorithm
 
 [merge]
-	conflictstyle = zdiff3                # show base text in conflict markers
+	conflictstyle = diff3                 # show base text in conflict markers (zdiff3 needs git 2.35+, fatal on Ubuntu 22.04)
 
 [rerere]
 	enabled = true                        # remember and reuse conflict resolutions
