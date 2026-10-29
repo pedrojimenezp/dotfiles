@@ -40,7 +40,6 @@ Step-by-step guide with SSH setup and daily use: [docs/server.md](docs/server.md
 
 ```sh
 ./install.sh --dry-run      # show what would happen, change nothing
-./install.sh --server       # no Homebrew: only zsh, tmux, vim, git, bin, theme
 ./install.sh --with-claude  # also clone and install the private Claude config (needs GitHub SSH access)
 ```
 
@@ -80,14 +79,12 @@ What each step does, backups, idempotency and troubleshooting: [docs/install.md]
 | `vim` | `~/.vimrc` | Small plugin-free vimrc for servers. |
 | `git` | `~/.config/git/{config,ignore}` | Git defaults, delta pager, aliases, global ignores, `local` include. |
 | `starship` | `~/.config/starship.toml` | Prompt layout. |
-| `atuin` | `~/.config/atuin/config.toml` | Shell history search on `Up` and `Ctrl+R`, local only (no sync). Full mode only. |
+| `atuin` | `~/.config/atuin/config.toml` | Shell history search on `Up` and `Ctrl+R`, local only (no sync). |
 | `ghostty` | `~/.config/ghostty/config` | Ghostty terminal (optional; linked only if Ghostty is installed). Colors come from the generated `theme.conf` next to it. |
 | `iterm` | `~/.config/iterm/dotfiles-profile.plist` | Template for the iTerm2 Dynamic Profile "Dotfiles" (macOS only). `theme sync` adds the colors. |
 | `mise` | `~/.config/mise/config.toml` | Global mise defaults: node (LTS) and go (latest), `.nvmrc` support. |
 | `bin` | `~/.local/bin` | Scripts on PATH: `tmux-sessionizer`, `tmux-popup`, `theme`, `dotfiles-help`, `dotfiles-usage`. |
 | `theme` | `~/.config/theme/config` | The light/dark theme pair (tracked), used by the terminals, tmux and Neovim. |
-
-`./install.sh --server` (no `atuin`) links only `zsh`, `tmux`, `vim`, `git`, `bin` and `theme`.
 
 ## Cheat sheet
 

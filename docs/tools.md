@@ -92,7 +92,7 @@ mise installs and switches versions of node, go and other tools per project.
 - **Secrets per project**: an untracked `mise.local.toml`. mise also supports `[env]` and `[tasks]` in `mise.toml`.
 - **See / update**: `mise ls` (installed and active), `mise outdated`, `mise upgrade`.
 - **Go**: the `toolchain` line in `go.mod` still works. `go install` tools land in `~/go/bin` (on `PATH`).
-- **Old mise**: a standalone mise in `~/.local/bin` would shadow the Homebrew one, so `install.sh` renames it to `mise.backup-<stamp>` (full mode only).
+- **Old mise**: a standalone mise in `~/.local/bin` would shadow the Homebrew one, so `install.sh` renames it to `mise.backup-<stamp>`.
 - Zig is not managed by mise: the zig and zls versions must match, so both come from Homebrew.
 
 ## Usage report: dotfiles-usage

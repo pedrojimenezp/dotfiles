@@ -53,32 +53,30 @@ The Nerd Font step is skipped on a headless server (your local terminal draws th
 
 ```sh
 ./install.sh --dry-run      # print what would happen, change nothing
-./install.sh --server       # no Homebrew: only zsh, tmux, vim, git, bin, theme
 ./install.sh --with-claude  # also clone and install the private Claude config
 ./install.sh --help         # usage
 ```
 
-Flags can be combined (`--dry-run --server`).
+Flags can be combined (`--dry-run --with-claude`).
 
 - **`--dry-run`**: every action is printed with a `[dry-run]` prefix. Use it first on a new machine.
-- **`--server`**: for machines where you do not want Homebrew tools. Skips Homebrew, `nvim`, `starship`, `mise`, Ghostty and iTerm, the theme sync and the font. Tools are used only if they exist (the zsh config checks each one). Note: the git config still names `delta` as pager and `nvim` as editor, see the note in [git.md](git.md).
-- **`--with-claude`**: clones the private `claude-config` repo to `~/.config/claude-shared` (or `$CLAUDE_SHARED_DIR`) and runs its own `install.sh`. It needs GitHub SSH access. If the clone already exists it is not pulled. With no access, the step is skipped, everything else finishes, and the script exits with an error at the end. Not available with `--server`. The zsh config loads `~/.config/claude-shared/zsh/claude.zsh` only if that file exists, so these dotfiles work without it.
+- **`--with-claude`**: clones the private `claude-config` repo to `~/.config/claude-shared` (or `$CLAUDE_SHARED_DIR`) and runs its own `install.sh`. It needs GitHub SSH access. If the clone already exists it is not pulled. With no access, the step is skipped, everything else finishes, and the script exits with an error at the end. The zsh config loads `~/.config/claude-shared/zsh/claude.zsh` only if that file exists, so these dotfiles work without it.
 
 ## What `install.sh` does, in order
 
 1. Checks that `zsh` exists. Without it the script stops (with `--dry-run` it continues).
-2. **Homebrew packages** (full mode): `brew bundle --no-upgrade`. It installs what is missing and never upgrades. If `brew` is missing it prints the install command and stops.
-3. Decides the package list. Full: `zsh nvim tmux vim git starship mise atuin bin theme`, plus `iterm` on macOS, plus `ghostty` when Ghostty is installed. Server: `zsh tmux vim git bin theme`.
-4. Renames an old standalone `~/.local/bin/mise` that would shadow the Homebrew one (full mode).
+2. **Homebrew packages**: `brew bundle --no-upgrade`. It installs what is missing and never upgrades. If `brew` is missing it prints the install command and stops.
+3. Decides the package list. `zsh nvim tmux vim git starship mise atuin bin theme`, plus `iterm` on macOS, plus `ghostty` when Ghostty is installed.
+4. Renames an old standalone `~/.local/bin/mise` that would shadow the Homebrew one.
 5. **Backs up** every real file a package would link: `<file>.backup-YYYYmmdd-HHMMSS`. Files that are already links into this repo are left alone. `~/.gitconfig` is backed up too, because it beats `~/.config/git/config`.
 6. Removes the old iTerm profile link from earlier installs.
 7. **Links** the packages with `stow --restow --no-folding`. `--no-folding` makes each file its own link, so folders like `~/.config/ghostty` stay real folders and generated files never land in the repo. Without `stow` it uses plain symlinks.
-8. `mise install` for the global runtimes (full mode).
+8. `mise install` for the global runtimes.
    Then, only when `~/.local/share/atuin/history.db` does not exist yet, `atuin import zsh` copies `~/.zsh_history` into atuin once. A failure only prints a warning.
 9. Removes the old `~/.config/git/local` https override, but only if an older installer wrote it.
 10. Clones **TPM** into `~/.config/tmux/plugins/tpm` and installs the tmux plugins.
 11. Linux desktop only: installs the Monaspace Nerd Font into `~/.local/share/fonts`.
-12. `theme sync`: writes the Ghostty and iTerm theme files (full mode). A failure here only prints a warning.
+12. `theme sync`: writes the Ghostty and iTerm theme files. A failure here only prints a warning.
 13. `--with-claude` step, if asked.
 14. Prints the next steps and, if zsh is not your login shell, the `chsh` command.
 
@@ -115,7 +113,7 @@ cd ~/projects/personal/dotfiles && git pull && ./install.sh
 ## Troubleshooting
 
 - **"zsh was not found"**: install zsh with your package manager and run the script again.
-- **"Homebrew was not found"**: install it (command above), open a new shell, run again. Or use `--server`.
+- **"Homebrew was not found"**: install it (command above), open a new shell, run again.
 - **stow reports a conflict**: a real file blocks a link. The backup step normally moves it away. Look for the path in the message, rename it, and run the script again.
 - **A tmux plugin is missing**: in tmux press `Ctrl+Space`, then `Shift+i`.
 - **Icons look wrong**: the terminal font is not a Nerd Font ([terminals.md](terminals.md)).

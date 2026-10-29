@@ -68,7 +68,7 @@ Notes:
 
 ## Tab completion with fzf-tab
 
-[fzf-tab](https://github.com/Aloxaf/fzf-tab) replaces the completion menu with fzf. It comes from the Brewfile (`brew "fzf-tab"`), and `.zshrc` sources it from `$HOMEBREW_PREFIX/opt/fzf-tab` only if the file exists. Without it Tab still works, but as a plain list: the config sets `menu no`, which fzf-tab requires. On a `--server` machine (no Homebrew) the plugin is not installed.
+[fzf-tab](https://github.com/Aloxaf/fzf-tab) replaces the completion menu with fzf. It comes from the Brewfile (`brew "fzf-tab"`), and `.zshrc` sources it from `$HOMEBREW_PREFIX/opt/fzf-tab` only if the file exists. Without it Tab still works, but as a plain list: the config sets `menu no`, which fzf-tab requires.
 
 - Load order: after `compinit` and fzf, before autosuggestions and syntax highlighting (they wrap widgets).
 - `cd <Tab>` previews the folder with `eza` (only if eza is installed).
@@ -78,7 +78,7 @@ Notes:
 
 ## History search with atuin
 
-[atuin](https://docs.atuin.sh/) stores every command (with folder, time, exit code) in a local SQLite database, `~/.local/share/atuin/history.db`. Config: `atuin/.config/atuin/config.toml`, linked to `~/.config/atuin/config.toml`. It is local only: no account, no sync, no update checks (`auto_sync = false`, `update_check = false`). Full mode only; `--server` machines keep the old behavior.
+[atuin](https://docs.atuin.sh/) stores every command (with folder, time, exit code) in a local SQLite database, `~/.local/share/atuin/history.db`. Config: `atuin/.config/atuin/config.toml`, linked to `~/.config/atuin/config.toml`. It is local only: no account, no sync, no update checks (`auto_sync = false`, `update_check = false`).
 
 What changes: `Up` and `Ctrl+R` now open the same atuin list under the prompt. Both search the history of **all** shells, tabs and folders (`filter_mode = "global"`), like the shared zsh history before.
 

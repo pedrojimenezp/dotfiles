@@ -4,8 +4,8 @@ Both terminals use the same font and the same colors (from [theme.md](theme.md))
 
 | Package | File | Platform |
 | --- | --- | --- |
-| `ghostty` | `~/.config/ghostty/config` | macOS and Linux. Linked only if Ghostty is installed. Not in `--server` mode. |
-| `iterm` | `~/.config/iterm/dotfiles-profile.plist` (template) | **macOS only**. Not in `--server` mode. |
+| `ghostty` | `~/.config/ghostty/config` | macOS and Linux. Linked only if Ghostty is installed. |
+| `iterm` | `~/.config/iterm/dotfiles-profile.plist` (template) | **macOS only**. |
 
 ## Font
 
@@ -13,7 +13,7 @@ Both terminals use the same font and the same colors (from [theme.md](theme.md))
 
 - **Neon** for code, **Radon** (handwriting style) for italics.
 - **macOS**: installed by the Brewfile cask `font-monaspice-nerd-font`.
-- **Linux desktop**: `install.sh` downloads it into `~/.local/share/fonts` and runs `fc-cache`. It skips this on a headless server (your local terminal draws the font) and in `--server` mode.
+- **Linux desktop**: `install.sh` downloads it into `~/.local/share/fonts` and runs `fc-cache`. It skips this on a headless server (your local terminal draws the font).
 - **Switch fonts**: change `NERD_FONT` and `NERD_FONT_FAMILY` in `install.sh`, the cask in the `Brewfile`, `font-family` and `font-family-italic` in the Ghostty config, and `Normal Font` in the iTerm template.
 
 ## Ghostty

@@ -1,12 +1,11 @@
 #!/usr/bin/env bash
 # Install these dotfiles: back up conflicting files, then link packages with GNU Stow.
-# Usage: ./install.sh [--server] [--dry-run] [--with-claude]
+# Usage: ./install.sh [--dry-run] [--with-claude]
 set -euo pipefail # stop on errors, unset variables and failed pipes
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" # absolute path of this repo
 REPO_REAL="$(cd "$REPO" && pwd -P)"                  # physical path (no symlinks)
 STAMP="$(date +%Y%m%d-%H%M%S)"                       # suffix for backup files
-SERVER=0                                             # 1 = minimal mode without Homebrew
 DRY=0                                                # 1 = print actions, change nothing
 WITH_CLAUDE=0                                        # 1 = also set up the private Claude config repo
 CLAUDE_REPO_URL="git@github.com:pedrojimenezp/claude-config.git" # private repo: needs your GitHub SSH key
@@ -16,11 +15,10 @@ NERD_FONT_FAMILY="Monaspice"                         # family prefix fc-list rep
 
 for arg in "$@"; do # parse command-line flags
   case "$arg" in
-    --server) SERVER=1 ;;
     --dry-run) DRY=1 ;;
     --with-claude) WITH_CLAUDE=1 ;;
     -h | --help)
-      echo "Usage: $0 [--server] [--dry-run] [--with-claude]"
+      echo "Usage: $0 [--dry-run] [--with-claude]"
       exit 0
       ;;
     *)
@@ -61,33 +59,26 @@ github_ssh_ok() {
   [[ "$out" == *"successfully authenticated"* ]]                                  # match the text, not the exit code
 }
 
-# Packages to link: full mode vs server mode.
-if [[ $SERVER -eq 1 ]]; then
-  PACKAGES=(zsh tmux vim git bin theme)
-else
-  PACKAGES=(zsh nvim tmux vim git starship mise atuin bin theme)
-fi
+# Packages to link.
+PACKAGES=(zsh nvim tmux vim git starship mise atuin bin theme)
 
-# iTerm Dynamic Profile template (theme sync builds the real profile): macOS only, never in server mode.
-if [[ $SERVER -eq 0 && "$OSTYPE" == darwin* ]]; then
+# iTerm Dynamic Profile template (theme sync builds the real profile): macOS only.
+if [[ "$OSTYPE" == darwin* ]]; then
   PACKAGES+=(iterm)
 fi
 
-# Step 1: Homebrew packages (full mode only).
-if [[ $SERVER -eq 0 ]]; then
-  if command -v brew >/dev/null 2>&1; then
-    echo "==> Installing Homebrew packages"
-    # Upgrades are a separate, deliberate `brew upgrade`.
-    run brew bundle --no-upgrade --file="$REPO/Brewfile"
-  else
-cat <<'MSG'
+# Step 1: Homebrew packages.
+if command -v brew >/dev/null 2>&1; then
+  echo "==> Installing Homebrew packages"
+  # Upgrades are a separate, deliberate `brew upgrade`.
+  run brew bundle --no-upgrade --file="$REPO/Brewfile"
+else
+  cat <<'MSG'
 Homebrew was not found. Install it first (this script never uses sudo):
   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 Then follow the "Next steps" it prints to add brew to your PATH, and run this script again.
-On a server without Homebrew, use: ./install.sh --server
 MSG
-    exit 1
-  fi
+  exit 1
 fi
 
 # Ghostty is optional: link its config only if the app or binary exists.
@@ -96,7 +87,7 @@ for app in "$HOME/Applications/Ghostty.app" /Applications/Ghostty.app; do # Brew
   [[ -d $app ]] && HAS_GHOSTTY=1                                   # app bundle present
 done
 command -v ghostty >/dev/null 2>&1 && HAS_GHOSTTY=1                # Linux package on PATH
-if [[ $SERVER -eq 0 && $HAS_GHOSTTY -eq 1 ]]; then                 # never in server mode
+if [[ $HAS_GHOSTTY -eq 1 ]]; then
   PACKAGES+=(ghostty)                                              # stow the Ghostty config
 fi
 
@@ -117,12 +108,10 @@ backup() {
 }
 
 # Step 1b: an old standalone mise in ~/.local/bin shadows the Homebrew one on PATH.
-if [[ $SERVER -eq 0 ]]; then
-  BREW_MISE="$(brew --prefix 2>/dev/null)/bin/mise" # Homebrew's copy
-  if [[ -x "$BREW_MISE" && -f "$HOME/.local/bin/mise" && ! -L "$HOME/.local/bin/mise" ]]; then
-    echo "==> $HOME/.local/bin/mise shadows the Homebrew mise on PATH; backing it up"
-    backup "$HOME/.local/bin/mise"
-  fi
+BREW_MISE="$(brew --prefix 2>/dev/null)/bin/mise" # Homebrew's copy
+if [[ -x "$BREW_MISE" && -f "$HOME/.local/bin/mise" && ! -L "$HOME/.local/bin/mise" ]]; then
+  echo "==> $HOME/.local/bin/mise shadows the Homebrew mise on PATH; backing it up"
+  backup "$HOME/.local/bin/mise"
 fi
 
 # Step 2: back up every file a package would link, so stow never conflicts.
@@ -138,7 +127,7 @@ if [[ " ${PACKAGES[*]} " == *" git "* ]]; then
   backup "$HOME/.gitconfig"
 fi
 
-# Plain-symlink fallback used when stow is missing (server mode).
+# Plain-symlink fallback used when stow is missing.
 link_package() {
   local pkg="$1" file rel
   while IFS= read -r -d '' file; do
@@ -168,19 +157,17 @@ else
   done
 fi
 
-# Step 3b: install the global runtimes from the mise config (full mode only).
-if [[ $SERVER -eq 0 ]]; then
-  if command -v mise >/dev/null 2>&1; then
-    echo "==> Installing runtimes with mise"
-    run mise install # reads ~/.config/mise/config.toml
-  else
-    echo "==> Skipping mise install: mise not found"
-  fi
+# Step 3b: install the global runtimes from the mise config.
+if command -v mise >/dev/null 2>&1; then
+  echo "==> Installing runtimes with mise"
+  run mise install # reads ~/.config/mise/config.toml
+else
+  echo "==> Skipping mise install: mise not found"
 fi
 
-# Step 3b2: import the zsh history into atuin once (full mode only).
+# Step 3b2: import the zsh history into atuin once.
 ATUIN_DB="${XDG_DATA_HOME:-$HOME/.local/share}/atuin/history.db" # atuin's default database
-if [[ $SERVER -eq 0 ]] && { command -v atuin >/dev/null 2>&1 || [[ $DRY -eq 1 ]]; }; then # in dry-run atuin may not be installed yet
+if { command -v atuin >/dev/null 2>&1 || [[ $DRY -eq 1 ]]; }; then # in dry-run atuin may not be installed yet
   if [[ ! -e "$ATUIN_DB" ]]; then # first run only: a later run never imports again
     echo "==> Importing the zsh history into atuin"
     run atuin import zsh || echo "warning: atuin import failed; run 'atuin import zsh' later" >&2 # non-fatal
@@ -234,7 +221,7 @@ install_font() {
   run fc-cache -f # refresh the font cache
 }
 
-if [[ $SERVER -eq 0 && "$OSTYPE" == linux* ]]; then
+if [[ "$OSTYPE" == linux* ]]; then
   if [[ -z "${DISPLAY:-}${WAYLAND_DISPLAY:-}" ]]; then # headless: the local terminal renders fonts
     echo "==> Skipping Nerd Font: no graphical session (headless server)"
   elif command -v fc-cache >/dev/null 2>&1 && command -v fc-list >/dev/null 2>&1; then # needs fontconfig
@@ -244,39 +231,33 @@ if [[ $SERVER -eq 0 && "$OSTYPE" == linux* ]]; then
   fi
 fi
 
-# Step 5b: generate the Ghostty and iTerm theme files from ~/.config/theme/config (full mode only).
-if [[ $SERVER -eq 0 ]]; then
-  echo "==> Generating terminal theme files (theme sync)"
-  # a failed sync (offline, unknown theme name) must not stop the install
-  run "$REPO/bin/.local/bin/theme" sync || echo "Warning: theme sync failed; run 'theme sync' later" >&2
-fi
+# Step 5b: generate the Ghostty and iTerm theme files from ~/.config/theme/config.
+echo "==> Generating terminal theme files (theme sync)"
+# a failed sync (offline, unknown theme name) must not stop the install
+run "$REPO/bin/.local/bin/theme" sync || echo "Warning: theme sync failed; run 'theme sync' later" >&2
 
 CLAUDE_SKIPPED=0 # 1 = the Claude step was skipped, so the script exits non-zero
-# Step 6: optional private Claude config (opt-in, full mode only).
+# Step 6: optional private Claude config (opt-in).
 if [[ $WITH_CLAUDE -eq 1 ]]; then
-  if [[ $SERVER -eq 1 ]]; then
-    echo "==> --with-claude is ignored in server mode"
-  else
-    echo "==> Setting up Claude config in $CLAUDE_DIR"
-    if [[ ! -e "$CLAUDE_DIR" ]] && ! github_ssh_ok; then # the private repo needs your GitHub key
-      CLAUDE_SKIPPED=1 # reported at the end, with a non-zero exit
-      cat >&2 <<'ERR'
+  echo "==> Setting up Claude config in $CLAUDE_DIR"
+  if [[ ! -e "$CLAUDE_DIR" ]] && ! github_ssh_ok; then # the private repo needs your GitHub key
+    CLAUDE_SKIPPED=1 # reported at the end, with a non-zero exit
+    cat >&2 <<'ERR'
 Warning: skipping the Claude config: no GitHub SSH access on this machine.
   On your Mac, add "ForwardAgent yes" to this host in ~/.ssh/config and check that
   "ssh-add -l" lists your GitHub key. Reconnect, then run: ./install.sh --with-claude
   (see docs/server.md)
 ERR
-    elif [[ ! -e "$CLAUDE_DIR" ]]; then
-      run git clone "$CLAUDE_REPO_URL" "$CLAUDE_DIR" # access was checked above
-    elif git -C "$CLAUDE_DIR" rev-parse --git-dir >/dev/null 2>&1; then
-      echo "Claude config already there: $CLAUDE_DIR (not pulling)"
-    else
-      echo "Warning: $CLAUDE_DIR exists but is not a git repo: skipping" >&2
-    fi
-    # run its own installer once it is there (in dry-run the clone is only printed)
-    if [[ $CLAUDE_SKIPPED -eq 0 && ( -x "$CLAUDE_DIR/install.sh" || $DRY -eq 1 ) ]]; then # not after a skipped clone
-      run "$CLAUDE_DIR/install.sh"
-    fi
+  elif [[ ! -e "$CLAUDE_DIR" ]]; then
+    run git clone "$CLAUDE_REPO_URL" "$CLAUDE_DIR" # access was checked above
+  elif git -C "$CLAUDE_DIR" rev-parse --git-dir >/dev/null 2>&1; then
+    echo "Claude config already there: $CLAUDE_DIR (not pulling)"
+  else
+    echo "Warning: $CLAUDE_DIR exists but is not a git repo: skipping" >&2
+  fi
+  # run its own installer once it is there (in dry-run the clone is only printed)
+  if [[ $CLAUDE_SKIPPED -eq 0 && ( -x "$CLAUDE_DIR/install.sh" || $DRY -eq 1 ) ]]; then # not after a skipped clone
+    run "$CLAUDE_DIR/install.sh"
   fi
 fi
 

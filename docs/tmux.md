@@ -173,7 +173,7 @@ Look: popups use the terminal's own background and text colors with a rounded bl
 - **Clipboard**: the copy goes to the tmux buffer and the system clipboard (`pbcopy` on macOS, `wl-copy`/`xclip`/`xsel` on Linux with a display) and, through `set-clipboard on` (OSC 52), to your local clipboard even over SSH. One config works everywhere; there is no custom `@fingers-main-action`.
 - **`next-layout` is gone**: `prefix Space` used to cycle layouts. It is not rebound elsewhere; use `prefix : select-layout tiled` (or `even-horizontal`, ...) when you need a layout.
 - **The binary**: the plugin is a thin wrapper around a `tmux-fingers` binary (Crystal). Full install (`brew bundle`) installs it from the `tmux-fingers` formula before tmux first loads the plugin. `./install.sh` only clones the plugin (`install_plugins`); it never starts the plugin's wizard.
-- **Server mode (no Homebrew)**: if the binary is missing, the first time tmux loads the plugin it shows an install menu (wizard). Pick "Download standalone binary" (Linux x86_64 and macOS arm64) or build from source (needs Crystal). Until then `prefix Space` does nothing. Options for patterns and styles: see the plugin's README (`@fingers-pattern-N`, `@fingers-hint-style`, ...).
+- **Binary missing**: if the binary is not installed (the Brewfile installs it), the first time tmux loads the plugin it shows an install menu (wizard). Pick "Download standalone binary" (Linux x86_64 and macOS arm64) or build from source (needs Crystal). Until then `prefix Space` does nothing. Options for patterns and styles: see the plugin's README (`@fingers-pattern-N`, `@fingers-hint-style`, ...).
 
 ## Pane labels
 
