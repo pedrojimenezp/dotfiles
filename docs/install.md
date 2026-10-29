@@ -65,7 +65,7 @@ Flags can be combined (`--dry-run --with-claude`).
 ## What `install.sh` does, in order
 
 1. Checks that `zsh` exists. Without it the script stops (with `--dry-run` it continues).
-2. **Homebrew packages**: `brew bundle --no-upgrade`. It installs what is missing and never upgrades. If `brew` is missing it prints the install command and stops.
+2. **Homebrew packages**: `brew bundle --no-upgrade`. It installs what is missing and never upgrades. If `brew` is missing it prints the install command and stops (with `--dry-run` it continues).
 3. Decides the package list. `zsh nvim tmux vim git starship mise atuin bin theme`, plus `iterm` on macOS, plus `ghostty` when Ghostty is installed.
 4. Renames an old standalone `~/.local/bin/mise` that would shadow the Homebrew one.
 5. **Backs up** every real file a package would link: `<file>.backup-YYYYmmdd-HHMMSS`. Files that are already links into this repo are left alone. `~/.gitconfig` is backed up too, because it beats `~/.config/git/config`.

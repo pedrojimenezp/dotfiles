@@ -78,7 +78,11 @@ Homebrew was not found. Install it first (this script never uses sudo):
   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 Then follow the "Next steps" it prints to add brew to your PATH, and run this script again.
 MSG
-  exit 1
+  if [[ $DRY -eq 1 ]]; then # a preview should still show the rest of the plan
+    echo "[dry-run] continuing without Homebrew" >&2 # make the skipped exit visible
+  else
+    exit 1 # stop before any change
+  fi
 fi
 
 # Ghostty is optional: link its config only if the app or binary exists.
@@ -108,7 +112,7 @@ backup() {
 }
 
 # Step 1b: an old standalone mise in ~/.local/bin shadows the Homebrew one on PATH.
-BREW_MISE="$(brew --prefix 2>/dev/null)/bin/mise" # Homebrew's copy
+BREW_MISE="$(brew --prefix 2>/dev/null || true)/bin/mise" # Homebrew's copy; empty without brew
 if [[ -x "$BREW_MISE" && -f "$HOME/.local/bin/mise" && ! -L "$HOME/.local/bin/mise" ]]; then
   echo "==> $HOME/.local/bin/mise shadows the Homebrew mise on PATH; backing it up"
   backup "$HOME/.local/bin/mise"
