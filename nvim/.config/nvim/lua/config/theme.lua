@@ -9,6 +9,8 @@ local M = {}
 local defaults = { light = "GitHub Light Default", dark = "TokyoNight Night" } -- same fallbacks as the script
 local loading = false -- guard: a scheme that sets 'background' would reload us while we load
 M.applied = nil -- theme name shown now, to notice changes made in the shell
+local appearance = { at = nil, value = nil } -- last macOS appearance read; `defaults` is a process per call
+local appearance_ttl = 5000 -- ms; a quick focus switch reuses the answer
 
 -- Read the light/dark names from ~/.config/theme/config.
 function M.read_config()
@@ -34,8 +36,12 @@ function M.mode()
   local state = ok and lines[1] or "auto" -- missing file means auto
   if state == "dark" or state == "light" then return state end -- explicit choice
   if vim.fn.has("mac") == 1 then
+    local now = vim.uv.now() -- ms, monotonic
+    if appearance.at and now - appearance.at < appearance_ttl then return appearance.value end -- recent answer
     local res = vim.system({ "defaults", "read", "-g", "AppleInterfaceStyle" }, { text = true }):wait() -- fails in light mode
-    return vim.trim(res.stdout or "") == "Dark" and "dark" or "light" -- follow macOS
+    appearance.at = now -- remember when we asked
+    appearance.value = vim.trim(res.stdout or "") == "Dark" and "dark" or "light" -- follow macOS
+    return appearance.value
   end
   return nil -- auto elsewhere: the terminal background decides
 end
