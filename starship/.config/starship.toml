@@ -16,7 +16,7 @@ error_symbol = "[❯](bold red)"       # prompt symbol after a failed command
 
 [env_var.PROMPT_HOST]
 variable = "PROMPT_HOST"      # exported by zsh/.zshrc over SSH only: HOST_LABEL, else the short hostname
-format = "[$env_value]($style) " # host name, trailing space
+format = "[$env_value]($style) in " # host in its style, then a plain "in " connector (absent locally)
 style = "bold purple"         # readable in light and dark themes
 
 [directory]
@@ -25,7 +25,7 @@ truncate_to_repo = true       # truncate relative to the git repo root
 
 [git_branch]
 symbol = " "                 # branch icon (needs a Nerd Font)
-format = "[$symbol$branch]($style) "  # icon, branch name, trailing space
+format = "on [$symbol$branch]($style) "  # plain "on " connector, icon, branch name, trailing space
 
 [git_status]
 format = '([\[$all_status$ahead_behind\]]($style) )' # compact status like [!?⇡]
