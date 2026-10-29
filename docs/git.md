@@ -43,6 +43,8 @@ Git aliases (type `git <alias>`):
 
 Shell aliases from `.zshrc` (`gs`, `gd`, `gl`, `gp`, `lg`) are in [zsh.md](zsh.md). The shell `lg` is lazygit, and `git lg` is the log.
 
+lazygit and `gh` use delta too. `lazygit/.config/lazygit/config.yml` sets `git.diffRenderers` (press `|` in lazygit to switch between side by side and inline), and `.zshrc` sets `LG_CONFIG_FILE` so macOS reads that file. `.zshrc` also sets `GH_PAGER="delta -s"`, so `gh pr diff` is side by side.
+
 ## Per-machine settings: `~/.config/git/local`
 
 This file is included at the end of the config, so it wins over everything above. It is not in the repo. Your name and email live here: `install.sh` asks for them when git has none, and writes them with `git config --file ~/.config/git/local`. Use it also for a work email on a work machine, signing keys, or other local rules:
