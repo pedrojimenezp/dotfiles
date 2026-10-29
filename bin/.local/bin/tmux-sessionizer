@@ -132,11 +132,11 @@ list_candidates() {
   local prune_expr=() # find expression that skips the pruned trees without descending
   if ((${#prune[@]})); then prune_expr=(\( "${prune[@]}" \) -prune -o); fi # empty when nothing to skip
   if ((${#roots[@]} == 0)); then return 0; fi # find with no path would search the current directory
-  # Hidden dirs, .git, node_modules and worktrees are pruned (not walked); linked worktrees come from git instead.
+  # Hidden dirs, *.git (bare repos), node_modules and worktrees are pruned (not walked); linked worktrees come from git instead.
   # -mindepth 1 keeps the tests off the roots themselves, so a hidden root still works.
   # -H follows the roots only, so a root that is a symlink is still searched.
   dirs="$(find -H "${roots[@]}" -mindepth 1 -maxdepth "$depth" ${prune_expr[@]+"${prune_expr[@]}"} \
-    \( -name '.*' -o -name node_modules -o -name worktrees \) -prune -o -type d -print 2>/dev/null || true)"
+    \( -name '.*' -o -name '*.git' -o -name node_modules -o -name worktrees \) -prune -o -type d -print 2>/dev/null || true)"
   while IFS= read -r d; do
     [[ -n "$d" ]] || continue # find printed nothing
     if [[ -f "$d/.git" ]]; then
