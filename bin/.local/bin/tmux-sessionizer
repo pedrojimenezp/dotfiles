@@ -1,247 +1,78 @@
 #!/usr/bin/env bash
-# Pick a project directory or git worktree with fzf and open (or switch to) a tmux session for it.
-# Usage: tmux-sessionizer [dir]   (without an argument, pick from the configured roots; see docs/tmux-sessionizer.md)
-#        tmux-sessionizer --list  (print the candidates as "label<TAB>path<TAB>repo" and exit)
-# Default roots: ~/projects if it exists (depth 3), else $HOME (depth 2, skipping go, snap, bin).
-# Per-machine settings: ${XDG_CONFIG_HOME:-~/.config}/sessionizer/config (see docs/tmux-sessionizer.md).
-# Env vars: SESSIONIZER_DIRS, SESSIONIZER_EXCLUDE, SESSIONIZER_DEPTH override the file.
-# Worktrees are named after their branch; other directories after their basename.
+# Pick a project folder or feature worktree with fzf and open (or switch to) a tmux session for it.
+# Usage: tmux-sessionizer [dir]   (without an argument, pick from the roots; see docs/tmux-sessionizer.md)
+#        tmux-sessionizer --list  (print "label<TAB>path" for each candidate and exit)
+# Folder convention: <repo>/worktrees/<branch> or <parent>/worktrees/<feature>/<project>;
+# any <x>/worktrees/<feature> is a feature session. No git calls.
+# Roots: SESSIONIZER_DIRS (space separated), else ~/projects, else $HOME (without go, snap, bin).
 # SESSIONIZER_TMUX_ARGS adds tmux options, e.g. "-L sock" for a separate server.
 set -euo pipefail # stop on errors, unset variables and failed pipes
 
-# Settings: env vars > config file > built-in defaults.
-# Config file lines are "key = value" (include, exclude, depth); values are space-separated paths.
-config_file="${XDG_CONFIG_HOME:-$HOME/.config}/sessionizer/config" # per machine, not tracked in the repo
-cfg_include="" cfg_exclude="" cfg_depth="" # stay empty when the file does not set them
-
-warn() { printf 'tmux-sessionizer: %s\n' "$*" >&2; } # stderr keeps --list output clean
-
-# Expand a leading ~, $HOME or ${HOME} by hand; eval would run anything written in the file.
-# shellcheck disable=SC2016,SC2088 # the patterns match the literal text ~ and $HOME
-expand_path() {
-  case "$1" in
-    "~") printf '%s' "$HOME" ;;                      # bare tilde
-    "~/"*) printf '%s' "$HOME/${1#"~/"}" ;;          # tilde prefix
-    '$HOME') printf '%s' "$HOME" ;;                  # bare variable
-    '$HOME/'*) printf '%s' "$HOME/${1#'$HOME/'}" ;;  # variable prefix
-    '${HOME}') printf '%s' "$HOME" ;;                # braced variable
-    '${HOME}/'*) printf '%s' "$HOME/${1#'${HOME}/'}" ;; # braced prefix
-    *) printf '%s' "$1" ;;                           # anything else is used as written
-  esac
-}
-
-# Print the expanded, space-separated form of a list of paths.
-expand_list() {
-  local words=() w out="" # words holds the split input
-  read -r -a words <<<"$1" # split on whitespace without globbing
-  for w in ${words[@]+"${words[@]}"}; do out+="${out:+ }$(expand_path "$w")"; done # join the expanded paths
-  printf '%s' "$out"
-}
-
-# Whitespace trimming with parameter expansion only (no external commands).
-trim() {
-  local s="$1" # value to trim
-  s="${s#"${s%%[![:space:]]*}"}" # drop leading blanks
-  s="${s%"${s##*[![:space:]]}"}" # drop trailing blanks
-  printf '%s' "$s"
-}
-
-if [[ -f "$config_file" ]]; then
-  while IFS= read -r line || [[ -n "$line" ]]; do # last line may lack a newline
-    line="$(trim "${line%%#*}")" # strip comments and blanks
-    [[ -n "$line" ]] || continue # empty or comment-only line
-    if [[ "$line" != *=* ]]; then warn "$config_file: ignoring line without '=': $line"; continue; fi # not key = value
-    key="$(trim "${line%%=*}")" val="$(trim "${line#*=}")" # split at the first =
-    case "$key" in
-      include) cfg_include="$(expand_list "$val")" ;; # replaces the default roots
-      exclude) cfg_exclude="$(expand_list "$val")" ;; # trees to skip
-      depth) cfg_depth="$val" ;;                      # validated below with the env var
-      *) warn "$config_file: unknown key '$key' (ignored)" ;; # typo guard
-    esac
-  done <"$config_file"
-fi
-
-# Roots to search. SESSIONIZER_DIRS > include > ~/projects > $HOME.
-depth_default=3 # how deep find looks under each root
-fallback=0 # 1 when searching $HOME because nothing else is set
-include="$(expand_list "${SESSIONIZER_DIRS:-$cfg_include}")" # explicit roots keep the default depth
-roots=() # only roots that exist
-if [[ -n "$include" ]]; then
-  read -r -a wanted <<<"$include" # one entry per root
-  for d in ${wanted[@]+"${wanted[@]}"}; do
-    if [[ -d "$d" ]]; then roots+=("$d"); fi # missing roots are skipped silently
-  done
-elif [[ -d "$HOME/projects" ]]; then
-  roots=("$HOME/projects") # the usual layout
-else
-  roots=("$HOME") # servers often keep repos directly in $HOME
-  depth_default=2 # repos sit at depth 1 or 2 (e.g. ~/development/app); deeper is noise
-  fallback=1 # enables the built-in prunes below
-fi
-
-depth="$depth_default" # may be overridden below
-want_depth="${SESSIONIZER_DEPTH:-$cfg_depth}" # env wins over the file
-if [[ -n "$want_depth" ]]; then
-  if [[ "$want_depth" =~ ^[1-9][0-9]*$ ]]; then depth="$want_depth"; else warn "bad depth '$want_depth' (use a number >= 1); using $depth_default"; fi # find needs a positive integer
-fi
-
-prune=() # trees find must not enter (it would walk huge caches such as go/pkg/mod)
-add_prune() { if ((${#prune[@]})); then prune+=(-o); fi; prune+=(-path "${1%/}"); } # find ORs the tests together
-if ((fallback)); then
-  add_prune "$HOME/go"; add_prune "$HOME/snap"; add_prune "$HOME/bin" # not projects (worktrees folders are pruned by name in the find below)
-fi
-read -r -a excluded <<<"$(expand_list "${SESSIONIZER_EXCLUDE:-$cfg_exclude}")" # env replaces the file's list
-for d in ${excluded[@]+"${excluded[@]}"}; do add_prune "$d"; done # added on top of the built-in prunes
 read -r -a tmux_args <<<"${SESSIONIZER_TMUX_ARGS:-}" # extra tmux options (empty by default)
-
 tm() { tmux ${tmux_args[@]+"${tmux_args[@]}"} "$@"; } # one place to add tmux options
+clean() { printf '%s' "$1" | tr './: ' '----' | tr -s '-'; } # tmux rejects dots and colons
 
-# Print "branch  [repo]<TAB>path<TAB>repo" for each linked worktree of a repo.
-worktrees_of() {
-  local repo="$1" repo_name line path="" branch="" skip=0 first=1
-  repo_name="$(basename "$repo")" # shown next to the branch to tell repos apart
-  while IFS= read -r line; do
-    case "$line" in
-      "worktree "*) path="${line#worktree }" ;;                # start of an entry
-      "branch "*) branch="${line#branch refs/heads/}" ;;       # detached entries have none
-      bare | prunable*) skip=1 ;;                              # nothing usable to open
-      "") # blank line ends an entry
-        if [[ -n "$path" ]]; then
-          if ((first)); then
-            first=0 # the first entry is the main checkout, already in the plain list
-          elif ((!skip)) && [[ -d "$path" ]]; then
-            printf '%s  [%s]\t%s\t%s\n' "${branch:-$(basename "$path")}" "$repo_name" "$path" "$repo_name"
-          fi
-        fi
-        path="" branch="" skip=0 ;; # reset for the next entry
-    esac
-  done < <(git -C "$repo" worktree list --porcelain 2>/dev/null || true; echo) # trailing echo closes the last entry
-}
+roots=() # only roots that exist
+skip=() # find tests for trees that are not projects
+if [[ -n "${SESSIONIZER_DIRS:-}" ]]; then
+  for d in $SESSIONIZER_DIRS; do [[ -d "$d" ]] && roots+=("$d"); done # missing roots are skipped silently
+elif [[ -d "$HOME/projects" ]]; then
+  roots=("$HOME/projects")
+else
+  roots=("$HOME")
+  skip=(-path "$HOME/go" -o -path "$HOME/snap" -o -path "$HOME/bin" -o) # caches, not projects
+fi
 
-# Repo name for the shared git dir $1: the parent folder for app/.git or app/.bare, else the dir itself minus a .git suffix (bare app.git).
-repo_label() {
-  local b
-  b="$(basename "$1")"
-  if [[ "$b" == .git || "$b" == .bare ]]; then basename "$(dirname "$1")"; else printf '%s\n' "${b%.git}"; fi
-}
-
-# True when path $1 is already a path field in the worktree rows $2 (also compares the physical path).
-is_listed() {
-  local p="$1" rows="$2" phys
-  [[ "$rows" == *$'\t'"$p"$'\t'* ]] && return 0 # git prints physical paths, find prints them as written under the root
-  phys="$(CDPATH='' cd -- "$p" 2>/dev/null && pwd -P)" || return 1
-  [[ "$rows" == *$'\t'"$phys"$'\t'* ]]
-}
-
-# Print all candidates: worktrees first (what you are usually working on), then plain dirs.
+# Features first (<x>/worktrees/<feature>, label "feature  [x]"), then repos (a folder with .git, label = path).
+# One find: prune hidden dirs and node_modules, print worktrees/ folders and .git entries without entering them.
 list_candidates() {
-  local dirs d gl wts="" plain="" linked=() # wts and plain collect output so worktrees can print first
-  local prune_expr=() # find expression that skips the pruned trees without descending
-  if ((${#prune[@]})); then prune_expr=(\( "${prune[@]}" \) -prune -o); fi # empty when nothing to skip
-  if ((${#roots[@]} == 0)); then return 0; fi # find with no path would search the current directory
-  # Hidden dirs, *.git (bare repos), node_modules and worktrees are pruned (not walked); linked worktrees come from git instead.
-  # -mindepth 1 keeps the tests off the roots themselves, so a hidden root still works.
-  # -H follows the roots only, so a root that is a symlink is still searched.
-  dirs="$(find -H "${roots[@]}" -mindepth 1 -maxdepth "$depth" ${prune_expr[@]+"${prune_expr[@]}"} \
-    \( -name '.*' -o -name '*.git' -o -name node_modules -o -name worktrees \) -prune -o -type d -print 2>/dev/null || true)"
-  while IFS= read -r d; do
-    [[ -n "$d" ]] || continue # find printed nothing
-    if [[ -f "$d/.git" ]]; then
-      IFS= read -r gl <"$d/.git" || true # "gitdir: <path>": linked worktrees point into .../worktrees/<name>, submodules into .../modules/<name>
-      gl="${gl#gitdir: }"
-      [[ "$gl" == /* ]] || gl="$d/$gl" # relative gitdir paths are relative to the worktree
-      # Only linked worktrees have a commondir file; a submodule inside one also has .../worktrees/ in its path.
-      if [[ "$gl" == */worktrees/* && -f "$gl/commondir" ]]; then linked+=("$d"$'\t'"$gl"); continue; fi # checked below, once every repo has been asked
+  local p d f feats="" repos=""
+  ((${#roots[@]})) || return 0 # find with no path would search the current directory
+  while IFS= read -r p; do
+    if [[ "$p" == */worktrees ]]; then
+      for f in "$p"/*/; do [[ -d "$f" ]] && feats+="$(basename "$f")  [$(basename "$(dirname "$p")")]"$'\t'"${f%/}"$'\n'; done
+    else
+      d="${p%/.git}"
+      repos+="$d"$'\t'"$d"$'\n'
     fi
-    plain+="$d"$'\t'"$d"$'\t\n' # label and path are the same for plain dirs
-    # Only main checkouts have a .git directory (submodules and linked worktrees have a file), so git runs once per repo.
-    if [[ -d "$d/.git" ]]; then wts+="$(worktrees_of "$d")"$'\n'; fi
-  done <<<"$dirs"
-  # A linked worktree is listed from its repo. If that repo was not walked (outside the roots, hidden, bare,
-  # too deep), no repo listed it: add it here, with its own branch.
-  local entry gitdir common branch repo_name
-  for entry in ${linked[@]+"${linked[@]}"}; do
-    d="${entry%%$'\t'*}" gitdir="${entry#*$'\t'}"
-    if is_listed "$d" "$wts"; then continue; fi
-    common="${gitdir%/worktrees/*}" # the shared git dir (.git or .bare)
-    repo_name="$(repo_label "$common")" # same rule as the session naming below
-    branch="$(git -C "$d" branch --show-current 2>/dev/null || true)"
-    wts+="${branch:-$(basename "$d")}  [$repo_name]"$'\t'"$d"$'\t'"$repo_name"$'\n'
-  done
-  printf '%s\n' "$wts" | sed '/^$/d' # drop blank lines left by repos without worktrees
-  printf '%s' "$plain"
+  done < <(find -H "${roots[@]}" -mindepth 1 -maxdepth 4 ${skip[@]+"${skip[@]}"} \
+    \( \( -name '.*' ! -name .git \) -o -name node_modules \) -prune -o \
+    \( -name worktrees -type d -print -prune \) -o \( -name .git -print -prune \) 2>/dev/null || true)
+  printf '%s%s' "$feats" "$repos"
 }
 
-repo=""
 if [[ "${1:-}" == "--list" ]]; then
   list_candidates
   exit 0
 elif [[ $# -eq 1 ]]; then
-  [[ -d "$1" ]] || { warn "not a directory: $1"; exit 1; }
-  selected="$(CDPATH='' cd -- "$1" && pwd -P)" # absolute and symlink-free, so names and the path check agree ('.' would be named '-')
+  selected="$(CDPATH='' cd -- "$1" && pwd -P)" # absolute and symlink-free, so '.' is not named '-'
 else
   line="$(list_candidates | fzf --prompt='project> ' --delimiter=$'\t' --with-nth=1 || true)" # show only the label
   [[ -n "$line" ]] || exit 0 # nothing chosen (Esc)
-  IFS=$'\t' read -r _ selected repo <<<"$line" # hidden columns: path and repo
-  selected="$(CDPATH='' cd -- "$selected" && pwd -P)" # physical path too, so it compares equal to the session paths below
+  selected="$(CDPATH='' cd -- "${line#*$'\t'}" && pwd -P)"
 fi
-
-[[ -n "$selected" ]] || exit 0 # empty argument
-# A linked worktree (its git dir differs from the shared one) is named by branch, repo = main folder,
-# whichever way it was chosen.
-gd="$(git -C "$selected" rev-parse --path-format=absolute --git-dir 2>/dev/null || true)"
-cd_="$(git -C "$selected" rev-parse --path-format=absolute --git-common-dir 2>/dev/null || true)"
-if [[ -n "$gd" && -n "$cd_" && "$gd" != "$cd_" ]]; then repo="$(repo_label "$cd_")"; fi
 "$(dirname "$0")/dotfiles-log" tmux-sessionizer >/dev/null 2>&1 || true # count the run for dotfiles-usage
 
-if [[ -n "$repo" ]]; then
-  name="$(git -C "$selected" branch --show-current 2>/dev/null || true)" # worktree: named after its branch
-  name="${name:-$(basename "$selected")}" # detached HEAD falls back to the folder name
+parent="$(dirname "$selected")"
+name="$(clean "$(basename "$selected")")"
+if [[ "$(basename "$parent")" == worktrees ]]; then
+  extra="$(basename "$(dirname "$parent")")" # the repo or parent folder that owns worktrees/
 else
-  name="$(basename "$selected")"
+  extra="$(basename "$parent")"
 fi
-name="$(printf '%s' "$name" | tr './: ' '----' | tr -s '-')" # tmux rejects dots and colons; slashes would read as paths; collapse repeated dashes
 
-# Physical start directory of the session named $1; empty when there is none.
-session_dir() {
-  local p
-  p="$(tm list-sessions -F '#{session_name}'$'\t''#{session_path}' 2>/dev/null | awk -F'\t' -v n="$1" '$1 == n { print $2; exit }' || true)" # where that session was started
-  if [[ -d "$p" ]]; then p="$(CDPATH='' cd -- "$p" && pwd -P)"; fi # sessions made elsewhere may hold /var vs /private/var spellings
-  printf '%s' "$p"
-}
-
-# Name of a session already started in physical directory $1; empty when there is none.
-session_for_path() {
-  local n p
-  while IFS=$'\t' read -r n p; do
-    if [[ "$n" == _popup_* ]]; then continue; fi # hidden popup sessions share the project path; never switch into one
-    if [[ -d "$p" ]]; then p="$(CDPATH='' cd -- "$p" && pwd -P)"; fi # same spelling fix as session_dir
-    if [[ "$p" == "$1" ]]; then printf '%s' "$n"; return 0; fi
-  done < <(tm list-sessions -F '#{session_name}'$'\t''#{session_path}' 2>/dev/null || true)
-}
-
-# Reuse the session already started in this directory, whatever its name (it may have got a suffix
-# earlier). Otherwise a same-named session for another directory would be switched to by mistake:
-# add the repo (worktrees) or the parent folder (plain dirs) to tell them apart, then a counter if
-# that name is taken too.
-found="$(session_for_path "$selected")"
-existing="$(session_dir "$name")"
+# Reuse a session already started in this folder; popup sessions share the path, never switch into one.
+found="$(tm list-sessions -F '#{session_name}'$'\t''#{session_path}' 2>/dev/null |
+  awk -F'\t' -v p="$selected" '$1 !~ /^_popup_/ && $2 == p { print $1; exit }' || true)"
 if [[ -n "$found" ]]; then
   name="$found"
-elif [[ -n "$existing" && "$existing" != "$selected" ]]; then
-  extra="${repo:-$(basename "$(dirname "$selected")")}" # the repo for worktrees, else the folder that holds the directory
-  name="$name-$(printf '%s' "$extra" | tr './: ' '----' | tr -s '-')" # same cleanup as the name above
-  base="$name" n=2
-  while existing="$(session_dir "$name")"; [[ -n "$existing" && "$existing" != "$selected" ]]; do
-    name="$base-$n" n=$((n + 1)) # -2, -3, ... until the name is free or ours
-  done
+elif tm has-session -t "=$name" 2>/dev/null; then
+  name="$name-$(clean "$extra")" # name taken by another folder; if this is taken too, tmux errors out
 fi
 
 if [[ -z "${TMUX:-}" ]]; then
-  # Outside tmux: attach to the session, creating it if needed.
-  tm new-session -A -s "$name" -c "$selected"
+  tm new-session -A -s "$name" -c "$selected" # outside tmux: attach, creating it if needed
 else
-  # Inside tmux: create the session detached if missing, then switch to it.
   tm has-session -t "=$name" 2>/dev/null || tm new-session -ds "$name" -c "$selected"
-  tm switch-client -t "=$name"
+  tm switch-client -t "=$name" # inside tmux: create detached if missing, then switch
 fi
