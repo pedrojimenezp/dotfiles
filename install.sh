@@ -178,7 +178,7 @@ if [[ $SERVER -eq 0 ]]; then
   fi
 fi
 
-# Step 3c: the git config rewrites GitHub https URLs to SSH; without GitHub SSH access, clones (lazy.nvim, TPM) fail.
+# Step 3c: remove the https override older installs wrote (the git config now only rewrites pushes to SSH).
 GIT_LOCAL="$HOME/.config/git/local" # machine-specific git overrides (untracked, included by the git config)
 GIT_LOCAL_MARK="# written by dotfiles install.sh: GitHub over https (no SSH key); removed automatically once SSH works" # only a file starting with this line is ours
 is_our_git_local() { # true for the marked file, or the exact two lines older installs wrote without a marker
@@ -187,32 +187,20 @@ is_our_git_local() { # true for the marked file, or the exact two lines older in
   [[ "$(sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' -e '/^$/d' "$GIT_LOCAL")" == $'[url "https://github.com/"]\ninsteadOf = https://github.com/' ]] # legacy content, nothing else
 }
 if is_our_git_local; then # our own override, never a hand-written file
-  if github_ssh_ok; then # SSH works now (e.g. agent forwarding), so https would only ask for passwords
-    echo "==> GitHub SSH access works: removing the https override $GIT_LOCAL"
-    run rm -f "$GIT_LOCAL" # the git config goes back to SSH
-  fi
-elif [[ ! -e "$GIT_LOCAL" ]] && ! github_ssh_ok; then # no override yet and no usable key or agent
-  echo "==> No GitHub SSH access: keeping GitHub on https in $GIT_LOCAL"
-  if [[ $DRY -eq 0 ]]; then
-    mkdir -p "$(dirname "$GIT_LOCAL")" # the git package normally created it
-    cat >"$GIT_LOCAL" <<CFG # longer prefix beats the SSH rewrite in the main config
-$GIT_LOCAL_MARK
-[url "https://github.com/"]
-	insteadOf = https://github.com/
-CFG
-  fi
+  echo "==> Removing the obsolete https override $GIT_LOCAL (fetches no longer go over SSH)"
+  run rm -f "$GIT_LOCAL" # no longer needed
 fi
 
 # Step 4: tmux plugin manager.
 TPM="$HOME/.config/tmux/plugins/tpm"
 if [[ ! -d "$TPM" ]] && command -v git >/dev/null 2>&1; then
   echo "==> Cloning TPM"
-  run env GIT_CONFIG_GLOBAL=/dev/null git clone --depth 1 https://github.com/tmux-plugins/tpm "$TPM" # public repo over https: the git config rewrites GitHub to SSH, which fails on a machine without a key
+  run git clone --depth 1 https://github.com/tmux-plugins/tpm "$TPM" # public repo over https, no key needed
 fi
 # Download the plugins listed in tmux.conf; works without a running tmux server (public repos: https, no SSH key)
 if [[ -x "$TPM/bin/install_plugins" || $DRY -eq 1 ]]; then
   echo "==> Installing tmux plugins"
-  run env GIT_CONFIG_GLOBAL=/dev/null "$TPM/bin/install_plugins" || echo "Warning: tmux plugin install failed; press prefix + I in tmux" >&2
+  run "$TPM/bin/install_plugins" || echo "Warning: tmux plugin install failed; press prefix + I in tmux" >&2
 fi
 
 # Step 5: Nerd Font for Linux desktop terminals (Ghostty and macOS need nothing).

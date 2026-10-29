@@ -46,7 +46,7 @@
 	enabled = true                        # remember and reuse conflict resolutions
 
 [url "ssh://git@github.com"]
-	insteadOf = https://github.com        # always use SSH for GitHub
+	pushInsteadOf = https://github.com    # push over SSH; fetch stays https so public repos need no key
 
 [filter "lfs"]
 	clean = git-lfs clean -- %f           # Git LFS: store big files as pointers
