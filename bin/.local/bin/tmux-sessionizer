@@ -149,6 +149,7 @@ else
   line="$(list_candidates | fzf --prompt='project> ' --delimiter=$'\t' --with-nth=1 || true)" # show only the label
   [[ -n "$line" ]] || exit 0 # nothing chosen (Esc)
   IFS=$'\t' read -r _ selected repo <<<"$line" # hidden columns: path and repo
+  selected="$(cd "$selected" && pwd -P)" # physical path too, so it compares equal to the session paths below
 fi
 
 [[ -n "$selected" ]] || exit 0 # empty argument
