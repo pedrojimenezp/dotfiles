@@ -18,3 +18,5 @@ Thumbs.db
 .claude/worktrees/
 .claude/settings.local.json
 CLAUDE.local.md
+# Feature worktrees at the top of a repo (<repo>/worktrees/<feature>)
+/worktrees/
