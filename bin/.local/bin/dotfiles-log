@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Append one "<epoch> <tool>" line to the usage log that dotfiles-usage reads; never fails.
-# Usage: dotfiles-log <tool>   (--path prints the log file and exits)
+# Usage: dotfiles-log <tool>   (append one line to the usage log)
+#        dotfiles-log --path   (print the log file)
 log="${XDG_STATE_HOME:-$HOME/.local/state}/dotfiles/usage.log" # the one place that names the log
 case "${1:-}" in
   --path) printf '%s\n' "$log"; exit 0 ;; # for dotfiles-usage
