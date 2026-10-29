@@ -181,7 +181,12 @@ fi
 # Step 3c: the git config rewrites GitHub https URLs to SSH; without GitHub SSH access, clones (lazy.nvim, TPM) fail.
 GIT_LOCAL="$HOME/.config/git/local" # machine-specific git overrides (untracked, included by the git config)
 GIT_LOCAL_MARK="# written by dotfiles install.sh: GitHub over https (no SSH key); removed automatically once SSH works" # only a file starting with this line is ours
-if [[ -f "$GIT_LOCAL" && "$(head -n1 "$GIT_LOCAL")" == "$GIT_LOCAL_MARK" ]]; then # our own override, never a hand-written file
+is_our_git_local() { # true for the marked file, or the exact two lines older installs wrote without a marker
+  [[ -f "$GIT_LOCAL" ]] || return 1                                               # nothing to judge
+  [[ "$(head -n1 "$GIT_LOCAL")" == "$GIT_LOCAL_MARK" ]] && return 0               # marked: ours
+  [[ "$(sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' -e '/^$/d' "$GIT_LOCAL")" == $'[url "https://github.com/"]\ninsteadOf = https://github.com/' ]] # legacy content, nothing else
+}
+if is_our_git_local; then # our own override, never a hand-written file
   if github_ssh_ok; then # SSH works now (e.g. agent forwarding), so https would only ask for passwords
     echo "==> GitHub SSH access works: removing the https override $GIT_LOCAL"
     run rm -f "$GIT_LOCAL" # the git config goes back to SSH
