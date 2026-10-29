@@ -3,6 +3,8 @@
 return {
   {
     "neovim/nvim-lspconfig", -- ships default configs in its lsp/ folder (cmd, filetypes, root markers)
+    event = { "BufReadPre", "BufNewFile" }, -- load when opening files, not at startup
+    cmd = { "Mason", "LspInfo", "LspLog" }, -- commands usable before the first file
     dependencies = {
       { "mason-org/mason.nvim", opts = {} }, -- installer for servers, formatters, linters
       "mason-org/mason-lspconfig.nvim", -- bridges Mason and vim.lsp
