@@ -67,7 +67,7 @@ cd ~/dotfiles
 ./install.sh --with-claude
 ```
 
-Use `./install.sh` without `--with-claude` if the server has no GitHub access (no forwarded key). Then the installer keeps GitHub on https.
+Use `./install.sh` without `--with-claude` if the server has no GitHub access (no forwarded key). Without GitHub SSH access the installer keeps GitHub on https. If you reconnect later with the key forwarded, the next `./install.sh` removes that https override by itself (only the file it wrote, marked on its first line).
 
 If zsh is missing or is not your login shell, `install.sh` prints the exact command to run.
 
@@ -135,4 +135,6 @@ cd ~/dotfiles && git pull && ./install.sh
 
 - **`tssh` says tmux not found.** Your login shell is not zsh. On the server, run the `chsh` step from section 3, then log out and in.
 - **GitHub clone asks for a password, or "permission denied".** On your Mac, run `ssh-add -l` and check that your GitHub key is listed. Check that `ForwardAgent yes` is in the host entry. Then reconnect.
+- **`--with-claude` says "no GitHub SSH access on this machine" and exits with an error.** The installer tested `ssh git@github.com` and GitHub did not accept a key. It skips the Claude step and finishes the rest. Fix the forwarding as in the item above, reconnect, then run `./install.sh --with-claude` again.
+- **`git push` asks for a password on a server that used to have no key.** `~/.config/git/local` may still force https. Run `./install.sh` again: when `ssh -T git@github.com` works, it removes that file if the installer wrote it. A file you wrote yourself is never touched.
 - **Colors or icons look wrong.** This is the Mac terminal font or profile, not the server. The server sends text only; your Mac terminal draws the icons.

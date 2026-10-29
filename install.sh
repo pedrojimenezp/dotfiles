@@ -54,6 +54,13 @@ run() {
   fi
 }
 
+# Succeeds when this machine can authenticate to GitHub over SSH (read-only: nothing is written but known_hosts).
+github_ssh_ok() {
+  local out                                                                       # ssh banner
+  out="$(ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=5 -T git@github.com 2>&1 || true)" # exit 1 means authenticated, 255 means failed; offline times out
+  [[ "$out" == *"successfully authenticated"* ]]                                  # match the text, not the exit code
+}
+
 # Packages to link: full mode vs server mode.
 if [[ $SERVER -eq 1 ]]; then
   PACKAGES=(zsh tmux vim git bin theme)
@@ -73,7 +80,7 @@ if [[ $SERVER -eq 0 ]]; then
     # Upgrades are a separate, deliberate `brew upgrade`.
     run brew bundle --no-upgrade --file="$REPO/Brewfile"
   else
-    cat <<'MSG'
+cat <<'MSG'
 Homebrew was not found. Install it first (this script never uses sudo):
   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 Then follow the "Next steps" it prints to add brew to your PATH, and run this script again.
@@ -171,13 +178,20 @@ if [[ $SERVER -eq 0 ]]; then
   fi
 fi
 
-# Step 3c: the git config rewrites GitHub https URLs to SSH; without any SSH key, clones (lazy.nvim, TPM) fail.
+# Step 3c: the git config rewrites GitHub https URLs to SSH; without GitHub SSH access, clones (lazy.nvim, TPM) fail.
 GIT_LOCAL="$HOME/.config/git/local" # machine-specific git overrides (untracked, included by the git config)
-if [[ ! -e "$GIT_LOCAL" && -z "${SSH_AUTH_SOCK:-}" ]] && ! compgen -G "$HOME/.ssh/id_*" >/dev/null; then # no key and no agent
-  echo "==> No SSH key found: keeping GitHub on https in $GIT_LOCAL"
+GIT_LOCAL_MARK="# written by dotfiles install.sh: GitHub over https (no SSH key); removed automatically once SSH works" # only a file starting with this line is ours
+if [[ -f "$GIT_LOCAL" && "$(head -n1 "$GIT_LOCAL")" == "$GIT_LOCAL_MARK" ]]; then # our own override, never a hand-written file
+  if github_ssh_ok; then # SSH works now (e.g. agent forwarding), so https would only ask for passwords
+    echo "==> GitHub SSH access works: removing the https override $GIT_LOCAL"
+    run rm -f "$GIT_LOCAL" # the git config goes back to SSH
+  fi
+elif [[ ! -e "$GIT_LOCAL" ]] && ! github_ssh_ok; then # no override yet and no usable key or agent
+  echo "==> No GitHub SSH access: keeping GitHub on https in $GIT_LOCAL"
   if [[ $DRY -eq 0 ]]; then
     mkdir -p "$(dirname "$GIT_LOCAL")" # the git package normally created it
-    cat >"$GIT_LOCAL" <<'CFG' # longer prefix beats the SSH rewrite in the main config; delete this once you add a key
+    cat >"$GIT_LOCAL" <<CFG # longer prefix beats the SSH rewrite in the main config
+$GIT_LOCAL_MARK
 [url "https://github.com/"]
 	insteadOf = https://github.com/
 CFG
@@ -235,6 +249,35 @@ if [[ $SERVER -eq 0 ]]; then
   run "$REPO/bin/.local/bin/theme" sync || echo "Warning: theme sync failed; run 'theme sync' later" >&2
 fi
 
+CLAUDE_SKIPPED=0 # 1 = the Claude step was skipped, so the script exits non-zero
+# Step 6: optional private Claude config (opt-in, full mode only).
+if [[ $WITH_CLAUDE -eq 1 ]]; then
+  if [[ $SERVER -eq 1 ]]; then
+    echo "==> --with-claude is ignored in server mode"
+  else
+    echo "==> Setting up Claude config in $CLAUDE_DIR"
+    if [[ ! -e "$CLAUDE_DIR" ]] && ! github_ssh_ok; then # the private repo needs your GitHub key
+      CLAUDE_SKIPPED=1 # reported at the end, with a non-zero exit
+      cat >&2 <<'ERR'
+Warning: skipping the Claude config: no GitHub SSH access on this machine.
+  On your Mac, add "ForwardAgent yes" to this host in ~/.ssh/config and check that
+  "ssh-add -l" lists your GitHub key. Reconnect, then run: ./install.sh --with-claude
+  (see docs/server.md)
+ERR
+    elif [[ ! -e "$CLAUDE_DIR" ]]; then
+      run git clone "$CLAUDE_REPO_URL" "$CLAUDE_DIR" # access was checked above
+    elif git -C "$CLAUDE_DIR" rev-parse --git-dir >/dev/null 2>&1; then
+      echo "Claude config already there: $CLAUDE_DIR (not pulling)"
+    else
+      echo "Warning: $CLAUDE_DIR exists but is not a git repo: skipping" >&2
+    fi
+    # run its own installer once it is there (in dry-run the clone is only printed)
+    if [[ $CLAUDE_SKIPPED -eq 0 && ( -x "$CLAUDE_DIR/install.sh" || $DRY -eq 1 ) ]]; then # not after a skipped clone
+      run "$CLAUDE_DIR/install.sh"
+    fi
+  fi
+fi
+
 cat <<'MSG'
 
 Done. Next steps:
@@ -272,22 +315,8 @@ suggest_login_shell() {
 }
 suggest_login_shell
 
-# Step 6: optional private Claude config (opt-in, full mode only).
-if [[ $WITH_CLAUDE -eq 1 ]]; then
-  if [[ $SERVER -eq 1 ]]; then
-    echo "==> --with-claude is ignored in server mode"
-  else
-    echo "==> Setting up Claude config in $CLAUDE_DIR"
-    if [[ ! -e "$CLAUDE_DIR" ]]; then
-      run git clone "$CLAUDE_REPO_URL" "$CLAUDE_DIR" # needs GitHub SSH access
-    elif git -C "$CLAUDE_DIR" rev-parse --git-dir >/dev/null 2>&1; then
-      echo "Claude config already there: $CLAUDE_DIR (not pulling)"
-    else
-      echo "Warning: $CLAUDE_DIR exists but is not a git repo: skipping" >&2
-    fi
-    # run its own installer once it is there (in dry-run the clone is only printed)
-    if [[ -x "$CLAUDE_DIR/install.sh" || $DRY -eq 1 ]]; then
-      run "$CLAUDE_DIR/install.sh"
-    fi
-  fi
+if [[ $CLAUDE_SKIPPED -eq 1 ]]; then # a skipped step must not look like success
+  echo >&2
+  echo "The Claude config was NOT installed (no GitHub SSH access). Fix that and run ./install.sh --with-claude again." >&2
+  exit 1 # visible to scripts and to the eye, after everything else finished
 fi
