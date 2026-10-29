@@ -84,7 +84,7 @@ The list is read from the repo at every open, so nothing has to be kept in sync 
 | `tmux` | The `bind -N "..."` lines of `tmux.conf` (no tmux server needed) |
 | `zsh key`, `zsh alias`, `zsh function` | End-of-line comments of `bindkey` and `alias` lines in `zsh/.zshrc`, and the comment above each function |
 | `command` | Line 2 and the `# Usage:` lines of each script in `bin/.local/bin` |
-| `tmux plugin`, `zsh tool`, `terminal`, `nvim`, `theme` | [cheatsheet.tsv](cheatsheet.tsv): keys that no config file states |
+| `tmux plugin`, `zsh tool`, `terminal`, `nvim`, and `command` for `theme` | [cheatsheet.tsv](cheatsheet.tsv): keys that no config file states |
 
 tmux's own default keys are not in the list: `prefix k` shows them (and `prefix /` describes one key). Keys are shown readable: `C-l` becomes `Ctrl+l`, an uppercase letter becomes `Shift+A`. The script finds the repo by following its own symlink, so it works wherever the repo is cloned.
 
