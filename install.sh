@@ -141,14 +141,6 @@ link_package() {
   done < <(find "$REPO/$pkg" -type f -print0)
 }
 
-# Step 2b: the iTerm profile used to be a link into this repo; `theme sync` now writes a real file there.
-ITERM_PROFILE="$HOME/Library/Application Support/iTerm2/DynamicProfiles/dotfiles.plist" # generated profile
-OLD_TARGET="iterm/Library/Application Support/iTerm2/DynamicProfiles/dotfiles.plist" # where the old link pointed
-if [[ -L "$ITERM_PROFILE" && "$(readlink "$ITERM_PROFILE")" == *"$OLD_TARGET" ]]; then # old stow link (may dangle now)
-  echo "==> Removing the old iTerm profile link (theme sync recreates it)"
-  run rm "$ITERM_PROFILE" # only the link; the repo file is untouched
-fi
-
 # Step 3: link the packages.
 echo "==> Linking packages: ${PACKAGES[*]}"
 if command -v stow >/dev/null 2>&1; then
@@ -176,19 +168,6 @@ if { command -v atuin >/dev/null 2>&1 || [[ $DRY -eq 1 ]]; }; then # in dry-run 
     echo "==> Importing the zsh history into atuin"
     run atuin import zsh || echo "warning: atuin import failed; run 'atuin import zsh' later" >&2 # non-fatal
   fi
-fi
-
-# Step 3c: remove the https override older installs wrote (the git config now only rewrites pushes to SSH).
-GIT_LOCAL="$HOME/.config/git/local" # machine-specific git overrides (untracked, included by the git config)
-GIT_LOCAL_MARK="# written by dotfiles install.sh: GitHub over https (no SSH key); removed automatically once SSH works" # only a file starting with this line is ours
-is_our_git_local() { # true for the marked file, or the exact two lines older installs wrote without a marker
-  [[ -f "$GIT_LOCAL" ]] || return 1                                               # nothing to judge
-  [[ "$(head -n1 "$GIT_LOCAL")" == "$GIT_LOCAL_MARK" ]] && return 0               # marked: ours
-  [[ "$(sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' -e '/^$/d' "$GIT_LOCAL")" == $'[url "https://github.com/"]\ninsteadOf = https://github.com/' ]] # legacy content, nothing else
-}
-if is_our_git_local; then # our own override, never a hand-written file
-  echo "==> Removing the obsolete https override $GIT_LOCAL (fetches no longer go over SSH)"
-  run rm -f "$GIT_LOCAL" # no longer needed
 fi
 
 # Step 4: tmux plugin manager.

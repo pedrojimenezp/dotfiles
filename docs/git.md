@@ -62,8 +62,6 @@ git config --show-origin user.email
 
 For one project only, run `git config user.email me@work.example` inside that repo (stored in the repo's `.git/config`).
 
-`install.sh` deletes the `local` file only when it is the old https override that an older installer wrote itself. A hand-written file is never touched.
-
 ## Global ignore list
 
 `~/.config/git/ignore` applies to every repo on this machine. It ignores: `.DS_Store`, `Thumbs.db`, Vim swap files (`*.swp`, `*.swo`, `*~`), `.idea/`, `.vscode/`, `.env.local`, `.zshrc.local`, `.claude/worktrees/`, `/worktrees/` (feature worktrees at the top of a repo, so no `info/exclude` entry is needed), `.claude/settings.local.json` and `CLAUDE.local.md` (the rest of `.claude/`, such as `settings.json`, stays trackable). For a rule that is only yours in one repo, add it to that repo's `.git/info/exclude` (not committed).

@@ -69,16 +69,14 @@ Flags can be combined (`--dry-run --with-claude`).
 3. Decides the package list. `zsh nvim tmux vim git starship mise atuin bin theme`, plus `iterm` on macOS, plus `ghostty` when Ghostty is installed.
 4. Renames an old standalone `~/.local/bin/mise` that would shadow the Homebrew one.
 5. **Backs up** every real file a package would link: `<file>.backup-YYYYmmdd-HHMMSS`. Files that are already links into this repo are left alone. `~/.gitconfig` is backed up too, because it beats `~/.config/git/config`.
-6. Removes the old iTerm profile link from earlier installs.
-7. **Links** the packages with `stow --restow --no-folding`. `--no-folding` makes each file its own link, so folders like `~/.config/ghostty` stay real folders and generated files never land in the repo. Without `stow` it uses plain symlinks.
-8. `mise install` for the global runtimes.
+6. **Links** the packages with `stow --restow --no-folding`. `--no-folding` makes each file its own link, so folders like `~/.config/ghostty` stay real folders and generated files never land in the repo. Without `stow` it uses plain symlinks.
+7. `mise install` for the global runtimes.
    Then, only when `~/.local/share/atuin/history.db` does not exist yet, `atuin import zsh` copies `~/.zsh_history` into atuin once. A failure only prints a warning.
-9. Removes the old `~/.config/git/local` https override, but only if an older installer wrote it.
-10. Clones **TPM** into `~/.config/tmux/plugins/tpm` and installs the tmux plugins.
-11. Linux desktop only: installs the Monaspace Nerd Font into `~/.local/share/fonts`.
-12. `theme sync`: writes the Ghostty and iTerm theme files. A failure here only prints a warning.
-13. `--with-claude` step, if asked.
-14. Prints the next steps and, if zsh is not your login shell, the `chsh` command.
+8. Clones **TPM** into `~/.config/tmux/plugins/tpm` and installs the tmux plugins.
+9. Linux desktop only: installs the Monaspace Nerd Font into `~/.local/share/fonts`.
+10. `theme sync`: writes the Ghostty and iTerm theme files. A failure here only prints a warning.
+11. `--with-claude` step, if asked.
+12. Prints the next steps and, if zsh is not your login shell, the `chsh` command.
 
 ## Idempotent and safe
 
