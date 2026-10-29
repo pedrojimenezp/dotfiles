@@ -74,10 +74,11 @@ Example:
 
 ```
 # Roots to search. This replaces the default roots.
-include = ~/development ~/dotfiles
+# Only folders below a root are listed, never the root itself.
+include = ~/projects ~/work
 
 # Trees to skip. find never goes inside them.
-exclude = ~/go ~/development/old
+exclude = ~/go ~/projects/old
 
 # Maximum depth under each root.
 depth = 2
@@ -126,7 +127,8 @@ tmux-sessionizer --list
 
 It prints every candidate as `label<TAB>path<TAB>repo` and exits. Check:
 
-1. Is the path under a search root? Look at your `include` line.
+1. Is the path below a search root? Look at your `include` line. The roots
+   themselves are never listed, only the folders inside them.
 2. Is it deeper than `depth`? Raise `depth`.
 3. Is it inside an `exclude` path, a hidden folder or `node_modules`?
 4. Did a warning appear on stderr? Fix the config line.
