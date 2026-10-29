@@ -21,7 +21,7 @@ Files: `git/.config/git/config` (settings) and `git/.config/git/ignore` (global 
 | `diff.colorMoved` | `default` | Moved lines have their own color. |
 | `merge.conflictstyle` | `diff3` | Conflict markers also show the base text. (`zdiff3` is not used: it fails on git older than 2.35, for example Ubuntu 22.04.) |
 | `rerere.enabled` | `true` | Git remembers how you solved a conflict and reuses it. |
-| `url."ssh://git@github.com".pushInsteadOf` | `https://github.com` | **Pushes** to GitHub go over SSH. Fetch, clone and pull stay on https, so public repos need no key. |
+| `url."ssh://git@github.com/".pushInsteadOf` | `https://github.com/` | **Pushes** to GitHub go over SSH (the trailing slashes keep hosts like `github.company.com` unchanged). Fetch, clone and pull stay on https, so public repos need no key. |
 | `filter.lfs.*` | git-lfs commands | Git LFS for big files (`required = true`: fails if git-lfs is missing). |
 | `include.path` | `~/.config/git/local` | Machine-specific overrides, not tracked. |
 

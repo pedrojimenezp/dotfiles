@@ -44,8 +44,8 @@
 [rerere]
 	enabled = true                        # remember and reuse conflict resolutions
 
-[url "ssh://git@github.com"]
-	pushInsteadOf = https://github.com    # push over SSH; fetch stays https so public repos need no key
+[url "ssh://git@github.com/"]
+	pushInsteadOf = https://github.com/   # push over SSH; the slashes keep github.company.com out; fetch stays https
 
 [filter "lfs"]
 	clean = git-lfs clean -- %f           # Git LFS: store big files as pointers
