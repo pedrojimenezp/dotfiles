@@ -1,6 +1,6 @@
 # tmux
 
-File: `tmux/.config/tmux/tmux.conf`, linked to `~/.config/tmux/tmux.conf`. It needs tmux 3.3 or newer. Every line has a comment in the file.
+File: `tmux/.config/tmux/tmux.conf`, linked to `~/.config/tmux/tmux.conf`. It needs tmux 3.5 or newer (the Brewfile installs a current one; `extended-keys-format` is the newest option used). Older tmux, such as the apt package on Ubuntu, prints errors for options it does not know. Every line has a comment in the file.
 
 tmux keeps your terminal programs running when you close the terminal or lose the connection. It splits one terminal into **panes**, groups panes into **windows**, and groups windows into **sessions**.
 
