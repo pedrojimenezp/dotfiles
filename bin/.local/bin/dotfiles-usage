@@ -3,7 +3,7 @@
 # Usage: dotfiles-usage [week|2weeks|month]   (uses per tool and last use; default week)
 # Tools: Brewfile brew entries, aliases in zsh/.zshrc, scripts in bin/.local/bin, and tssh. Nothing is listed by hand.
 # Source: atuin history if installed, else ~/.zsh_history (needs EXTENDED_HISTORY). Scripts started by a key
-# (tmux-popup, tmux-sessionizer, dotfiles-help) log "<epoch> <tool>" through dotfiles-log (usage.log) instead.
+# do not reach history: every script that calls dotfiles-log logs "<epoch> <tool>" to usage.log, and is counted from that log only.
 # Approximate: counts the first word of each command and of each part of a pipe or && chain, after env vars and sudo.
 # Env: DOTFILES_USAGE_HISTFILE reads that zsh history file instead; ATUIN_DB_PATH points atuin at another database.
 set -euo pipefail # stop on errors, unset variables and failed pipes
