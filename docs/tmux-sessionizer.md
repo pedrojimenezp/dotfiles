@@ -1,7 +1,7 @@
 # tmux-sessionizer
 
 `tmux-sessionizer` is a project picker for tmux. In tmux, press `prefix f`
-(the prefix is `Ctrl-a` or `Ctrl-b`, whichever you set). An fzf list opens.
+(the prefix is `Ctrl+Space`). An fzf list opens.
 Pick a line and you jump to a tmux session for that directory. The session is
 created if it does not exist yet.
 
@@ -42,8 +42,8 @@ repo under your search roots, wherever the worktree folder lives.
 | `~/projects` exists | `~/projects` | 3 |
 | `~/projects` is missing | `$HOME` | 2 |
 
-In the `$HOME` fallback the script skips `~/go`, `~/snap`, `~/bin` and
-`~/*/worktrees`.
+In the `$HOME` fallback the script skips `~/go`, `~/snap` and `~/bin`
+(and every `worktrees/` folder, at any depth).
 
 ## Config file
 
@@ -86,7 +86,7 @@ Rules:
 - A `depth` that is not a number of 1 or more prints a warning and the
   default depth is used.
 - `exclude` is added to the built-in skips. With the `$HOME` fallback, `go`,
-  `snap`, `bin` and `*/worktrees` stay skipped too.
+  `snap`, `bin` and `worktrees/` folders stay skipped too.
 - If `include` is set, the depth default is 3 (not 2).
 
 ## Environment variables

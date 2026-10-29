@@ -113,7 +113,7 @@ z dotfiles<Space><Tab>   # type "z", a word, Space, then Tab: pick a match with 
 
 ## Bell after long commands
 
-When a command takes `LONG_CMD_BELL_SECONDS` or more (default 30) and stdout is a terminal, the prompt rings the bell (`\a`). tmux's `monitor-bell` then marks the window with a bell icon, so you can switch away while a build or test runs. Commands that are long by nature are skipped: the list is `LONG_CMD_BELL_IGNORE` (default: `nvim vim vi less man lazygit lg lzd tmux ssh tssh claude top btop htop fzf`, matched on the first word after any leading `VAR=value` and `sudo`, `command`, `env`, `nocorrect`, `noglob`, `time` or `nohup`). Change either in `~/.zshrc.local`:
+When a command takes `LONG_CMD_BELL_SECONDS` or more (default 30) and stdout is a terminal, the prompt rings the bell (`\a`). tmux's `monitor-bell` then marks the window with a bell icon, so you can switch away while a build or test runs. Commands that are long by nature are skipped: the list is `LONG_CMD_BELL_IGNORE` (default: `nvim vim vi less man lazygit lg lzd tmux ssh tssh claude top btop htop fzf`, matched on the first word after any leading `VAR=value` and `sudo`, `command`, `env`, `nocorrect`, `noglob`, `time` or `nohup`, and the options of those wrappers such as `-E` or `-u USER`). Change either in `~/.zshrc.local`:
 
 ```sh
 export LONG_CMD_BELL_SECONDS=10

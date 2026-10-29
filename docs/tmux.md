@@ -42,6 +42,7 @@ Forgot one? `prefix ?` opens a searchable list of every key from this config and
 | `prefix Space` | Copy with hints (tmux-fingers), see [Copy with hints](#copy-with-hints). Replaces the default `next-layout` |
 | `prefix s` | Pick a session from a list (popup sessions are hidden) |
 | `prefix N` | (`Shift+n`) New session: asks for a name (anything but letters, digits, `_` and `-` becomes `-`, so `my.app` is `my-app`), starts in the pane's folder and switches to it |
+| `prefix (` / `)` | Previous / next session (popup sessions skipped) |
 | `prefix X` | Kill the current session, after a `y/n` question |
 | `prefix r` | Reload `tmux.conf` and show "tmux.conf reloaded" |
 | `prefix Ctrl+l` | Clear the screen and the scrollback of the pane (see the note below) |
@@ -65,7 +66,6 @@ These are tmux defaults, not set in this config.
 | `prefix n` / `p` | Next / previous window |
 | `prefix ,` | Rename the window |
 | `prefix $` | Rename the session |
-| `prefix (` / `)` | Previous / next session (popup sessions skipped) |
 | `prefix w` | Pick a window from a tree |
 | `prefix /` | Describe one key: press it and tmux shows its note |
 | `prefix :` | tmux command prompt (vi keys) |
@@ -218,7 +218,7 @@ Other TPM keys (defaults): `prefix U` updates plugins, `prefix Alt+u` removes pl
 
 ## Change a key or option
 
-Edit `tmux/.config/tmux/tmux.conf` in the repo (the link points there), then `prefix r`. Give every new binding a note, `bind -N "what it does" key command`, so it shows in `prefix ?`. For options only for this machine, add `source-file -q ~/.config/tmux/local.conf` at the end of the file yourself, and keep that file untracked (this line is not in the config today).
+Edit `tmux/.config/tmux/tmux.conf` in the repo (the link points there), then `prefix r`. Give every new binding a note, `bind -N "what it does" key command`, so it shows in `prefix ?`. For options only for this machine, use `~/.config/tmux/local.conf`: the config sources it if present (see above), and the file stays untracked.
 
 ## Related
 

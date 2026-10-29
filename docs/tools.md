@@ -35,7 +35,6 @@ Everything below is installed by the `Brewfile` (`brew bundle`, run by `install.
 
 Optional, commented in the `Brewfile` (remove the `#` and run `brew bundle`):
 
-- `atuin`: searchable shell history, can sync between machines.
 - `mosh`: SSH-like shell that survives sleep and roaming (`mosh myserver`).
 
 ## Git and containers
