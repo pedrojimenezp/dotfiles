@@ -29,6 +29,8 @@ Install [Homebrew](https://brew.sh) first if `brew` is missing (`install.sh` pri
 
 ### Ubuntu server
 
+Full step-by-step guide, including the SSH setup on your Mac and daily use: [docs/server.md](docs/server.md).
+
 A headless Ubuntu Server (for example an EC2 instance, 22.04 or 24.04) uses the full install. The Nerd Font step is skipped there (your local terminal renders the font). Run as a normal user with sudo; `install.sh` itself never uses sudo. The git config rewrites GitHub URLs to SSH; if the machine has no SSH key or agent, `install.sh` writes `~/.config/git/local` to keep GitHub on https (delete that file once you add a key).
 
 ```sh
