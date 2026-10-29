@@ -4,6 +4,7 @@
 # Usage: tmux-popup open <shell|claude> <client> <parent session id> <dir>
 #        tmux-popup cleanup           (kill popup sessions whose parent session is gone)
 #        tmux-popup rescue <client>   (move a normal client out of a popup session)
+#        tmux-popup next|prev <client>  (switch to the next/previous normal session, skipping popup sessions)
 # Env: TMUX_POPUP_CLAUDE_CMD replaces the command of the claude popup (e.g. for tests).
 set -euo pipefail # stop on errors, unset variables and failed pipes
 
@@ -55,22 +56,34 @@ cleanup() {
   done < <(popup_sessions)
 }
 
-# detach-on-destroy off can move a normal client into a popup session; send it to the most recent normal one.
+# Switch the client to the next/previous normal session in list-sessions order (wraps; popup sessions are skipped).
+# Nothing to switch to: returns 1 and does nothing.
+step() {
+  local dir="$1" client="$2" cur target
+  cur="$(tmux display-message -p -c "$client" '#{session_name}')"
+  target="$(tmux list-sessions -F '#{session_name}' 2>/dev/null | awk -v cur="$cur" -v dir="$dir" -v p="$prefix" '
+    { s[NR] = $0; if ($0 == cur) i = NR } # i stays unset when the current session is gone
+    END {
+      if (!i) i = (dir > 0 ? 0 : NR + 1) # start just outside the list
+      for (k = 1; k <= NR; k++) {
+        j = i + dir * k; if (j < 1) j += NR; if (j > NR) j -= NR # wrap around
+        if (s[j] != cur && index(s[j], p) != 1) { print s[j]; exit }
+      }
+    }')" || true
+  [[ -n "$target" ]] || return 1
+  tmux switch-client -c "$client" -t "=$target"
+}
+
+# detach-on-destroy off can move a normal client into a popup session; send it to the next normal one.
 rescue() {
-  local client="$1" target pid server
+  local client="$1" pid server
   # A popup's own client runs under the tmux server (display-popup started it): leave it alone.
   pid="$(tmux display-message -p -c "$client" '#{client_pid}')" server="$(tmux display-message -p '#{pid}')"
   while [[ -n "$pid" && "$pid" -gt 1 ]]; do
     if [[ "$pid" == "$server" ]]; then return 0; fi
     pid="$(ps -o ppid= -p "$pid" 2>/dev/null | tr -d ' ' || true)" # walk up to the parent process
   done
-  target="$(tmux list-sessions -F '#{session_activity}'$'\t''#{session_name}' 2>/dev/null |
-    awk -F'\t' -v p="$prefix" 'index($2, p) != 1' | sort -rn | head -n 1 | cut -f2 || true)" # newest activity first
-  if [[ -n "$target" ]]; then
-    tmux switch-client -c "$client" -t "=$target"
-  else
-    tmux detach-client -t "$client" # only popup sessions are left
-  fi
+  step 1 "$client" || tmux detach-client -t "$client" # only popup sessions are left
 }
 
 [[ "${1:-}" == open ]] && { mkdir -p "${XDG_STATE_HOME:-$HOME/.local/state}/dotfiles" && printf '%s tmux-popup\n' "$(date +%s)" >> "${XDG_STATE_HOME:-$HOME/.local/state}/dotfiles/usage.log"; } 2>/dev/null || true # count the run for dotfiles-usage; never fails
@@ -78,5 +91,6 @@ case "${1:-}" in
   open) [[ $# -eq 5 ]] || { echo "usage: tmux-popup open <shell|claude> <client> <parent id> <dir>" >&2; exit 2; }; open_popup "$2" "$3" "$4" "$5" ;;
   cleanup) cleanup ;;
   rescue) [[ $# -eq 2 ]] || { echo "usage: tmux-popup rescue <client>" >&2; exit 2; }; rescue "$2" ;;
-  *) echo "usage: tmux-popup open|cleanup|rescue ..." >&2; exit 2 ;;
+  next | prev) [[ $# -eq 2 ]] || { echo "usage: tmux-popup next|prev <client>" >&2; exit 2; }; step "$([[ $1 == next ]] && echo 1 || echo -1)" "$2" || true ;; # no other normal session: stay
+  *) echo "usage: tmux-popup open|cleanup|rescue|next|prev ..." >&2; exit 2 ;;
 esac

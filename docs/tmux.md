@@ -65,7 +65,7 @@ These are tmux defaults, not set in this config.
 | `prefix n` / `p` | Next / previous window |
 | `prefix ,` | Rename the window |
 | `prefix $` | Rename the session |
-| `prefix (` / `)` | Previous / next session |
+| `prefix (` / `)` | Previous / next session (popup sessions skipped) |
 | `prefix w` | Pick a window from a tree |
 | `prefix /` | Describe one key: press it and tmux shows its note |
 | `prefix :` | tmux command prompt (vi keys) |
@@ -150,9 +150,9 @@ Look: popups use the terminal's own background and text colors with a rounded bl
 - **Program exits** (you type `exit`, or quit Claude Code): the hidden session ends and the popup closes. The next press starts a fresh one.
 - **Claude Code** runs as `$SHELL -ic claude`, so a `claude` alias or shell function from your shell config applies.
 
-**Hidden from lists**: `prefix s` filters out every session whose name starts with `_popup_`. `tmux ls` still shows them. `prefix (` / `)` are not filtered: they may step onto a popup session, and the next point sends you back.
+**Hidden from lists**: `prefix s` filters out every session whose name starts with `_popup_`. `tmux ls` still shows them. `prefix (` / `)` skip them too (`tmux-popup prev|next`), stepping through the normal sessions in `tmux ls` order.
 
-**Never landed in by mistake**: with `detach-on-destroy off`, killing a session moves you to another one, which could be a popup session. A `client-session-changed` hook catches that and switches you to the most recently used normal session (the popup's own client is left alone).
+**Never landed in by mistake**: with `detach-on-destroy off`, killing a session moves you to another one, which could be a popup session. A `client-session-changed` hook catches that and switches you to the next normal session in `tmux ls` order (the popup's own client is left alone).
 
 **Cleanup**: popup sessions remember their parent session (`@popup_parent`, the session id, so renaming the parent is fine). A `session-closed` hook runs `tmux-popup cleanup`, which kills every popup session whose parent is gone. So `prefix X` on a session also removes its popups.
 
