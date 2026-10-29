@@ -107,6 +107,7 @@ Details are in the docs above. `prefix` is `Ctrl+Space`. In Neovim, `<leader>` i
 | `prefix [` then `v`, `y` | Copy mode: select, copy |
 | `prefix f` | Project session picker |
 | `prefix t` | Toggle light/dark |
+| `prefix N` | New session by name, in the pane's folder |
 | `prefix X` | Kill the current session (asks first) |
 | `prefix d` | Detach (default) |
 | `prefix r` | Reload `tmux.conf` |

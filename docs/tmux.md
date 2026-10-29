@@ -32,6 +32,7 @@ Start tmux: `tmux`. Start or attach to a named session: `tmux new-session -A -s 
 | `prefix [` | Enter copy mode (vi keys). Then `v` starts a selection, `Ctrl+v` toggles a rectangle, `y` copies and leaves. |
 | `prefix f` | Project session picker, see [tmux-sessionizer.md](tmux-sessionizer.md) |
 | `prefix t` | Toggle light/dark theme, see [theme.md](theme.md) |
+| `prefix N` | (`Shift+n`) New session: asks for a name (no `.` or `:`), starts in the pane's folder and switches to it |
 | `prefix X` | Kill the current session, after a `y/n` question |
 | `prefix r` | Reload `tmux.conf` and show "tmux.conf reloaded" |
 | `prefix Ctrl+l` | Clear the screen and the scrollback of the pane (see the note below) |
@@ -39,7 +40,7 @@ Start tmux: `tmux`. Start or attach to a named session: `tmux new-session -A -s 
 | `prefix Ctrl+r` | Restore saved sessions (resurrect) |
 | `prefix I` | (`Shift+i`) Install plugins (TPM) |
 
-Note on `Ctrl+l`: plain `Ctrl+l` belongs to vim-tmux-navigator (move to the right pane; inside vim, nvim or fzf it is sent to the program). The plugin also sets `prefix Ctrl+l` to a plain clear screen, so `tmux.conf` defines `prefix Ctrl+l` again at the very end, after TPM, as "clear screen and scrollback".
+Note on `Ctrl+l`: plain `Ctrl+l` belongs to vim-tmux-navigator (move to the right pane; inside vim, nvim or fzf it is sent to the program). The plugin also sets `prefix Ctrl+l` to a plain clear screen, so `tmux.conf` defines `prefix Ctrl+l` again at the very end, after TPM, as "clear screen and scrollback". The scrollback is cleared 0.3 seconds after the screen, because the shell redraw would otherwise push the old screen back into the history.
 
 ### Default keys you will use often
 
