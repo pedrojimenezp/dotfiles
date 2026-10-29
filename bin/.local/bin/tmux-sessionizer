@@ -141,7 +141,10 @@ list_candidates() {
     [[ -n "$d" ]] || continue # find printed nothing
     if [[ -f "$d/.git" ]]; then
       IFS= read -r gl <"$d/.git" || true # "gitdir: <path>": linked worktrees point into .../worktrees/<name>, submodules into .../modules/<name>
-      if [[ "$gl" == */worktrees/* ]]; then linked+=("$d"$'\t'"${gl#gitdir: }"); continue; fi # checked below, once every repo has been asked
+      gl="${gl#gitdir: }"
+      [[ "$gl" == /* ]] || gl="$d/$gl" # relative gitdir paths are relative to the worktree
+      # Only linked worktrees have a commondir file; a submodule inside one also has .../worktrees/ in its path.
+      if [[ "$gl" == */worktrees/* && -f "$gl/commondir" ]]; then linked+=("$d"$'\t'"$gl"); continue; fi # checked below, once every repo has been asked
     fi
     plain+="$d"$'\t'"$d"$'\t\n' # label and path are the same for plain dirs
     # Only main checkouts have a .git directory (submodules and linked worktrees have a file), so git runs once per repo.
