@@ -4,11 +4,18 @@ A step-by-step guide to set up an Ubuntu server (for example an EC2 instance) wi
 
 Every command says where it runs: "On your laptop" or "On the server". Your laptop can be a Mac or a Linux machine. Where a step is different, it is marked **macOS** or **Linux**. If a step has no mark, it is the same on both.
 
+- [1. What you get](#1-what-you-get)
+- [2. On your laptop, once](#2-on-your-laptop-once)
+- [3. On the server, once](#3-on-the-server-once)
+- [4. Daily use](#4-daily-use)
+- [5. Updating the server later](#5-updating-the-server-later)
+- [6. Troubleshooting](#6-troubleshooting)
+
 ## 1. What you get
 
 - The same dev environment as your laptop: zsh, nvim, tmux, mise and Claude Code.
 - tmux runs on the server. If your laptop disconnects or sleeps, your work keeps running.
-- tmux continuum saves your sessions every 15 minutes. After a server reboot, run `tssh my-ec2` and they come back.
+- tmux continuum saves your [sessions](glossary.md#session) every 15 minutes. After a server reboot, run `tssh my-ec2` and they come back.
 
 ## 2. On your laptop, once
 
@@ -24,6 +31,8 @@ Host my-ec2
 
 `ForwardAgent yes` lets the server use your laptop's GitHub key without copying the key to the server. You need it for a private `--with-claude` repo and for `git push` from the server.
 
+Security trade-off: while you are connected, anyone with root on the server can use your forwarded keys. Only enable it for servers you trust.
+
 You do not need `SetEnv TERM=...` or `RequestTTY` in the entry. Ghostty's ssh-terminfo and `tssh -t` already cover them.
 
 ### Share your GitHub key with the server
@@ -34,7 +43,7 @@ Why: on your laptop, `ssh` can read a key file directly, so GitHub works even if
    ```sh
    ssh -vT git@github.com 2>&1 | grep -E "Offering public key|Authenticated to"
    ```
-   The path printed just before "Authenticated to github.com" is your GitHub key. Only file names are printed, never the key itself.
+   The path printed right before "Authenticated to github.com" is your GitHub key. Only file names are printed, never the key itself.
 2. On your laptop, load that key into the agent. Use your own path.
 
    **macOS only:**
@@ -163,7 +172,7 @@ Rules:
 - Use one tab per server.
 - Never run `tssh` inside a local tmux. No tmux inside tmux.
 - Switch between tabs. On macOS use `Cmd+1`, `Cmd+2`, and so on. On Linux use `Alt+1`, `Alt+2`, and so on, or `Ctrl+PageUp` and `Ctrl+PageDown` (Ghostty defaults; other terminals may differ).
-- To leave, press `Ctrl+Space`, then `d` (detach). Or just close the tab. Everything keeps running on the server.
+- To leave, press `Ctrl+Space`, then `d` (detach). Or close the tab. Everything keeps running on the server.
 - To come back, open a tab and run `tssh my-ec2` again.
 
 ## 5. Updating the server later
@@ -181,5 +190,13 @@ cd ~/dotfiles && git pull && ./install.sh
 - **`tssh` says tmux not found.** Your login shell is not zsh. On the server, run the `chsh` step from section 3, then log out and in.
 - **GitHub clone asks for a password, or "permission denied".** Follow "Share your GitHub key with the server" in section 2, then reconnect.
 - **`--with-claude <git-url>` says "no GitHub SSH access on this machine" and exits with an error.** The installer tested `ssh git@github.com` and GitHub did not accept a key. It skips the Claude step and finishes the rest. Fix the forwarding as in the item above, reconnect, then run `./install.sh --with-claude <git-url>` again.
-- **Homebrew install or `git pull` says "Permission denied (publickey)".** This only happens with the old git config, which sent all GitHub traffic over SSH. Run `git pull` in the dotfiles clone (or re-run `./install.sh`) to get the current config. Now only pushes use SSH. Where SSH is needed (a private `--with-claude` repo, `git push`), see "Share your GitHub key with the server" in section 2: if `echo $SSH_AUTH_SOCK` on the server is set but access is denied, the key is not in the laptop's agent; if it is empty, `ForwardAgent yes` is missing.
+- **Homebrew install or `git pull` says "Permission denied (publickey)".** The old git config sent all GitHub traffic over SSH. Run `git pull` in the dotfiles clone, or run `./install.sh` again, to get the current config. Now only pushes use SSH.
+- **`git push` or a private `--with-claude` repo says "Permission denied (publickey)", and `echo $SSH_AUTH_SOCK` on the server prints a path.** Forwarding works, but the key is not in your laptop's agent. Do steps 2-4 of "Share your GitHub key with the server" in section 2.
+- **Same error, and `echo $SSH_AUTH_SOCK` on the server prints nothing.** Forwarding is off. Add `ForwardAgent yes` to the host entry (section 2), then reconnect.
 - **Colors or icons look wrong.** This is your laptop's terminal font or profile, not the server. The server sends text only; your laptop's terminal draws the icons. On macOS, check the terminal profile (for example iTerm) uses the Nerd Font. On Linux, the Nerd Font must be installed on the laptop (`install.sh` does this on Linux desktops; run `fc-cache -f` and restart the terminal) and selected in your terminal.
+
+## Related pages
+
+- [install.md](install.md): what `install.sh` does, flags, and how to undo it.
+- [first-day.md](first-day.md): the keys you'll use most.
+- [tmux.md](tmux.md): every tmux key and the status bar.
