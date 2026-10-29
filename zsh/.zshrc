@@ -105,7 +105,8 @@ zmodload zsh/datetime                     # provides $EPOCHSECONDS
 autoload -Uz add-zsh-hook                 # safe way to add preexec/precmd hooks
 LONG_CMD_BELL_IGNORE=${LONG_CMD_BELL_IGNORE:-"nvim vim vi less man lazygit lg lzd tmux ssh tssh claude top btop htop fzf"}  # long by nature; override in ~/.zshrc.local
 long_cmd_start() {
-  long_cmd_name=${${(z)1}[1]}             # first word of the command line
+  local -a words=(${(z)1})                # split like the shell would (one word stays an array)
+  long_cmd_name=$words[1]                 # first word of the command line
   long_cmd_t0=$EPOCHSECONDS               # start time in seconds
 }
 long_cmd_bell() {
