@@ -163,15 +163,24 @@ else
 fi
 name="$(printf '%s' "$name" | tr './: ' '----' | tr -s '-')" # tmux rejects dots and colons; slashes would read as paths; collapse repeated dashes
 
+# Physical start directory of the session named $1; empty when there is none.
+session_dir() {
+  local p
+  p="$(tm list-sessions -F '#{session_name}'$'\t''#{session_path}' 2>/dev/null | awk -F'\t' -v n="$1" '$1 == n { print $2; exit }' || true)" # where that session was started
+  if [[ -d "$p" ]]; then p="$(cd "$p" && pwd -P)"; fi # sessions made elsewhere may hold /var vs /private/var spellings
+  printf '%s' "$p"
+}
+
 # A same-named session for another directory would be switched to by mistake; add the repo (worktrees)
-# or the parent folder (plain dirs) to tell them apart.
-if tm has-session -t "=$name" 2>/dev/null; then
-  existing="$(tm list-sessions -F '#{session_name}'$'\t''#{session_path}' 2>/dev/null | awk -F'\t' -v n="$name" '$1 == n { print $2; exit }' || true)" # where that session was started
-  if [[ -d "$existing" ]]; then existing="$(cd "$existing" && pwd -P)"; fi # sessions made elsewhere may hold /var vs /private/var spellings
-  if [[ -n "$existing" && "$existing" != "$selected" ]]; then
-    extra="${repo:-$(basename "$(dirname "$selected")")}" # the repo for worktrees, else the folder that holds the directory
-    name="$name-$(printf '%s' "$extra" | tr './: ' '----' | tr -s '-')" # same cleanup as the name above
-  fi
+# or the parent folder (plain dirs) to tell them apart, then a counter if that name is taken too.
+existing="$(session_dir "$name")"
+if [[ -n "$existing" && "$existing" != "$selected" ]]; then
+  extra="${repo:-$(basename "$(dirname "$selected")")}" # the repo for worktrees, else the folder that holds the directory
+  name="$name-$(printf '%s' "$extra" | tr './: ' '----' | tr -s '-')" # same cleanup as the name above
+  base="$name" n=2
+  while existing="$(session_dir "$name")"; [[ -n "$existing" && "$existing" != "$selected" ]]; do
+    name="$base-$n" n=$((n + 1)) # -2, -3, ... until the name is free or ours
+  done
 fi
 
 if [[ -z "${TMUX:-}" ]]; then

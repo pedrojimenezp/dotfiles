@@ -33,6 +33,7 @@ repo under your search roots, wherever the worktree folder lives.
 - If a session with that name already exists for another directory, a suffix
   is added (cleaned the same way): the repo name for a worktree
   (`fix-login-api`), the parent folder name for a plain directory (`api-b`).
+  If that name is taken by yet another directory, a counter follows (`api-b-2`, `api-b-3`).
 
 ## Default search roots
 
