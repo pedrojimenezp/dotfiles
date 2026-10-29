@@ -88,7 +88,7 @@ fi
 prune=() # trees find must not enter (it would walk huge caches such as go/pkg/mod)
 add_prune() { if ((${#prune[@]})); then prune+=(-o); fi; prune+=(-path "${1%/}"); } # find ORs the tests together
 if ((fallback)); then
-  add_prune "$HOME/go"; add_prune "$HOME/snap"; add_prune "$HOME/bin"; add_prune "$HOME/*/worktrees" # not projects; worktrees come from git
+  add_prune "$HOME/go"; add_prune "$HOME/snap"; add_prune "$HOME/bin" # not projects (worktrees folders are pruned by name in the find below)
 fi
 read -r -a excluded <<<"$(expand_list "${SESSIONIZER_EXCLUDE:-$cfg_exclude}")" # env replaces the file's list
 for d in ${excluded[@]+"${excluded[@]}"}; do add_prune "$d"; done # added on top of the built-in prunes
