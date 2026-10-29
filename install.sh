@@ -245,7 +245,10 @@ CLAUDE_SKIPPED=0 # 1 = the Claude step was skipped, so the script exits non-zero
 # Step 6: optional private Claude config (opt-in).
 if [[ $WITH_CLAUDE -eq 1 ]]; then
   echo "==> Setting up Claude config in $CLAUDE_DIR"
-  if [[ ! -e "$CLAUDE_DIR" ]] && ! github_ssh_ok; then # the private repo needs your GitHub key
+  if [[ ! -e "$CLAUDE_DIR" && $DRY -eq 1 ]]; then # dry-run stays offline and leaves known_hosts alone
+    echo "[dry-run] would check GitHub SSH access"
+    run git clone "$CLAUDE_REPO_URL" "$CLAUDE_DIR"
+  elif [[ ! -e "$CLAUDE_DIR" ]] && ! github_ssh_ok; then # the private repo needs your GitHub key
     CLAUDE_SKIPPED=1 # reported at the end, with a non-zero exit
     cat >&2 <<'ERR'
 Warning: skipping the Claude config: no GitHub SSH access on this machine.
