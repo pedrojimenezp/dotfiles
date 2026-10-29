@@ -14,6 +14,7 @@ Thumbs.db
 # Local, machine-specific files
 .env.local
 .zshrc.local
-# Claude Code local files
-.claude/
+# Claude Code worktrees and personal settings (the rest of .claude/ is shared config)
+.claude/worktrees/
+.claude/settings.local.json
 CLAUDE.local.md

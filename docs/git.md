@@ -66,7 +66,7 @@ For one project only, run `git config user.email me@work.example` inside that re
 
 ## Global ignore list
 
-`~/.config/git/ignore` applies to every repo on this machine. It ignores: `.DS_Store`, `Thumbs.db`, Vim swap files (`*.swp`, `*.swo`, `*~`), `.idea/`, `.vscode/`, `.env.local`, `.zshrc.local`, `.claude/` and `CLAUDE.local.md`. For a rule that is only yours in one repo, add it to that repo's `.git/info/exclude` (not committed).
+`~/.config/git/ignore` applies to every repo on this machine. It ignores: `.DS_Store`, `Thumbs.db`, Vim swap files (`*.swp`, `*.swo`, `*~`), `.idea/`, `.vscode/`, `.env.local`, `.zshrc.local`, `.claude/worktrees/`, `.claude/settings.local.json` and `CLAUDE.local.md` (the rest of `.claude/`, such as `settings.json`, stays trackable). For a rule that is only yours in one repo, add it to that repo's `.git/info/exclude` (not committed).
 
 ## Useful commands with this config
 
