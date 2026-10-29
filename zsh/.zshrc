@@ -79,6 +79,9 @@ bindkey '^[[A' up-line-or-beginning-search    # Up, normal cursor mode
 bindkey '^[OA' up-line-or-beginning-search    # Up, application mode (tmux, after smkx)
 bindkey '^[[B' down-line-or-beginning-search  # Down, normal cursor mode
 bindkey '^[OB' down-line-or-beginning-search  # Down, application mode (tmux, after smkx)
+autoload -Uz edit-command-line            # built-in widget: edit the current line in $VISUAL
+zle -N edit-command-line                  # register the widget
+bindkey '^X^E' edit-command-line          # Ctrl-X Ctrl-E opens the line in the editor
 
 # --- Completion ---
 # Extra completions from Homebrew must be on fpath before compinit.

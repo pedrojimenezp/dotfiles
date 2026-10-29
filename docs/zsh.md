@@ -50,6 +50,7 @@ Run `alias` to list what is active on this machine.
 | `Alt+C` | Fuzzy pick a folder and `cd` into it | fzf |
 | `Tab` | Fuzzy completion list (`Enter` accepts, `,` / `.` switch group) | fzf-tab |
 | `**` then `Tab` | Fuzzy completion, for example `vim **<Tab>` | fzf |
+| `Ctrl+X` `Ctrl+E` | Edit the current command line in `$VISUAL` (nvim if installed) | This config |
 | `Ctrl+L` | Clear the screen **and** the scrollback | This config |
 | `Right arrow` | Accept the grey suggestion | Default of zsh-autosuggestions (`End` also works) |
 | `Ctrl+A` / `Ctrl+E` | Start / end of line | Default (emacs style) |
