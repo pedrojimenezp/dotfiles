@@ -40,7 +40,7 @@ Step-by-step guide with SSH setup and daily use: [docs/server.md](docs/server.md
 
 ```sh
 ./install.sh --dry-run      # show what would happen, change nothing
-./install.sh --with-claude  # also clone and install the private Claude config (needs GitHub SSH access)
+./install.sh --with-claude <git-url>  # optional: also clone and install your own Claude config repo
 ```
 
 What each step does, backups, idempotency and troubleshooting: [docs/install.md](docs/install.md).

@@ -1,32 +1,48 @@
 #!/usr/bin/env bash
 # Install these dotfiles: back up conflicting files, then link packages with GNU Stow.
-# Usage: ./install.sh [--dry-run] [--with-claude]
+# Usage: ./install.sh [--dry-run] [--with-claude <git-url>]
 set -euo pipefail # stop on errors, unset variables and failed pipes
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" # absolute path of this repo
 REPO_REAL="$(cd "$REPO" && pwd -P)"                  # physical path (no symlinks)
 STAMP="$(date +%Y%m%d-%H%M%S)"                       # suffix for backup files
 DRY=0                                                # 1 = print actions, change nothing
-WITH_CLAUDE=0                                        # 1 = also set up the private Claude config repo
-CLAUDE_REPO_URL="git@github.com:pedrojimenezp/claude-config.git" # private repo: needs your GitHub SSH key
+WITH_CLAUDE=0                                        # 1 = also set up your own Claude config repo
+CLAUDE_REPO_URL=""                                   # git URL given to --with-claude (a private repo needs your SSH key)
 CLAUDE_DIR="${CLAUDE_SHARED_DIR:-$HOME/.config/claude-shared}"   # where the Claude config repo lives
 NERD_FONT="Monaspace"                                # Nerd Fonts release archive name; change to switch fonts
 NERD_FONT_FAMILY="Monaspice"                         # family prefix fc-list reports (Nerd Fonts renames Monaspace)
 
-for arg in "$@"; do # parse command-line flags
-  case "$arg" in
+usage() { echo "Usage: $0 [--dry-run] [--with-claude <git-url>]"; } # one place for the usage text
+
+while [[ $# -gt 0 ]]; do # parse command-line flags
+  case "$1" in
     --dry-run) DRY=1 ;;
-    --with-claude) WITH_CLAUDE=1 ;;
+    --with-claude=*)
+      WITH_CLAUDE=1
+      CLAUDE_REPO_URL="${1#--with-claude=}"
+      ;;
+    --with-claude)
+      WITH_CLAUDE=1
+      CLAUDE_REPO_URL="${2:-}" # empty when the URL is missing
+      [[ $# -gt 1 ]] && shift   # also consume the URL
+      ;;
     -h | --help)
-      echo "Usage: $0 [--dry-run] [--with-claude]"
+      usage
       exit 0
       ;;
     *)
-      echo "Unknown option: $arg" >&2
+      echo "Unknown option: $1" >&2
       exit 1
       ;;
   esac
+  shift
 done
+if [[ $WITH_CLAUDE -eq 1 && ( -z "$CLAUDE_REPO_URL" || "$CLAUDE_REPO_URL" == -* ) ]]; then # a flag is not a URL
+  echo "--with-claude needs the git URL of your Claude config repo." >&2
+  usage >&2
+  exit 1
+fi
 
 # Prerequisite: zsh must exist (the configs are zsh-only). This script never uses sudo, so it only prints the command.
 if ! command -v zsh >/dev/null 2>&1; then # nothing to link against without zsh
@@ -232,7 +248,7 @@ if [[ $WITH_CLAUDE -eq 1 ]]; then
     cat >&2 <<'ERR'
 Warning: skipping the Claude config: no GitHub SSH access on this machine.
   On your Mac, add "ForwardAgent yes" to this host in ~/.ssh/config and check that
-  "ssh-add -l" lists your GitHub key. Reconnect, then run: ./install.sh --with-claude
+  "ssh-add -l" lists your GitHub key. Reconnect, then run: ./install.sh --with-claude <git-url>
   (see docs/server.md)
 ERR
   elif [[ ! -e "$CLAUDE_DIR" ]]; then
@@ -315,6 +331,6 @@ suggest_login_shell
 
 if [[ $CLAUDE_SKIPPED -eq 1 ]]; then # a skipped step must not look like success
   echo >&2
-  echo "The Claude config was NOT installed (see the warning above). Fix that and run ./install.sh --with-claude again." >&2
+  echo "The Claude config was NOT installed (see the warning above). Fix that and run ./install.sh --with-claude <git-url> again." >&2
   exit 1 # visible to scripts and to the eye, after everything else finished
 fi

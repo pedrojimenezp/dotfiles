@@ -39,7 +39,7 @@ sudo apt-get update && sudo apt-get install -y build-essential procps curl file 
 NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 
-# 3. Clone and install (add --with-claude if you have GitHub SSH access)
+# 3. Clone and install (add --with-claude <git-url> if you keep your own Claude config repo)
 git clone https://github.com/pedrojimenezp/dotfiles ~/dotfiles
 cd ~/dotfiles && ./install.sh
 
@@ -47,20 +47,20 @@ cd ~/dotfiles && ./install.sh
 sudo chsh -s /usr/bin/zsh "$USER"
 ```
 
-The Nerd Font step is skipped on a headless server (your local terminal draws the font). Git fetches stay on https, so the install works without a GitHub key (only `--with-claude` and `git push` need one).
+The Nerd Font step is skipped on a headless server (your local terminal draws the font). Git fetches stay on https, so the install works without a GitHub key (only a private `--with-claude` repo and `git push` need one).
 
 ## Flags
 
 ```sh
 ./install.sh --dry-run      # print what would happen, change nothing
-./install.sh --with-claude  # also clone and install the private Claude config
+./install.sh --with-claude <git-url>  # optional: also clone and install your own Claude config repo
 ./install.sh --help         # usage
 ```
 
-Flags can be combined (`--dry-run --with-claude`).
+Flags can be combined (`--dry-run --with-claude <git-url>`). `--with-claude=<git-url>` works too.
 
 - **`--dry-run`**: every action is printed with a `[dry-run]` prefix. Use it first on a new machine.
-- **`--with-claude`**: clones the private `claude-config` repo to `~/.config/claude-shared` (or `$CLAUDE_SHARED_DIR`) and runs its own `install.sh`. It needs GitHub SSH access. If the clone already exists it is not pulled. With no access, or when the folder exists but is not a git repo, the step is skipped (its `install.sh` does not run), everything else finishes, and the script exits with an error at the end. In `--dry-run` it only prints that it would check GitHub access and clone. The zsh config loads `~/.config/claude-shared/zsh/claude.zsh` only if that file exists, so these dotfiles work without it.
+- **`--with-claude <git-url>`**: optional, for people who keep their own Claude Code config in a private repo. Clones that repo to `~/.config/claude-shared` (or `$CLAUDE_SHARED_DIR`) and runs its own `install.sh`. A private GitHub repo needs SSH access. If the clone already exists it is not pulled. With no access, or when the folder exists but is not a git repo, the step is skipped (its `install.sh` does not run), everything else finishes, and the script exits with an error at the end. In `--dry-run` it only prints that it would check GitHub access and clone. The zsh config loads `~/.config/claude-shared/zsh/claude.zsh` only if that file exists, so these dotfiles work without it.
 
 ## What `install.sh` does, in order
 
@@ -75,7 +75,7 @@ Flags can be combined (`--dry-run --with-claude`).
 8. Clones **TPM** into `~/.config/tmux/plugins/tpm` and installs the tmux plugins.
 9. Linux desktop only: installs the Monaspace Nerd Font into `~/.local/share/fonts`.
 10. `theme sync`: writes the Ghostty and iTerm theme files. A failure here only prints a warning.
-11. `--with-claude` step, if asked.
+11. `--with-claude <git-url>` step, if asked.
 12. Asks for your git name and email if none is set (stored in `~/.config/git/local`; piped or `--dry-run` runs print the two commands instead).
 13. Prints the next steps and, if zsh is not your login shell, the `chsh` command.
 
@@ -117,6 +117,6 @@ cd ~/projects/personal/dotfiles && git pull && ./install.sh
 - **A tmux plugin is missing**: in tmux press `Ctrl+Space`, then `Shift+i`.
 - **Icons look wrong**: the terminal font is not a Nerd Font ([terminals.md](terminals.md)).
 - **Colors did not change after `theme sync`**: see [theme.md](theme.md).
-- **`--with-claude` says "no GitHub SSH access"**: forward or add your GitHub key, see [server.md](server.md), then run it again.
+- **`--with-claude <git-url>` says "no GitHub SSH access"**: forward or add your GitHub key, see [server.md](server.md), then run it again.
 - **Go back to the old files**: the backups are next to the links: `ls ~/.zshrc.backup-*`. Remove the link and rename the backup.
 - **Remove everything**: `stow --delete --dir=$HOME/projects/personal/dotfiles --target=$HOME zsh nvim tmux vim git starship mise atuin bin theme` (add `ghostty iterm` if linked). It removes only the links.

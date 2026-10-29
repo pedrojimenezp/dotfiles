@@ -22,7 +22,7 @@ Host my-ec2
   ForwardAgent yes
 ```
 
-`ForwardAgent yes` lets the server use your laptop's GitHub key without copying the key to the server. You need it for `--with-claude` and for `git push` from the server.
+`ForwardAgent yes` lets the server use your laptop's GitHub key without copying the key to the server. You need it for a private `--with-claude` repo and for `git push` from the server.
 
 You do not need `SetEnv TERM=...` or `RequestTTY` in the entry. Ghostty's ssh-terminfo and `tssh -t` already cover them.
 
@@ -104,10 +104,10 @@ On the server, clone the dotfiles and install them:
 ```sh
 git clone https://github.com/pedrojimenezp/dotfiles ~/dotfiles
 cd ~/dotfiles
-./install.sh --with-claude
+./install.sh --with-claude <git-url>
 ```
 
-Use `./install.sh` without `--with-claude` if the server has no GitHub access (no forwarded key). Everything else (Homebrew, plugins, `git pull`) uses https and needs no key; only `--with-claude` and `git push` need SSH.
+Use `./install.sh` without `--with-claude <git-url>` if the server has no GitHub access (no forwarded key). Everything else (Homebrew, plugins, `git pull`) uses https and needs no key; only a private `--with-claude` repo and `git push` need SSH.
 
 If zsh is missing or is not your login shell, `install.sh` prints the exact command to run.
 
@@ -180,6 +180,6 @@ cd ~/dotfiles && git pull && ./install.sh
 
 - **`tssh` says tmux not found.** Your login shell is not zsh. On the server, run the `chsh` step from section 3, then log out and in.
 - **GitHub clone asks for a password, or "permission denied".** Follow "Share your GitHub key with the server" in section 2, then reconnect.
-- **`--with-claude` says "no GitHub SSH access on this machine" and exits with an error.** The installer tested `ssh git@github.com` and GitHub did not accept a key. It skips the Claude step and finishes the rest. Fix the forwarding as in the item above, reconnect, then run `./install.sh --with-claude` again.
-- **Homebrew install or `git pull` says "Permission denied (publickey)".** This only happens with the old git config, which sent all GitHub traffic over SSH. Run `git pull` in the dotfiles clone (or re-run `./install.sh`) to get the current config. Now only pushes use SSH. Where SSH is needed (`--with-claude`, `git push`), see "Share your GitHub key with the server" in section 2: if `echo $SSH_AUTH_SOCK` on the server is set but access is denied, the key is not in the laptop's agent; if it is empty, `ForwardAgent yes` is missing.
+- **`--with-claude <git-url>` says "no GitHub SSH access on this machine" and exits with an error.** The installer tested `ssh git@github.com` and GitHub did not accept a key. It skips the Claude step and finishes the rest. Fix the forwarding as in the item above, reconnect, then run `./install.sh --with-claude <git-url>` again.
+- **Homebrew install or `git pull` says "Permission denied (publickey)".** This only happens with the old git config, which sent all GitHub traffic over SSH. Run `git pull` in the dotfiles clone (or re-run `./install.sh`) to get the current config. Now only pushes use SSH. Where SSH is needed (a private `--with-claude` repo, `git push`), see "Share your GitHub key with the server" in section 2: if `echo $SSH_AUTH_SOCK` on the server is set but access is denied, the key is not in the laptop's agent; if it is empty, `ForwardAgent yes` is missing.
 - **Colors or icons look wrong.** This is your laptop's terminal font or profile, not the server. The server sends text only; your laptop's terminal draws the icons. On macOS, check the terminal profile (for example iTerm) uses the Nerd Font. On Linux, the Nerd Font must be installed on the laptop (`install.sh` does this on Linux desktops; run `fc-cache -f` and restart the terminal) and selected in your terminal.
