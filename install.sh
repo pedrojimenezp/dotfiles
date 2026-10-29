@@ -284,7 +284,7 @@ MSG
 suggest_login_shell() {
   local current zsh_path=""                                                     # current login shell, zsh to recommend
   if [[ "$OSTYPE" == darwin* ]]; then                                           # macOS keeps users in Directory Services
-    current="$(dscl . -read ~/ UserShell 2>/dev/null | awk '{print $2}')"       # $SHELL can be stale
+    current="$(dscl . -read "/Users/$(id -un)" UserShell 2>/dev/null | awk '{print $2}')"       # $SHELL can be stale
     zsh_path="/bin/zsh"                                                         # always shipped with macOS
   else
     current="$(getent passwd "${USER:-$(id -un)}" 2>/dev/null | cut -d: -f7)"   # passwd entry, not the current process
