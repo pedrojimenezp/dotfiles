@@ -24,6 +24,7 @@ fi
 export VISUAL=$EDITOR                     # same editor for programs that read VISUAL
 export PAGER=less                         # default pager
 export LESS='-R -F -X'                    # colors, quit if one screen, no screen clear
+command -v delta >/dev/null 2>&1 && export GH_PAGER="delta -s"  # gh diffs side by side with delta
 
 # --- Go ---
 export GOPATH="$HOME/go"                  # Go workspace and `go install` target
@@ -161,6 +162,7 @@ else
 fi
 command -v bat >/dev/null 2>&1 && alias cat='bat --paging=never'  # highlighted cat
 command -v lazygit >/dev/null 2>&1 && alias lg='lazygit'          # git UI
+export LG_CONFIG_FILE="$HOME/.config/lazygit/config.yml"           # macOS would read ~/Library/Application Support/lazygit
 command -v lazydocker >/dev/null 2>&1 && alias lzd='lazydocker'    # docker UI
 command -v docker >/dev/null 2>&1 && alias dcu='docker compose up'    # compose up
 command -v docker >/dev/null 2>&1 && alias dcd='docker compose down'  # compose down
