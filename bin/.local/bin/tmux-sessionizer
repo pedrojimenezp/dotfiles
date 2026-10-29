@@ -120,7 +120,7 @@ worktrees_of() {
 
 # Print all candidates: worktrees first (what you are usually working on), then plain dirs.
 list_candidates() {
-  local dirs d wts="" plain="" # wts and plain collect output so worktrees can print first
+  local dirs d gl wts="" plain="" # wts and plain collect output so worktrees can print first
   local prune_expr=() # find expression that skips the pruned trees without descending
   if ((${#prune[@]})); then prune_expr=(\( "${prune[@]}" \) -prune -o); fi # empty when nothing to skip
   if ((${#roots[@]} == 0)); then return 0; fi # find with no path would search the current directory
@@ -130,10 +130,13 @@ list_candidates() {
     \( -name '.*' -o -name node_modules -o -name worktrees \) -prune -o -type d -print 2>/dev/null || true)"
   while IFS= read -r d; do
     [[ -n "$d" ]] || continue # find printed nothing
-    [[ -f "$d/.git" ]] && continue # linked worktree: listed from its repo with the branch name
+    if [[ -f "$d/.git" ]]; then
+      IFS= read -r gl <"$d/.git" || true # "gitdir: <path>": linked worktrees point into .../worktrees/<name>, submodules into .../modules/<name>
+      [[ "$gl" == */worktrees/* ]] && continue # linked worktree: listed from its repo with the branch name
+    fi
     plain+="$d"$'\t'"$d"$'\t\n' # label and path are the same for plain dirs
-    # Only main checkouts have a .git directory (linked ones have a file), so git runs once per repo.
-    if [[ -d "$d/.git" ]]; then wts+="$(worktrees_of "$d")"$'\n'; fi
+    # Main checkouts and submodules have a .git entry that is not a linked worktree, so git runs once per repo.
+    if [[ -e "$d/.git" ]]; then wts+="$(worktrees_of "$d")"$'\n'; fi
   done <<<"$dirs"
   printf '%s\n' "$wts" | sed '/^$/d' # drop blank lines left by repos without worktrees
   printf '%s' "$plain"
