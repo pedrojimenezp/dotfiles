@@ -43,16 +43,16 @@ eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 git clone https://github.com/pedrojimenezp/dotfiles ~/dotfiles
 cd ~/dotfiles && ./install.sh
 
-# 4. Make zsh the login shell, then log out and back in
-chsh -s "$(command -v zsh)"
+# 4. Make the system zsh the login shell (sudo: EC2 users have no password), then log out and back in
+sudo chsh -s /usr/bin/zsh "$USER"
 
-# 5. Claude Code (optional): see the Claude Code docs for the current install command
+# 5. Claude Code (optional, native installer), then run `claude` to log in
 curl -fsSL https://claude.ai/install.sh | bash
 ```
 
 ### After installing
 
-1. In tmux press `Ctrl+Space`, then `Shift+i` to install the plugins.
+1. tmux plugins are already installed; `Ctrl+Space`, then `Shift+i` retries if one failed.
 2. Open `nvim` once and wait for lazy.nvim, Mason and treesitter to install everything.
 3. Move secrets and machine settings into `~/.zshrc.local` (sourced last, not tracked).
 4. Put machine-specific git settings in `~/.config/git/local`.
