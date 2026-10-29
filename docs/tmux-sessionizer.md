@@ -24,7 +24,8 @@ repo under your search roots, wherever the worktree folder lives.
 A worktree folder inside a search root is listed once, by its branch, and gets
 the branch name however you open it (picker or argument).
 A worktree whose main checkout is not under the roots (or is a bare repo, as in
-`app/.bare` plus `app/main`) is still listed, by its own branch.
+`app.git` or `app/.bare` plus worktrees) is still listed, by its own branch,
+with the repo name `app`.
 A search root may be a symlink; symlinks below a root are not followed.
 
 ## Session names

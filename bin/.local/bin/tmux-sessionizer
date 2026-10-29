@@ -118,6 +118,13 @@ worktrees_of() {
   done < <(git -C "$repo" worktree list --porcelain 2>/dev/null || true; echo) # trailing echo closes the last entry
 }
 
+# Repo name for the shared git dir $1: the parent folder for app/.git or app/.bare, else the dir itself minus a .git suffix (bare app.git).
+repo_label() {
+  local b
+  b="$(basename "$1")"
+  if [[ "$b" == .git || "$b" == .bare ]]; then basename "$(dirname "$1")"; else printf '%s\n' "${b%.git}"; fi
+}
+
 # True when path $1 is already a path field in the worktree rows $2 (also compares the physical path).
 is_listed() {
   local p="$1" rows="$2" phys
@@ -157,7 +164,7 @@ list_candidates() {
     d="${entry%%$'\t'*}" gitdir="${entry#*$'\t'}"
     if is_listed "$d" "$wts"; then continue; fi
     common="${gitdir%/worktrees/*}" # the shared git dir (.git or .bare)
-    repo_name="$(basename "$(dirname "$common")")" # same rule as the session naming below
+    repo_name="$(repo_label "$common")" # same rule as the session naming below
     branch="$(git -C "$d" branch --show-current 2>/dev/null || true)"
     wts+="${branch:-$(basename "$d")}  [$repo_name]"$'\t'"$d"$'\t'"$repo_name"$'\n'
   done
@@ -184,7 +191,7 @@ fi
 # whichever way it was chosen.
 gd="$(git -C "$selected" rev-parse --path-format=absolute --git-dir 2>/dev/null || true)"
 cd_="$(git -C "$selected" rev-parse --path-format=absolute --git-common-dir 2>/dev/null || true)"
-if [[ -n "$gd" && -n "$cd_" && "$gd" != "$cd_" ]]; then repo="$(basename "$(dirname "$cd_")")"; fi
+if [[ -n "$gd" && -n "$cd_" && "$gd" != "$cd_" ]]; then repo="$(repo_label "$cd_")"; fi
 "$(dirname "$0")/dotfiles-log" tmux-sessionizer >/dev/null 2>&1 || true # count the run for dotfiles-usage
 
 if [[ -n "$repo" ]]; then
