@@ -11,7 +11,7 @@ zsh tool	Ctrl+T / Alt+C	fzf: paste a file path / cd into a folder	docs/zsh.md
 zsh tool	Tab	fuzzy completion list (fzf-tab; , and . switch group)	docs/zsh.md
 zsh tool	Right	accept the grey suggestion (zsh-autosuggestions)	docs/zsh.md
 zsh tool	z name / zi	jump to a frequent folder / pick one with fzf (zoxide)	docs/zsh.md
-terminal	Cmd+K	clear the tmux pane: sends prefix Ctrl+l (Ghostty, iTerm; Linux Ghostty: Ctrl+Shift+K)	docs/terminals.md
+terminal	Cmd+K	clear the tmux pane in a shell, nothing in vim/nvim: sends prefix Ctrl+l (Ghostty, iTerm; Linux Ghostty: Ctrl+Shift+K)	docs/terminals.md
 terminal	Shift+Enter	new line in Claude Code (tmux passes it on via extended keys)	docs/tmux.md
 nvim	Space, then wait	which-key lists every leader key (leader is Space)	docs/nvim.md
 nvim	Space u t	toggle light/dark	docs/nvim.md

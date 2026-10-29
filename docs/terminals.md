@@ -51,10 +51,10 @@ Shell integration features:
 | `Cmd+Shift+D` | Split down (macOS) |
 | `Cmd+Shift+Enter` | Zoom the current split (macOS) |
 | `Cmd+Shift+R` | Reload the config (macOS) |
-| `Cmd+K` | Clear the tmux pane: sends `Ctrl+Space`, then `Ctrl+L` (macOS) |
+| `Cmd+K` | Clear the tmux pane in a shell (does nothing in vim/nvim): sends `Ctrl+Space`, then `Ctrl+L` (macOS) |
 | `Ctrl+Shift+K` | Same as `Cmd+K` (Linux, which has no Cmd key) |
 
-On Linux, the four `cmd+` binds do nothing useful: use Ghostty's Linux defaults instead (see `ghostty +list-keybinds --default`). `Cmd+K` works with tmux's `prefix Ctrl+L`; without tmux, `Ctrl+L` in zsh clears the screen and the scrollback ([zsh.md](zsh.md)).
+On Linux, the four `cmd+` binds do nothing useful: use Ghostty's Linux defaults instead (see `ghostty +list-keybinds --default`). `Cmd+K` works with tmux's `prefix Ctrl+L` (which ignores panes running vim or nvim); without tmux, `Ctrl+L` in zsh clears the screen and the scrollback ([zsh.md](zsh.md)).
 
 Default Ghostty keys used in these docs (not in the config): macOS `Cmd+T` new tab, `Cmd+1`...`9` go to tab, `Cmd+Shift+,` reload config. Linux `Ctrl+Shift+T` new tab, `Alt+1`...`9` or `Ctrl+PageUp/PageDown` switch tab.
 
@@ -77,7 +77,7 @@ Profile settings from the template:
 | Terminal type | `xterm-256color` |
 | Scrollback | unlimited |
 | New session folder | home |
-| `Cmd+K` | sends `Ctrl+Space` + `Ctrl+L` (clear the tmux pane) |
+| `Cmd+K` | sends `Ctrl+Space` + `Ctrl+L` (clear the tmux pane; nothing in vim/nvim) |
 
 One manual step per machine: iTerm Settings > Profiles > select **Dotfiles** > Other Actions > Set as Default. The profile keeps the same Guid, so this survives every sync.
 
