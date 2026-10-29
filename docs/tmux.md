@@ -136,6 +136,8 @@ Reload with `prefix r`.
 
 Popups float over the current window. They use the script `bin/.local/bin/tmux-popup` (linked to `~/.local/bin/tmux-popup`).
 
+Look: popups use the terminal's own background and text colors with a rounded blue border (`popup-style`, `popup-border-style`); tmux 3.8's default is a solid grey that reads badly on light themes.
+
 | Keys | Popup | Persists? |
 | --- | --- | --- |
 | `prefix G` | lazygit in the pane's folder (90% of the window) | No: quitting lazygit (`q`) closes it. Without lazygit installed you get the message "lazygit is not installed". |
