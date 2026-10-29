@@ -30,6 +30,7 @@ theme pick dark             # choose the dark theme, even in light mode
 theme set light "Flexoki Light"   # save a theme without fzf, then sync and apply
 theme list                  # print every theme name
 theme file "Nord"           # print the path of a theme file (downloads it if needed)
+theme file --no-download "Nord"   # same, but only cache and Ghostty bundles: fails fast offline
 theme sync                  # rewrite the Ghostty and iTerm files from the pair
 theme help                  # usage (also -h, --help)
 tt                          # shell alias for: theme toggle
@@ -39,6 +40,7 @@ Options (can go anywhere in the command):
 
 - `--tty <path>`: write the color codes to that terminal device instead of the current one. tmux uses it for `prefix t`.
 - `--print`: write the codes to standard output (the default). It wins over `--tty`. Neovim uses it.
+- `--no-download`: for `theme file`, look only in the cache and the Ghostty bundles and fail fast when the theme is missing, instead of waiting on curl. Neovim uses it; if the theme is not there yet, it falls back as for an unknown theme until `theme set`, `pick` or `sync` downloads it.
 
 Scripts should read `theme mode`: it prints exactly one word. `theme status` is for people and its layout can change. `<leader>ut` uses `theme mode`; the shell startup reads the state file directly to save a process.
 

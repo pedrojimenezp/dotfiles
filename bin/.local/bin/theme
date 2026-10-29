@@ -29,7 +29,7 @@ PANE_TTY=0                                          # 1 = OUT_TTY is this pane's
 
 usage() {
   cat <<'EOF'
-usage: theme <command> [--tty <path>] [--print]
+usage: theme <command> [--tty <path>] [--print] [--no-download]
   dark | light | auto      set the mode (auto = terminal profile, follows macOS) and apply it
   toggle                   flip between light and dark
   apply                    re-apply the saved mode
@@ -38,7 +38,8 @@ usage: theme <command> [--tty <path>] [--print]
   pick [light|dark]        choose a theme with fzf and live preview (default: the current mode's slot)
   set light|dark <name>    save <name> as the light or dark theme, sync and apply
   list                     print every available theme name
-  file <name>              print the path of a theme file (downloads it if needed)
+  file <name>              print the path of a theme file (downloads it if needed;
+                           --no-download: cache and Ghostty bundles only, fails fast offline)
   sync                     regenerate the Ghostty and iTerm files from ~/.config/theme/config
 EOF
 }
@@ -184,6 +185,10 @@ theme_file() {
   check_name "$name"                                # refuse paths
   [[ -f "$CACHE_DIR/$name" ]] && { echo "$CACHE_DIR/$name"; return 0; }  # cached download
   bundled_file "$name" && return 0                  # Ghostty ships it
+  if ((NO_DOWNLOAD)); then                          # --no-download: never wait on the network
+    echo "theme: '$name' is not cached or bundled (--no-download)" >&2
+    return 1
+  fi
   download_theme "$name" && { echo "$CACHE_DIR/$name"; return 0; }  # fetched from GitHub
   echo "theme: '$name' not found (no Ghostty bundle has it and the download failed; see 'theme list')" >&2
   return 1                                          # caller decides whether to stop
@@ -491,10 +496,12 @@ pick() {
 CMD=""                                              # the command word
 ARGS=()                                             # its arguments
 PRINT=0                                             # 1 = print to stdout
+NO_DOWNLOAD=0                                       # 1 = theme_file never downloads
 while (($#)); do
   case $1 in
     --tty) OUT_TTY="${2:?--tty needs a path}"; shift 2 ;;  # write to this tty
     --print) PRINT=1; shift ;;                      # stdout (the default, kept for callers)
+    --no-download) NO_DOWNLOAD=1; shift ;;          # cache and bundles only (for editors)
     -h | --help) CMD=help; shift ;;                 # show usage
     *)
       if [[ -z $CMD ]]; then CMD=$1; else ARGS+=("$1"); fi  # first word is the command

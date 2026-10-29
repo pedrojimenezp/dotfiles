@@ -46,11 +46,11 @@ function M.mode()
   return nil -- auto elsewhere: the terminal background decides
 end
 
--- Path of a theme file, via the `theme` script (cache, Ghostty bundle or download).
+-- Path of a theme file, via the `theme` script (cache or Ghostty bundle; never downloads, so startup cannot wait on curl).
 local function theme_file(name)
   if vim.fn.executable("theme") ~= 1 then return nil end -- script not installed
-  local res = vim.system({ "theme", "file", name }, { text = true }):wait() -- may download once
-  if res.code ~= 0 then return nil end -- unknown theme or offline
+  local res = vim.system({ "theme", "file", "--no-download", name }, { text = true }):wait()
+  if res.code ~= 0 then return nil end -- unknown or not cached yet
   return vim.trim(res.stdout or "") -- the path
 end
 
