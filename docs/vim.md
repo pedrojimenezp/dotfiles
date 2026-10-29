@@ -15,7 +15,7 @@ The leader key is `Space`. Press the keys one after another.
 | `Ctrl+h/j/k/l` | normal | Move between splits |
 | `Alt+j` / `Alt+k` | normal, visual | Move the line or selection down / up |
 
-`Alt` needs "Option as Alt" in the terminal, see [terminals.md](terminals.md). Splits use the Vim defaults: `:split`, `:vsplit`, or `Ctrl+w s` / `Ctrl+w v`.
+`Alt` needs "Option as Alt" in the terminal, see [terminals.md](terminals.md). Splits use the Vim defaults: `:split`, `:vsplit`, or `Ctrl+w s` / `Ctrl+w v`. The vimrc maps the Esc+j and Esc+k sequences the terminal sends, because terminal Vim does not decode them as Alt on its own.
 
 ## What it sets
 
