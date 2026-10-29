@@ -1,0 +1,94 @@
+#!/usr/bin/env bash
+# Count how often each tool of these dotfiles was used lately, to decide what to remove.
+# Usage: dotfiles-usage [week|2weeks|month]   (uses per tool and last use; default week)
+# Tools: Brewfile brew entries, aliases in zsh/.zshrc, scripts in bin/.local/bin, and tssh. Nothing is listed by hand.
+# Source: atuin history if installed, else ~/.zsh_history (needs EXTENDED_HISTORY). Scripts started by a key
+# (tmux-popup, tmux-sessionizer, dotfiles-help) log "<epoch> <tool>" to $XDG_STATE_HOME/dotfiles/usage.log instead.
+# Approximate: counts the first word of each command and of each part of a pipe or && chain, after env vars and sudo.
+# Env: DOTFILES_USAGE_HISTFILE reads that zsh history file instead; ATUIN_DB_PATH points atuin at another database.
+set -euo pipefail # stop on errors, unset variables and failed pipes
+
+# Repo root: follow the stow symlink back into the repo (a loop, as old macOS readlink lacks -f).
+src="${BASH_SOURCE[0]}" # path this script was started as
+while [[ -L "$src" ]]; do
+  dir="$(cd -P "$(dirname "$src")" && pwd)" # folder that holds the link
+  src="$(readlink "$src")"                  # one hop
+  [[ "$src" == /* ]] || src="$dir/$src"     # relative target: resolve from the link's folder
+done
+ROOT="$(cd -P "$(dirname "$src")/../../.." && pwd)" # bin/.local/bin -> repo root
+
+case "${1:-week}" in
+  week) days=7 ;; 2weeks) days=14 ;; month) days=30 ;;
+  *) sed -n '3p' "$0" | sed 's/^# //'; exit 2 ;; # unknown period: show the usage line
+esac
+
+# Tools: command names from the Brewfile, where the command differs from the formula name or is no command at all.
+tools="tssh" # a zsh function, not a file; z and zi are only aliases of zoxide below
+while read -r name; do
+  case "$name" in
+    zsh-*|fzf-tab|tree-sitter-cli|tmux-fingers|git-lfs|zls|font-*) continue ;; # plugins, libraries, helpers: no command to count
+    ripgrep) name=rg ;; git-delta) name="delta" ;; tealdeer) name=tldr ;; neovim) name=nvim ;; # command differs from formula
+  esac
+  tools="$tools $name"
+done < <(sed -n 's/^brew "\([^"]*\)".*/\1/p' "$ROOT/Brewfile")
+for f in "$ROOT"/bin/.local/bin/*; do tools="$tools ${f##*/}"; done # our own scripts
+logged="$(grep -l 'usage\.log' "$ROOT"/bin/.local/bin/* | sed 's|.*/||' | tr '\n' ' ')" # scripts that log themselves: counted from the log only
+aliases="z=zoxide zi=zoxide $(grep -oE "alias [^= ]+='[^ ']+" "$ROOT/zsh/.zshrc" | sed "s/alias \(.*\)='\(.*\)/\1=\2/" | tr '\n' ' ')" # name=first word
+
+# Data source: custom file, else atuin (global, all folders), else zsh's own history.
+hist="${DOTFILES_USAGE_HISTFILE:-}"
+if [[ -z "$hist" ]] && command -v atuin >/dev/null 2>&1; then
+  from="atuin"
+  read_history() { atuin search --filter-mode global --after "$days days ago" --format '{time} {command}' || true; } # "YYYY-MM-DD HH:MM:SS command"
+else
+  hist="${hist:-$HOME/.zsh_history}"
+  from="zsh history $hist"
+  read_history() { cat "$hist" 2>/dev/null || true; } # ": epoch:duration;command"; missing file: no data
+fi
+log="${XDG_STATE_HOME:-$HOME/.local/state}/dotfiles/usage.log" # one "<epoch> <tool>" line per key-launched run
+zone="$(date +%z)" # local offset, so days change at local midnight
+offset=$(( ${zone:0:1}1 * (10#${zone:1:2} * 3600 + 10#${zone:3:2} * 60) ))
+
+printf '%-20s %5s  %s\n' tool uses "last used"
+{ read_history; sed 's/^/L /' "$log" 2>/dev/null || true; } | LC_ALL=C awk -v days="$days" -v off="$offset" -v today="$(date +%Y-%m-%d)" \
+  -v tools="$tools" -v aliases="$aliases" -v logged="$logged" '
+  function dn(y, m, d) { # days since 1970-01-01 of a calendar date
+    y -= (m <= 2); era = int(y / 400); yoe = y - era * 400
+    doy = int((153 * (m + (m > 2 ? -3 : 9)) + 2) / 5) + d - 1
+    return era * 146097 + yoe * 365 + int(yoe / 4) - int(yoe / 100) + doy - 719468
+  }
+  function hit(name, day) { # count one use if the tool exists
+    if (!(name in tool)) return
+    uses[name]++; if (day > last[name]) last[name] = day
+  }
+  BEGIN {
+    n = split(tools, t, " "); for (i = 1; i <= n; i++) { tool[t[i]] = 1; uses[t[i]] = 0 }
+    n = split(aliases, t, " "); for (i = 1; i <= n; i++) { split(t[i], kv, "="); if (kv[2] in tool) alias[kv[1]] = kv[2] } # only aliases of known tools
+    n = split(logged, t, " "); for (i = 1; i <= n; i++) skip[t[i]] = 1
+    split(today, d, "-"); today = dn(d[1] + 0, d[2] + 0, d[3] + 0)
+  }
+  $1 == "L" { day = int(($2 + off) / 86400); if (day > today - days) hit($3, day); next } # usage.log line
+  /^: [0-9]+:[0-9]+;/ { split($2, e, ":"); day = int((e[1] + off) / 86400); cmd = $0; sub(/^[^;]*;/, "", cmd) } # zsh history line
+  /^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9] / { split($1, d, "-"); day = dn(d[1] + 0, d[2] + 0, d[3] + 0); cmd = $0; sub(/^[^ ]+ [^ ]+ /, "", cmd) } # atuin line
+  /^: [0-9]+:[0-9]+;|^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9] / && day > today - days {
+    n = split(cmd, seg, /[|;&]+/) # simple pipes and chains: each part counts
+    for (i = 1; i <= n; i++) {
+      s = seg[i]; sub(/^[ \t(]+/, "", s)
+      while (s ~ /^[A-Za-z_][A-Za-z0-9_]*=[^ ]* /) sub(/^[^ ]+ +/, "", s) # leading FOO=1
+      sub(/^sudo +/, "", s)
+      w = s; sub(/[ \t].*/, "", w); sub(/.*\//, "", w) # first word without its path
+      if (w in alias) w = alias[w]
+      if (!(w in skip)) hit(w, day)
+    }
+  }
+  END {
+    for (name in tool) {
+      age = today - last[name]
+      when = uses[name] == 0 ? "never" : age == 0 ? "today" : age == 1 ? "yesterday" : age " days ago"
+      printf "%d %s %s\n", uses[name], name, when
+    }
+  }' | sort -k1,1nr -k2,2 | while read -r uses name when; do
+  mark=""; [[ "$uses" -gt 0 ]] || mark="  ← unused"
+  printf '%-20s %5s  %s%s\n' "$name" "$uses" "$when" "$mark"
+done
+printf '\nPeriod: last %s days · Source: %s + %s\n' "$days" "$from" "$log"

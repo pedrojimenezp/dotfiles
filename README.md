@@ -84,7 +84,7 @@ What each step does, backups, idempotency and troubleshooting: [docs/install.md]
 | `ghostty` | `~/.config/ghostty/config` | Ghostty terminal (optional; linked only if Ghostty is installed). Colors come from the generated `theme.conf` next to it. |
 | `iterm` | `~/.config/iterm/dotfiles-profile.plist` | Template for the iTerm2 Dynamic Profile "Dotfiles" (macOS only). `theme sync` adds the colors. |
 | `mise` | `~/.config/mise/config.toml` | Global mise defaults: node (LTS) and go (latest), `.nvmrc` support. |
-| `bin` | `~/.local/bin` | Scripts on PATH: `tmux-sessionizer`, `tmux-popup`, `theme`, `dotfiles-help`. |
+| `bin` | `~/.local/bin` | Scripts on PATH: `tmux-sessionizer`, `tmux-popup`, `theme`, `dotfiles-help`, `dotfiles-usage`. |
 | `theme` | `~/.config/theme/config` | The light/dark theme pair (tracked), used by the terminals, tmux and Neovim. |
 
 `./install.sh --server` (no `atuin`) links only `zsh`, `tmux`, `vim`, `git`, `bin` and `theme`.
@@ -113,6 +113,7 @@ The full, searchable list is `prefix ?` or `dotfiles-help` (see [Help](#help)); 
 | `ll`, `la`, `lt` | eza: long, with hidden, tree |
 | `theme pick` | Choose a theme with live preview |
 | `dotfiles-help` | Search every shortcut (fzf) |
+| `dotfiles-usage [week\|2weeks\|month]` | Uses per tool, to find what to remove ([docs](docs/tools.md#usage-report-dotfiles-usage)) |
 
 ### tmux
 

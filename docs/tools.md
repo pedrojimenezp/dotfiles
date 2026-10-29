@@ -94,3 +94,12 @@ mise installs and switches versions of node, go and other tools per project.
 - **Go**: the `toolchain` line in `go.mod` still works. `go install` tools land in `~/go/bin` (on `PATH`).
 - **Old mise**: a standalone mise in `~/.local/bin` would shadow the Homebrew one, so `install.sh` renames it to `mise.backup-<stamp>` (full mode only).
 - Zig is not managed by mise: the zig and zls versions must match, so both come from Homebrew.
+
+## Usage report: dotfiles-usage
+
+`dotfiles-usage [week|2weeks|month]` (default `week`) lists how often each tool of this repo was used in that period, most used first. Tools never used are last, marked `← unused`: candidates to remove. The footer shows the period and the data source.
+
+- **Tool list**: nothing is kept by hand. It reads the `brew` lines of the `Brewfile` (plugins, libraries and helpers like `zsh-*`, `fzf-tab` and `tree-sitter-cli` have no command, so they are skipped), the scripts in `bin/.local/bin` and the `tssh` function. Aliases in `zsh/.zshrc` count for their tool (`lg` is `lazygit`, `vim` is `nvim`, `tt` is `theme`, `ls` is `eza`, `z` is `zoxide`).
+- **History**: atuin (`atuin search --filter-mode global --after "N days ago"`) when installed, else `~/.zsh_history` (needs `EXTENDED_HISTORY`, set in `.zshrc`). `DOTFILES_USAGE_HISTFILE=file` reads another zsh history file; `ATUIN_DB_PATH` points atuin at another database.
+- **Key-launched tools** do not reach shell history, so `tmux-popup`, `tmux-sessionizer` and `dotfiles-help` append `<epoch> <tool>` to `${XDG_STATE_HOME:-~/.local/state}/dotfiles/usage.log` on each run. Their counts come only from that log. Delete the file to reset it.
+- **Approximation**: the first word of each command counts, and so does each part of a pipe or chain (`a | b`, `a && b`), after `FOO=1` prefixes and `sudo`. Tools run from scripts, `xargs` or `$(...)`, and keys handled by a tool itself (fzf `Ctrl+R`, `Ctrl+T`) are not seen.

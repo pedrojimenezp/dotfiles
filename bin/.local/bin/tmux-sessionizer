@@ -149,6 +149,7 @@ else
 fi
 
 [[ -n "$selected" ]] || exit 0 # empty argument
+{ mkdir -p "${XDG_STATE_HOME:-$HOME/.local/state}/dotfiles" && printf '%s tmux-sessionizer\n' "$(date +%s)" >> "${XDG_STATE_HOME:-$HOME/.local/state}/dotfiles/usage.log"; } 2>/dev/null || true # count the run for dotfiles-usage; never fails
 
 if [[ -n "$repo" ]]; then
   name="$(git -C "$selected" branch --show-current 2>/dev/null || true)" # worktree: named after its branch
