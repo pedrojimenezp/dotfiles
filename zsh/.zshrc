@@ -223,6 +223,8 @@ fi
 
 # --- Local, untracked overrides (secrets, machine settings): keep it after the plugins, before syntax highlighting ---
 if [[ -f $HOME/.zshrc.local ]]; then source "$HOME/.zshrc.local"; fi  # an if keeps $? at 0 when the file is missing (a failed [[ ]] would turn the prompt red)
+# Host shown in the prompt over SSH only: HOST_LABEL (set in .zshrc.local), else the short hostname
+if [[ -n ${SSH_CONNECTION:-} ]]; then export PROMPT_HOST=${HOST_LABEL:-${HOST%%.*}}; else unset PROMPT_HOST; fi
 
 # --- Syntax highlighting: must load after everything that defines widgets, so keep it last ---
 if [[ -n ${HOMEBREW_PREFIX:-} && -f $HOMEBREW_PREFIX/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ]]; then
