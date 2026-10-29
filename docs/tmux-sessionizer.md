@@ -28,8 +28,9 @@ repo under your search roots, wherever the worktree folder lives.
   HEAD) it uses the folder name. A plain directory uses its folder name.
 - The characters `/`, `.`, `:` and spaces become `-`. Repeated `-` collapse
   into one. (tmux does not allow `.` and `:` in names.)
-- If a session with that name already exists for another directory, the repo
-  name is added: `fix-login-api`.
+- If a session with that name already exists for another directory, a suffix
+  is added (cleaned the same way): the repo name for a worktree
+  (`fix-login-api`), the parent folder name for a plain directory (`api-b`).
 
 ## Default search roots
 

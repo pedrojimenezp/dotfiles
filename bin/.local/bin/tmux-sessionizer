@@ -159,10 +159,14 @@ else
 fi
 name="$(printf '%s' "$name" | tr './: ' '----' | tr -s '-')" # tmux rejects dots and colons; slashes would read as paths; collapse repeated dashes
 
-# A same-named session for another directory would be switched to by mistake; add the repo to tell them apart.
-if [[ -n "$repo" ]] && tm has-session -t "=$name" 2>/dev/null; then
+# A same-named session for another directory would be switched to by mistake; add the repo (worktrees)
+# or the parent folder (plain dirs) to tell them apart.
+if tm has-session -t "=$name" 2>/dev/null; then
   existing="$(tm list-sessions -F '#{session_name}'$'\t''#{session_path}' 2>/dev/null | awk -F'\t' -v n="$name" '$1 == n { print $2; exit }' || true)" # where that session was started
-  if [[ -n "$existing" && "$existing" != "$selected" ]]; then name="$name-$(printf '%s' "$repo" | tr './: ' '----' | tr -s '-')"; fi # same cleanup as the name above
+  if [[ -n "$existing" && "$existing" != "$selected" ]]; then
+    extra="${repo:-$(basename "$(dirname "$selected")")}" # the repo for worktrees, else the folder that holds the directory
+    name="$name-$(printf '%s' "$extra" | tr './: ' '----' | tr -s '-')" # same cleanup as the name above
+  fi
 fi
 
 if [[ -z "${TMUX:-}" ]]; then
