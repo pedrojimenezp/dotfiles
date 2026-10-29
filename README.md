@@ -78,7 +78,7 @@ What each step does, backups, idempotency and troubleshooting: [docs/install.md]
 | `tmux` | `~/.config/tmux/tmux.conf` | tmux with prefix `Ctrl+Space`, vi copy mode, TPM plugins, minimal status line that follows the terminal palette, with SSH badge, prefix, bell, zoom and git branch indicators. |
 | `vim` | `~/.vimrc` | Small plugin-free vimrc for servers. |
 | `git` | `~/.config/git/{config,ignore}` | Git defaults, delta pager, aliases, global ignores, `local` include. |
-| `starship` | `~/.config/starship.toml` | Prompt layout. |
+| `starship` | `~/.config/starship.toml` | Two-line framed prompt. |
 | `atuin` | `~/.config/atuin/config.toml` | Shell history search on `Up` and `Ctrl+R`, local only (no sync). |
 | `ghostty` | `~/.config/ghostty/config` | Ghostty terminal (optional; linked only if Ghostty is installed). Colors come from the generated `theme.conf` next to it. |
 | `iterm` | `~/.config/iterm/dotfiles-profile.plist` | Template for the iTerm2 Dynamic Profile "Dotfiles" (macOS only). `theme sync` adds the colors. |
