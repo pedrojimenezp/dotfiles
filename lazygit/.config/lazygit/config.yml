@@ -1,0 +1,7 @@
+git:
+  # Cycle with `|`. The first one goes side by side only when the panel is wide enough.
+  diffRenderers:
+    - command: delta --{{colorScheme}} --paging=never {{if gt .width 160}}--side-by-side{{end}}
+      name: delta auto
+    - command: delta --{{colorScheme}} --paging=never
+      name: delta inline

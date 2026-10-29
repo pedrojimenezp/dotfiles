@@ -76,7 +76,7 @@ github_ssh_ok() {
 }
 
 # Packages to link.
-PACKAGES=(zsh nvim tmux vim git starship mise atuin bin theme)
+PACKAGES=(zsh nvim tmux vim git lazygit starship mise atuin bin theme)
 
 # iTerm Dynamic Profile template (theme sync builds the real profile): macOS only.
 if [[ "$OSTYPE" == darwin* ]]; then
