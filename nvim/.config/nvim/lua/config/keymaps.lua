@@ -4,6 +4,10 @@ local map = vim.keymap.set
 map("i", "jk", "<Esc>", { desc = "Leave insert mode" })
 map("n", "<Esc>", "<cmd>nohlsearch<CR>", { desc = "Clear search highlight" })
 
+-- NUL (Ctrl-Space) in insert mode inserts the last text by default. Terminal Cmd+K sends it, so ignore it.
+map("i", "<C-@>", "<Nop>", { desc = "Ignore NUL" })
+map("i", "<C-Space>", "<Nop>", { desc = "Ignore NUL" })
+
 -- Windows: Ctrl-h/j/k/l are handled by vim-tmux-navigator (works across tmux panes too).
 -- Splits use the built-in Ctrl-w v / Ctrl-w s (<leader>s is the Search group).
 

@@ -52,6 +52,9 @@ if $SSH_TTY != '' | set clipboard= | else | set clipboard=unnamed | endif
 " Mappings: comments go on the line above because a trailing " would be part of the mapping.
 " jk leaves insert mode
 inoremap jk <Esc>
+
+" NUL (Ctrl-Space) in insert mode inserts the last text by default. Terminal Cmd+K sends it, so ignore it.
+inoremap <C-@> <Nop>
 " Ctrl-h/j/k/l move between splits; at the edge, hand off to the tmux pane there
 function! s:Nav(dir) abort
   let l:win = winnr()

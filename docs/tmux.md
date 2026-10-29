@@ -190,7 +190,7 @@ When a window has 2 or more panes, each pane gets a label row at its top border:
 
 ## Clear the pane: `Cmd+K`
 
-In Ghostty (macOS) and iTerm, `Cmd+K` sends `Ctrl+Space`, then `Ctrl+L`, so it clears the tmux pane, scrollback included. In a pane running vim or nvim it does nothing: `prefix Ctrl+L` is skipped there, because the `Ctrl+L` would reach the editor and move focus (vim-tmux-navigator). Outside tmux, Ghostty or iTerm send the keys straight to nvim and nothing can detect that. Ghostty on Linux uses `Ctrl+Shift+K`. See [terminals.md](terminals.md).
+In Ghostty (macOS) and iTerm, `Cmd+K` sends `Ctrl+Space`, then `Ctrl+L`, so it clears the tmux pane, scrollback included. In a pane running vim or nvim it does nothing: `prefix Ctrl+L` is skipped there, because the `Ctrl+L` would reach the editor and move focus (vim-tmux-navigator). Outside tmux, the keys go straight to vim or nvim: they never change text (insert mode ignores `Ctrl+Space`), but in normal mode `Ctrl+L` can still move to the split on the right. Ghostty on Linux uses `Ctrl+Shift+K`. See [terminals.md](terminals.md).
 
 ## Plugins and TPM
 

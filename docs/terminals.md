@@ -51,7 +51,7 @@ Shell integration features:
 | `Cmd+Shift+D` | Split down (macOS) |
 | `Cmd+Shift+Enter` | Zoom the current split (macOS) |
 | `Cmd+Shift+R` | Reload the config (macOS) |
-| `Cmd+K` | Clear the tmux pane in a shell (does nothing in vim/nvim): sends `Ctrl+Space`, then `Ctrl+L` (macOS) |
+| `Cmd+K` | Clear the tmux pane in a shell (in vim/nvim it never changes text; in normal mode it can move to the right split): sends `Ctrl+Space`, then `Ctrl+L` (macOS) |
 | `Ctrl+Shift+K` | Same as `Cmd+K` (Linux, which has no Cmd key) |
 
 On Linux, the four `cmd+` binds do nothing useful: use Ghostty's Linux defaults instead (see `ghostty +list-keybinds --default`). `Cmd+K` works with tmux's `prefix Ctrl+L` (which ignores panes running vim or nvim); without tmux, `Ctrl+L` in zsh clears the screen and the scrollback ([zsh.md](zsh.md)).
@@ -77,7 +77,7 @@ Profile settings from the template:
 | Terminal type | `xterm-256color` |
 | Scrollback | unlimited |
 | New session folder | home |
-| `Cmd+K` | sends `Ctrl+Space` + `Ctrl+L` (clear the tmux pane; nothing in vim/nvim) |
+| `Cmd+K` | sends `Ctrl+Space` + `Ctrl+L` (clear the tmux pane; never edits text in vim/nvim) |
 
 One manual step per machine: iTerm Settings > Profiles > select **Dotfiles** > Other Actions > Set as Default. The profile keeps the same Guid, so this survives every sync.
 
