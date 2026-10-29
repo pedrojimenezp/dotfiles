@@ -203,7 +203,8 @@ fi
 install_font() {
   local dir="$HOME/.local/share/fonts/${NERD_FONT}NerdFont" tmp # per-user dir, no sudo
   # fc-list shows Monaspice families as "MonaspiceNe Nerd Font", so match the family prefix
-  if fc-list | grep -qi "${NERD_FONT_FAMILY}.* Nerd Font" || [[ -n "$(ls -A "$dir" 2>/dev/null)" ]]; then
+  # grep -c reads all input, so fc-list never gets SIGPIPE (which fails the pipe under pipefail)
+  if [[ "$(fc-list | grep -ci "${NERD_FONT_FAMILY}.* Nerd Font")" -gt 0 ]] || [[ -n "$(ls -A "$dir" 2>/dev/null)" ]]; then
     return 0 # already installed
   fi
   echo "==> Installing ${NERD_FONT} Nerd Font"
