@@ -254,7 +254,13 @@ ERR
   elif [[ ! -e "$CLAUDE_DIR" ]]; then
     run git clone "$CLAUDE_REPO_URL" "$CLAUDE_DIR" # access was checked above
   elif git -C "$CLAUDE_DIR" rev-parse --git-dir >/dev/null 2>&1; then
-    echo "Claude config already there: $CLAUDE_DIR (not pulling)"
+    echo "Claude config already there: $CLAUDE_DIR (pulling)"
+    # a failed pull (offline, conflicts) keeps the clone as it is; its installer still runs
+    if [[ $DRY -eq 0 ]] && ! github_ssh_ok; then # the pull needs your GitHub key like the clone
+      echo "Warning: no GitHub SSH access, not pulling $CLAUDE_DIR (see docs/server.md)" >&2
+    else
+      run git -C "$CLAUDE_DIR" pull --rebase --autostash || echo "Warning: could not pull $CLAUDE_DIR; keeping it as it is" >&2
+    fi
   else
     CLAUDE_SKIPPED=1 # its installer must not run from an unknown folder; reported at the end
     echo "Warning: $CLAUDE_DIR exists but is not a git repo: skipping" >&2
