@@ -6,6 +6,7 @@ cask_args appdir: "~/Applications" # per-user app folder: casks never need sudo 
 brew "neovim"                  # main editor (Lua config in nvim/)
 brew "tmux"                    # terminal multiplexer: sessions, windows, panes
 brew "stow"                    # symlink manager that links this repo into $HOME
+brew "tmux-fingers"            # binary for the tmux-fingers plugin: hint-based copy (prefix Space)
 brew "starship"                # fast, customizable shell prompt
 brew "zsh-autosuggestions"     # fish-style suggestions from history while typing
 brew "zsh-syntax-highlighting" # colors valid/invalid commands as you type

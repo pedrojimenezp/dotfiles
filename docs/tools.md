@@ -8,6 +8,7 @@ Everything below is installed by the `Brewfile` (`brew bundle`, run by `install.
 | --- | --- | --- |
 | `neovim` | Main editor ([nvim.md](nvim.md)) | `nvim file.go` (or `vim file.go`) |
 | `tmux` | Sessions, windows, panes ([tmux.md](tmux.md)) | `tmux new-session -A -s work` |
+| `tmux-fingers` | Binary behind the tmux hint-copy plugin ([tmux.md](tmux.md#copy-with-hints)) | `prefix Space`, then a hint letter |
 | `stow` | Links each package into `$HOME` | `stow --restow --no-folding -d ~/dotfiles -t ~ zsh` |
 | `starship` | Prompt (see below) | `starship explain` |
 | `zsh-autosuggestions` | Grey history suggestion while you type | Press `Right arrow` to accept |

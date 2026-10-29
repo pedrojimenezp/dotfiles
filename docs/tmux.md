@@ -35,6 +35,7 @@ Start tmux: `tmux`. Start or attach to a named session: `tmux new-session -A -s 
 | `prefix G` | (`Shift+g`) lazygit in a popup, in the pane's folder. See [Popups](#popups) |
 | `` prefix ` `` | Toggle a scratch shell popup that keeps running. See [Popups](#popups) |
 | `prefix A` | (`Shift+a`) Toggle a Claude Code popup that keeps running. See [Popups](#popups) |
+| `prefix Space` | Copy with hints (tmux-fingers), see [Copy with hints](#copy-with-hints). Replaces the default `next-layout` |
 | `prefix s` | Pick a session from a list (popup sessions are hidden) |
 | `prefix N` | (`Shift+n`) New session: asks for a name (no `.` or `:`), starts in the pane's folder and switches to it |
 | `prefix X` | Kill the current session, after a `y/n` question |
@@ -130,6 +131,23 @@ Popups float over the current window. They use the script `bin/.local/bin/tmux-p
 
 **resurrect and continuum**: saves include popup sessions, and a restore brings them back without their parent mark. `@resurrect-hook-post-restore-all` runs the same cleanup after every restore, so they disappear right away and the next press starts fresh ones. This is simpler than filtering the save file, and a running Claude Code is not restored anyway.
 
+## Copy with hints
+
+`prefix Space` ([tmux-fingers](https://github.com/Morantron/tmux-fingers)) highlights URLs, file paths, git hashes, IPs, UUIDs, numbers (4+ digits) and similar in the visible pane, each with a letter hint. Press the hint's letter(s) to copy that match; no mouse and no copy mode.
+
+| Keys (in hint mode) | What it does |
+| --- | --- |
+| `a`-`z` | Copy the match |
+| `Ctrl` + letter | Copy and open it (`:open:`, e.g. a URL in the browser) |
+| `Shift` + letter | Copy and paste it into the pane |
+| `Tab` | Multi mode: pick several matches, `Tab` again copies them all |
+| `q`, `Esc` | Leave |
+
+- **Clipboard**: the copy goes to the tmux buffer and the system clipboard (`pbcopy` on macOS, `wl-copy`/`xclip`/`xsel` on Linux with a display) and, through `set-clipboard on` (OSC 52), to your local clipboard even over SSH. One config works everywhere; there is no custom `@fingers-main-action`.
+- **`next-layout` is gone**: `prefix Space` used to cycle layouts. It is not rebound elsewhere; use `prefix : select-layout tiled` (or `even-horizontal`, ...) when you need a layout.
+- **The binary**: the plugin is a thin wrapper around a `tmux-fingers` binary (Crystal). Full install (`brew bundle`) installs it from the `tmux-fingers` formula before tmux first loads the plugin. `./install.sh` only clones the plugin (`install_plugins`); it never starts the plugin's wizard.
+- **Server mode (no Homebrew)**: if the binary is missing, the first time tmux loads the plugin it shows an install menu (wizard). Pick "Download standalone binary" (Linux x86_64 and macOS arm64) or build from source (needs Crystal). Until then `prefix Space` does nothing. Options for patterns and styles: see the plugin's README (`@fingers-pattern-N`, `@fingers-hint-style`, ...).
+
 ## Pane labels
 
 When a window has 2 or more panes, each pane gets a label row at its top border: `index: command`. The active pane's label is a blue block, and arrows mark the active border. Borders are heavy lines. With one pane, the label row is hidden.
@@ -155,6 +173,7 @@ Plugins are managed by [TPM](https://github.com/tmux-plugins/tpm), cloned by `in
 | --- | --- |
 | `tmux-plugins/tpm` | The plugin manager |
 | `christoomey/vim-tmux-navigator` | `Ctrl+h/j/k/l` between tmux panes and nvim splits |
+| `Morantron/tmux-fingers` | Hint-based copy (`prefix Space`), see [Copy with hints](#copy-with-hints) |
 | `tmux-plugins/tmux-resurrect` | Save and restore sessions |
 | `tmux-plugins/tmux-continuum` | Auto-save every 15 minutes and auto-restore |
 

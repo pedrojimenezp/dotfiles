@@ -109,6 +109,7 @@ Details are in the docs above. `prefix` is `Ctrl+Space`. In Neovim, `<leader>` i
 | `prefix t` | Toggle light/dark |
 | `prefix G` | lazygit popup (pane's folder) |
 | `` prefix ` `` / `prefix A` | Toggle a persistent shell / Claude Code popup (same key or `prefix d` closes) |
+| `prefix Space` | Copy with hints: press a letter to copy a URL, path or hash (replaces `next-layout`) |
 | `prefix s` | Pick a session (popup sessions hidden) |
 | `prefix N` | New session by name, in the pane's folder |
 | `prefix X` | Kill the current session (asks first) |
