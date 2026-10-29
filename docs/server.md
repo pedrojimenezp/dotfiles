@@ -136,12 +136,17 @@ Then finish the setup:
    ```sh
    chmod 600 ~/.zshrc.local
    ```
-3. On the server, run `claude` once and log in.
-4. On the server, inside a project that needs other tool versions, run:
+3. On the server, name this machine (optional). EC2 hostnames look like `ip-172-32-4-187`. Add one line to `~/.zshrc.local`:
+   ```sh
+   export HOST_LABEL=bravo.example.com
+   ```
+   Open a new shell: the prompt and the tmux SSH badge show this name instead of the hostname. It only affects your user, so it is safe on a shared box. tmux reads it when its server starts: for a running tmux, run `tmux kill-server` (this ends its sessions) or `tmux set -g @host_label "$HOST_LABEL"` and `tmux source-file ~/.config/tmux/tmux.conf`.
+4. On the server, run `claude` once and log in.
+5. On the server, inside a project that needs other tool versions, run:
    ```sh
    mise install
    ```
-5. On the server, type `exit` to go back to your laptop.
+6. On the server, type `exit` to go back to your laptop.
 
 ## 4. Daily use
 

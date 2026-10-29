@@ -124,7 +124,7 @@ Bells from any window are flagged (`monitor-bell on`, `bell-action any`) and no 
 
 **On a remote machine** (the tmux server was started from an SSH session) the look is different so you never mix it up with your local tmux: the left side starts with a red **SSH** badge that holds the host label (for example ` 󰣀 SSH dev-ec2 `), followed by the usual session block (blue, yellow while the prefix is pressed, the same as locally), and the right side shows the branch and the time without the host name. The badge is enough, so the rest of the bar keeps the terminal colors (a tinted bar would hurt readability in the light theme). A server first started locally and later used over SSH keeps the local look.
 
-**Host label and per-machine settings**: the label defaults to the short host name (`#h`). To change it on one machine, create `~/.config/tmux/local.conf`. It is not part of the dotfiles (untracked, not stowed) and tmux loads it if present, after the status settings and before the plugins, so it can override anything:
+**Host label and per-machine settings**: the label is `$HOST_LABEL` when set (the usual way: `export HOST_LABEL=...` in `~/.zshrc.local`, read when the tmux server starts), else the short host name. `@host_label` is the tmux-only override and wins over `$HOST_LABEL`. To set it on one machine, create `~/.config/tmux/local.conf`. It is not part of the dotfiles (untracked, not stowed) and tmux loads it if present, after the status settings and before the plugins, so it can override anything:
 
 ```tmux
 set -g @host_label "dev-box"
