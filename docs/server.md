@@ -2,7 +2,7 @@
 
 A step-by-step guide to set up an Ubuntu server (for example an EC2 instance) with these dotfiles and work on it over SSH.
 
-Every command says where it runs: "On your Mac" or "On the server".
+Every command says where it runs: "On your laptop" or "On the server". Your laptop can be a Mac or a Linux machine. Where a step is different, it is marked **macOS** or **Linux**. If a step has no mark, it is the same on both.
 
 ## 1. What you get
 
@@ -10,7 +10,7 @@ Every command says where it runs: "On your Mac" or "On the server".
 - tmux runs on the server. If your laptop disconnects or sleeps, your work keeps running.
 - tmux continuum saves your sessions every 15 minutes. After a server reboot, run `tssh my-ec2` and they come back.
 
-## 2. On your Mac, once
+## 2. On your laptop, once
 
 Add a host entry to `~/.ssh/config`. Replace the placeholders:
 
@@ -22,31 +22,50 @@ Host my-ec2
   ForwardAgent yes
 ```
 
-`ForwardAgent yes` lets the server use your Mac's GitHub key without copying the key to the server. You need it for `--with-claude` and for `git push` from the server.
+`ForwardAgent yes` lets the server use your laptop's GitHub key without copying the key to the server. You need it for `--with-claude` and for `git push` from the server.
 
 You do not need `SetEnv TERM=...` or `RequestTTY` in the entry. Ghostty's ssh-terminfo and `tssh -t` already cover them.
 
 ### Share your GitHub key with the server
 
-Why: on your Mac, `ssh` can read a key file directly, so GitHub works even if the key is not in the agent. But `ForwardAgent` only shares keys that are loaded in the agent. If the key is not loaded, the server gets "Permission denied (publickey)" even though GitHub works on your Mac. `gh auth login` does not help here: it sets up https tokens, and `ssh -T` only uses SSH keys.
+Why: on your laptop, `ssh` can read a key file directly, so GitHub works even if the key is not in the agent. But `ForwardAgent` only shares keys that are loaded in the agent. If the key is not loaded, the server gets "Permission denied (publickey)" even though GitHub works on your laptop. `gh auth login` does not help here: it sets up https tokens, and `ssh -T` only uses SSH keys.
 
-1. On your Mac, find which key GitHub uses:
+1. On your laptop (macOS and Linux), find which key GitHub uses:
    ```sh
    ssh -vT git@github.com 2>&1 | grep -E "Offering public key|Authenticated to"
    ```
    The path printed just before "Authenticated to github.com" is your GitHub key. Only file names are printed, never the key itself.
-2. On your Mac, load that key into the agent. Use your own path:
+2. On your laptop, load that key into the agent. Use your own path.
+
+   **macOS only:**
    ```sh
    ssh-add --apple-use-keychain ~/.ssh/id_ed25519
    ```
    It asks for the passphrase once and saves it in the macOS Keychain.
-3. On your Mac, keep the key loaded after a reboot. Add this at the END of `~/.ssh/config`:
+
+   **Linux:**
+   ```sh
+   ssh-add ~/.ssh/id_ed25519
+   ```
+   Most Linux desktops (GNOME Keyring, ssh-agent) start an agent for you. If `ssh-add -l` says it cannot connect to the agent, start one first, then run `ssh-add` again:
+   ```sh
+   eval "$(ssh-agent -s)"
+   ```
+3. On your laptop, keep the key loaded after a reboot. Add this at the END of `~/.ssh/config`. `UseKeychain` only exists on macOS. On Linux it is an error ("Bad configuration option: usekeychain"), so use the Linux block there.
+
+   **macOS only:**
    ```
    Host *
      AddKeysToAgent yes
      UseKeychain yes
    ```
-4. On your Mac, check that the agent lists the key:
+   **Linux:**
+   ```
+   Host *
+     AddKeysToAgent yes
+   ```
+   On Linux, `AddKeysToAgent yes` loads the key into the agent the first time you use it in a session. You type the passphrase once per login.
+4. On your laptop, check that the agent lists the key:
    ```sh
    ssh-add -l
    ```
@@ -61,7 +80,7 @@ Why: on your Mac, `ssh` can read a key file directly, so GitHub works even if th
 
 The first run takes a few minutes.
 
-On your Mac, connect:
+On your laptop, connect:
 
 ```sh
 ssh my-ec2
@@ -112,7 +131,7 @@ exit
 
 Then finish the setup:
 
-1. On your Mac, log in again: `ssh my-ec2`. You are now in zsh.
+1. On your laptop, log in again: `ssh my-ec2`. You are now in zsh.
 2. On the server, put your secrets in `~/.zshrc.local` (it is sourced last and not tracked by git), then lock it:
    ```sh
    chmod 600 ~/.zshrc.local
@@ -122,12 +141,12 @@ Then finish the setup:
    ```sh
    mise install
    ```
-5. On the server, type `exit` to go back to your Mac.
+5. On the server, type `exit` to go back to your laptop.
 
 ## 4. Daily use
 
-1. On your Mac, open a new terminal tab (`Cmd+T`).
-2. On your Mac, run:
+1. On your laptop, open a new terminal tab. On macOS press `Cmd+T`. On Linux press `Ctrl+Shift+T` (the default in Ghostty and most Linux terminals; if it does not work, use your terminal's new-tab shortcut).
+2. On your laptop, run:
    ```sh
    tssh my-ec2
    ```
@@ -138,7 +157,7 @@ Rules:
 
 - Use one tab per server.
 - Never run `tssh` inside a local tmux. No tmux inside tmux.
-- Switch between tabs with `Cmd+1`, `Cmd+2`, and so on.
+- Switch between tabs. On macOS use `Cmd+1`, `Cmd+2`, and so on. On Linux use `Alt+1`, `Alt+2`, and so on, or `Ctrl+PageUp` and `Ctrl+PageDown` (Ghostty defaults; other terminals may differ).
 - To leave, press `Ctrl+Space`, then `d` (detach). Or just close the tab. Everything keeps running on the server.
 - To come back, open a tab and run `tssh my-ec2` again.
 
@@ -157,5 +176,5 @@ cd ~/dotfiles && git pull && ./install.sh
 - **`tssh` says tmux not found.** Your login shell is not zsh. On the server, run the `chsh` step from section 3, then log out and in.
 - **GitHub clone asks for a password, or "permission denied".** Follow "Share your GitHub key with the server" in section 2, then reconnect.
 - **`--with-claude` says "no GitHub SSH access on this machine" and exits with an error.** The installer tested `ssh git@github.com` and GitHub did not accept a key. It skips the Claude step and finishes the rest. Fix the forwarding as in the item above, reconnect, then run `./install.sh --with-claude` again.
-- **Homebrew install or `git pull` says "Permission denied (publickey)".** This only happens with the old git config, which sent all GitHub traffic over SSH. Run `git pull` in the dotfiles clone (or re-run `./install.sh`) to get the current config. Now only pushes use SSH. Where SSH is needed (`--with-claude`, `git push`), see "Share your GitHub key with the server" in section 2: if `echo $SSH_AUTH_SOCK` on the server is set but access is denied, the key is not in the Mac agent; if it is empty, `ForwardAgent yes` is missing.
-- **Colors or icons look wrong.** This is the Mac terminal font or profile, not the server. The server sends text only; your Mac terminal draws the icons.
+- **Homebrew install or `git pull` says "Permission denied (publickey)".** This only happens with the old git config, which sent all GitHub traffic over SSH. Run `git pull` in the dotfiles clone (or re-run `./install.sh`) to get the current config. Now only pushes use SSH. Where SSH is needed (`--with-claude`, `git push`), see "Share your GitHub key with the server" in section 2: if `echo $SSH_AUTH_SOCK` on the server is set but access is denied, the key is not in the laptop's agent; if it is empty, `ForwardAgent yes` is missing.
+- **Colors or icons look wrong.** This is your laptop's terminal font or profile, not the server. The server sends text only; your laptop's terminal draws the icons. On macOS, check the terminal profile (for example iTerm) uses the Nerd Font. On Linux, the Nerd Font must be installed on the laptop (`install.sh` does this on Linux desktops; run `fc-cache -f` and restart the terminal) and selected in your terminal.
