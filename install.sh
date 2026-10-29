@@ -160,12 +160,12 @@ fi
 TPM="$HOME/.config/tmux/plugins/tpm"
 if [[ ! -d "$TPM" ]] && command -v git >/dev/null 2>&1; then
   echo "==> Cloning TPM"
-  run git clone --depth 1 https://github.com/tmux-plugins/tpm "$TPM"
+  run env GIT_CONFIG_GLOBAL=/dev/null git clone --depth 1 https://github.com/tmux-plugins/tpm "$TPM" # public repo over https: the git config rewrites GitHub to SSH, which fails on a machine without a key
 fi
-# Download the plugins listed in tmux.conf; works without a running tmux server
+# Download the plugins listed in tmux.conf; works without a running tmux server (public repos: https, no SSH key)
 if [[ -x "$TPM/bin/install_plugins" || $DRY -eq 1 ]]; then
   echo "==> Installing tmux plugins"
-  run "$TPM/bin/install_plugins" || echo "Warning: tmux plugin install failed; press prefix + I in tmux" >&2
+  run env GIT_CONFIG_GLOBAL=/dev/null "$TPM/bin/install_plugins" || echo "Warning: tmux plugin install failed; press prefix + I in tmux" >&2
 fi
 
 # Step 5: Nerd Font for Linux desktop terminals (Ghostty and macOS need nothing).
