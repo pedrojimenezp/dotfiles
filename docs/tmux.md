@@ -1,0 +1,135 @@
+# tmux
+
+File: `tmux/.config/tmux/tmux.conf`, linked to `~/.config/tmux/tmux.conf`. It needs tmux 3.3 or newer. Every line has a comment in the file.
+
+tmux keeps your terminal programs running when you close the terminal or lose the connection. It splits one terminal into **panes**, groups panes into **windows**, and groups windows into **sessions**.
+
+## The prefix: `Ctrl+Space`
+
+Most tmux keys start with the **prefix**. Press `Ctrl+Space`, release it, then press the next key. In this document `prefix c` means: `Ctrl+Space`, then `c`.
+
+The default prefix `Ctrl+b` is removed. Press the prefix twice (`Ctrl+Space`, `Ctrl+Space`) to send a real `Ctrl+Space` to the program inside, for example a nested tmux.
+
+## Basics
+
+| Concept | Meaning |
+| --- | --- |
+| Session | A named workspace. It survives when you detach. |
+| Window | A "tab" inside a session. Numbered from 1. |
+| Pane | A split inside a window. Numbered from 1. |
+
+Start tmux: `tmux`. Start or attach to a named session: `tmux new-session -A -s work`. List sessions: `tmux ls`.
+
+## Keys from this config
+
+| Keys | What it does |
+| --- | --- |
+| `prefix \|` | Split left/right, in the current folder |
+| `prefix -` | Split top/bottom, in the current folder |
+| `prefix c` | New window, in the current folder |
+| `prefix H` / `J` / `K` / `L` | Resize the pane 5 cells left / down / up / right. Hold the key to repeat (use `Shift`). |
+| `Ctrl+h` / `j` / `k` / `l` | Move between panes (and nvim splits), **no prefix** (vim-tmux-navigator) |
+| `prefix [` | Enter copy mode (vi keys). Then `v` starts a selection, `Ctrl+v` toggles a rectangle, `y` copies and leaves. |
+| `prefix f` | Project session picker, see [tmux-sessionizer.md](tmux-sessionizer.md) |
+| `prefix t` | Toggle light/dark theme, see [theme.md](theme.md) |
+| `prefix X` | Kill the current session, after a `y/n` question |
+| `prefix r` | Reload `tmux.conf` and show "tmux.conf reloaded" |
+| `prefix Ctrl+l` | Clear the screen of the pane (see the note below) |
+| `prefix Ctrl+s` | Save sessions now (resurrect) |
+| `prefix Ctrl+r` | Restore saved sessions (resurrect) |
+| `prefix I` | (`Shift+i`) Install plugins (TPM) |
+
+Note on `Ctrl+l`: plain `Ctrl+l` belongs to vim-tmux-navigator (move to the right pane; inside vim, nvim or fzf it is sent to the program). `tmux.conf` also defines `prefix Ctrl+l` as "clear screen and scrollback", but vim-tmux-navigator loads later (TPM runs at the end) and sets `prefix Ctrl+l` to a plain clear screen. See "Notes" at the end.
+
+### Default keys you will use often
+
+These are tmux defaults, not set in this config.
+
+| Keys | What it does |
+| --- | --- |
+| `prefix d` | Detach (everything keeps running) |
+| `prefix x` | Close the current pane (asks first) |
+| `prefix &` | Close the current window (asks first) |
+| `prefix z` | Zoom the pane to full window, press again to restore |
+| `prefix 1` ... `9` | Go to window number |
+| `prefix n` / `p` | Next / previous window |
+| `prefix ,` | Rename the window |
+| `prefix $` | Rename the session |
+| `prefix s` | Pick a session from a list |
+| `prefix (` / `)` | Previous / next session |
+| `prefix w` | Pick a window from a tree |
+| `prefix ?` | List all key bindings |
+| `prefix :` | tmux command prompt (vi keys) |
+| `prefix ]` | Paste the tmux buffer |
+
+The mouse is on: click a pane or window name, drag a border to resize, scroll the wheel to enter copy mode.
+
+## Behavior settings
+
+- **Numbers start at 1** for windows and panes. Windows are renumbered when one closes.
+- **Scrollback**: 50000 lines per pane.
+- **Escape delay** is 10 ms, so `Esc` is fast in vim.
+- **Colors**: `tmux-256color` plus true color (RGB). Focus events are passed to nvim.
+- **Extended keys** are on (CSI u format) and the outer `xterm*` terminal is marked as supporting them. This lets `Shift+Enter` and `Ctrl+Enter` reach programs such as Claude Code.
+- **Clipboard**: `set-clipboard on` uses OSC 52, so copying in tmux also reaches your local clipboard over SSH. `allow-passthrough on` lets programs (and the `theme` script) send escape sequences through tmux.
+- **`detach-on-destroy off`**: when you kill a session (`prefix X`), tmux moves you to another session. It exits only when no session is left.
+- **Window names** follow the running command. A name that looks like a version number (for example `2.1.312`) is shown as `claude`.
+
+## Status bar
+
+Left: the session name in a blue block. Right: the host name and the time (`HH:MM`). The bar uses the terminal's own colors, so it works in light and dark themes. It updates every 5 seconds. The active window is shown as a reversed block, others as plain `1:name`.
+
+**On a remote machine** (the tmux server was started from an SSH session) the look is different so you never mix it up with your local tmux: the left block is **magenta** and starts with the short host name (`host session`), and the right side shows only the time. A server first started locally and later used over SSH keeps the local look.
+
+## Pane labels
+
+When a window has 2 or more panes, each pane gets a label row at its top border: `index: command`. The active pane's label is a blue block, and arrows mark the active border. Borders are heavy lines. With one pane, the label row is hidden.
+
+## Sessions survive restarts: resurrect and continuum
+
+- **tmux-resurrect** saves sessions, windows, panes, their folders and (here) the visible text of each pane (`@resurrect-capture-pane-contents on`). Panes running `ssh` run it again after a restore (`@resurrect-processes "ssh"`).
+- **tmux-continuum** saves automatically **every 15 minutes** (`@continuum-save-interval`) and restores the last save when the tmux server starts (`@continuum-restore on`). So after a reboot or `tmux kill-server`, starting `tmux` brings your sessions back.
+- **Manual**: `prefix Ctrl+s` saves, `prefix Ctrl+r` restores.
+- **Where the files are**: the plugin default, `~/.local/share/tmux/resurrect/` (or `~/.tmux/resurrect/` if that folder already exists). The newest save is the file the symlink `last` points to.
+- Programs other than `ssh` are not restarted, only their panes and folders come back.
+
+## Clear the pane: `Cmd+K`
+
+In Ghostty (macOS) and iTerm, `Cmd+K` sends `Ctrl+Space`, then `Ctrl+L`, so it clears the tmux pane. Ghostty on Linux uses `Ctrl+Shift+K`. See [terminals.md](terminals.md).
+
+## Plugins and TPM
+
+Plugins are managed by [TPM](https://github.com/tmux-plugins/tpm), cloned by `install.sh` into `~/.config/tmux/plugins/tpm`.
+
+| Plugin | What it does |
+| --- | --- |
+| `tmux-plugins/tpm` | The plugin manager |
+| `christoomey/vim-tmux-navigator` | `Ctrl+h/j/k/l` between tmux panes and nvim splits |
+| `tmux-plugins/tmux-resurrect` | Save and restore sessions |
+| `tmux-plugins/tmux-continuum` | Auto-save every 15 minutes and auto-restore |
+
+Add a plugin:
+
+1. Add a line `set -g @plugin "author/name"` above the `run ".../tpm"` line in `tmux.conf`. Keep `tmux-continuum` last in the plugin list.
+2. Reload with `prefix r`.
+3. Install with `prefix I` (`Ctrl+Space`, then `Shift+i`).
+
+Other TPM keys (defaults): `prefix U` updates plugins, `prefix Alt+u` removes plugins not in the file.
+
+## Reload the config
+
+`prefix r`, or from a shell: `tmux source-file ~/.config/tmux/tmux.conf`. Settings that are set at server start (some `set -s` options) may need `tmux kill-server`; continuum restores your sessions.
+
+## Change a key or option
+
+Edit `tmux/.config/tmux/tmux.conf` in the repo (the link points there), then `prefix r`. For options only for this machine, add `source-file -q ~/.config/tmux/local.conf` at the end of the file yourself, and keep that file untracked (this line is not in the config today).
+
+## Related
+
+- Project sessions: [tmux-sessionizer.md](tmux-sessionizer.md)
+- Remote use: `tssh` in [zsh.md](zsh.md) and [server.md](server.md)
+- Theme toggle: [theme.md](theme.md)
+
+## Notes
+
+- Today `prefix Ctrl+l` only clears the screen, not the scrollback, because the plugin's binding wins over the config's. `Cmd+K` is affected the same way.
