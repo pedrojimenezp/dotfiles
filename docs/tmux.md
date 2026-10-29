@@ -32,6 +32,10 @@ Start tmux: `tmux`. Start or attach to a named session: `tmux new-session -A -s 
 | `prefix [` | Enter copy mode (vi keys). Then `v` starts a selection, `Ctrl+v` toggles a rectangle, `y` copies and leaves. |
 | `prefix f` | Project session picker, see [tmux-sessionizer.md](tmux-sessionizer.md) |
 | `prefix t` | Toggle light/dark theme, see [theme.md](theme.md) |
+| `prefix G` | (`Shift+g`) lazygit in a popup, in the pane's folder. See [Popups](#popups) |
+| `` prefix ` `` | Toggle a scratch shell popup that keeps running. See [Popups](#popups) |
+| `prefix A` | (`Shift+a`) Toggle a Claude Code popup that keeps running. See [Popups](#popups) |
+| `prefix s` | Pick a session from a list (popup sessions are hidden) |
 | `prefix N` | (`Shift+n`) New session: asks for a name (no `.` or `:`), starts in the pane's folder and switches to it |
 | `prefix X` | Kill the current session, after a `y/n` question |
 | `prefix r` | Reload `tmux.conf` and show "tmux.conf reloaded" |
@@ -56,7 +60,6 @@ These are tmux defaults, not set in this config.
 | `prefix n` / `p` | Next / previous window |
 | `prefix ,` | Rename the window |
 | `prefix $` | Rename the session |
-| `prefix s` | Pick a session from a list |
 | `prefix (` / `)` | Previous / next session |
 | `prefix w` | Pick a window from a tree |
 | `prefix ?` | List all key bindings |
@@ -103,6 +106,30 @@ set -g @host_label "dev-box"
 
 Reload with `prefix r`.
 
+## Popups
+
+Popups float over the current window. They use the script `bin/.local/bin/tmux-popup` (linked to `~/.local/bin/tmux-popup`).
+
+| Keys | Popup | Persists? |
+| --- | --- | --- |
+| `prefix G` | lazygit in the pane's folder (90% of the window) | No: quitting lazygit (`q`) closes it. Without lazygit installed you get the message "lazygit is not installed". |
+| `` prefix ` `` | Scratch shell (85%) | Yes |
+| `prefix A` | Claude Code, `claude` (85%) | Yes |
+
+**Persistent popups** (shell and Claude Code): each one is a hidden session named `_popup_shell_<session>` or `_popup_claude_<session>`, one per normal session. The first press creates it in the pane's folder; later presses show the same shell or Claude Code again, with its history and running programs. The popup has no status bar of its own.
+
+- **Close it**: press the same key again (`` prefix ` `` or `prefix A`; inside any persistent popup either key closes it), or `prefix d`. Both detach the popup; the program keeps running.
+- **Program exits** (you type `exit`, or quit Claude Code): the hidden session ends and the popup closes. The next press starts a fresh one.
+- **Claude Code** runs as `$SHELL -ic claude`, so a `claude` alias or shell function from your shell config applies.
+
+**Hidden from lists**: `prefix s` filters out every session whose name starts with `_popup_`. `tmux ls` still shows them. `prefix (` / `)` are not filtered: they may step onto a popup session, and the next point sends you back.
+
+**Never landed in by mistake**: with `detach-on-destroy off`, killing a session moves you to another one, which could be a popup session. A `client-session-changed` hook catches that and switches you to the most recently used normal session (the popup's own client is left alone).
+
+**Cleanup**: popup sessions remember their parent session (`@popup_parent`, the session id, so renaming the parent is fine). A `session-closed` hook runs `tmux-popup cleanup`, which kills every popup session whose parent is gone. So `prefix X` on a session also removes its popups.
+
+**resurrect and continuum**: saves include popup sessions, and a restore brings them back without their parent mark. `@resurrect-hook-post-restore-all` runs the same cleanup after every restore, so they disappear right away and the next press starts fresh ones. This is simpler than filtering the save file, and a running Claude Code is not restored anyway.
+
 ## Pane labels
 
 When a window has 2 or more panes, each pane gets a label row at its top border: `index: command`. The active pane's label is a blue block, and arrows mark the active border. Borders are heavy lines. With one pane, the label row is hidden.
@@ -114,6 +141,7 @@ When a window has 2 or more panes, each pane gets a label row at its top border:
 - **Manual**: `prefix Ctrl+s` saves, `prefix Ctrl+r` restores.
 - **Where the files are**: the plugin default, `~/.local/share/tmux/resurrect/` (or `~/.tmux/resurrect/` if that folder already exists). The newest save is the file the symlink `last` points to.
 - Programs other than `ssh` are not restarted, only their panes and folders come back.
+- Popup sessions are removed after a restore, see [Popups](#popups).
 
 ## Clear the pane: `Cmd+K`
 

@@ -72,7 +72,7 @@ What each step does, backups, idempotency and troubleshooting: [docs/install.md]
 | `ghostty` | `~/.config/ghostty/config` | Ghostty terminal (optional; linked only if Ghostty is installed). Colors come from the generated `theme.conf` next to it. |
 | `iterm` | `~/.config/iterm/dotfiles-profile.plist` | Template for the iTerm2 Dynamic Profile "Dotfiles" (macOS only). `theme sync` adds the colors. |
 | `mise` | `~/.config/mise/config.toml` | Global mise defaults: node (LTS) and go (latest), `.nvmrc` support. |
-| `bin` | `~/.local/bin` | Scripts on PATH: `tmux-sessionizer`, `theme`. |
+| `bin` | `~/.local/bin` | Scripts on PATH: `tmux-sessionizer`, `tmux-popup`, `theme`. |
 | `theme` | `~/.config/theme/config` | The light/dark theme pair (tracked), used by the terminals, tmux and Neovim. |
 
 `./install.sh --server` links only `zsh`, `tmux`, `vim`, `git`, `bin` and `theme`.
@@ -107,6 +107,9 @@ Details are in the docs above. `prefix` is `Ctrl+Space`. In Neovim, `<leader>` i
 | `prefix [` then `v`, `y` | Copy mode: select, copy |
 | `prefix f` | Project session picker |
 | `prefix t` | Toggle light/dark |
+| `prefix G` | lazygit popup (pane's folder) |
+| `` prefix ` `` / `prefix A` | Toggle a persistent shell / Claude Code popup (same key or `prefix d` closes) |
+| `prefix s` | Pick a session (popup sessions hidden) |
 | `prefix N` | New session by name, in the pane's folder |
 | `prefix X` | Kill the current session (asks first) |
 | `prefix d` | Detach (default) |
