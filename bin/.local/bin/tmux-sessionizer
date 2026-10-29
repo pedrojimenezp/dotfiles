@@ -130,6 +130,7 @@ list_candidates() {
     \( -name '.*' -o -name node_modules -o -name worktrees \) -prune -o -type d -print 2>/dev/null || true)"
   while IFS= read -r d; do
     [[ -n "$d" ]] || continue # find printed nothing
+    [[ -f "$d/.git" ]] && continue # linked worktree: listed from its repo with the branch name
     plain+="$d"$'\t'"$d"$'\t\n' # label and path are the same for plain dirs
     # Only main checkouts have a .git directory (linked ones have a file), so git runs once per repo.
     if [[ -d "$d/.git" ]]; then wts+="$(worktrees_of "$d")"$'\n'; fi
@@ -145,10 +146,6 @@ if [[ "${1:-}" == "--list" ]]; then
 elif [[ $# -eq 1 ]]; then
   [[ -d "$1" ]] || { warn "not a directory: $1"; exit 1; }
   selected="$(cd "$1" && pwd -P)" # absolute and symlink-free, so names and the path check agree ('.' would be named '-')
-  # A linked worktree (its git dir differs from the shared one) is named like on the fzf path: by branch, repo = main folder.
-  gd="$(git -C "$selected" rev-parse --path-format=absolute --git-dir 2>/dev/null || true)"
-  cd_="$(git -C "$selected" rev-parse --path-format=absolute --git-common-dir 2>/dev/null || true)"
-  if [[ -n "$gd" && -n "$cd_" && "$gd" != "$cd_" ]]; then repo="$(basename "$(dirname "$cd_")")"; fi
 else
   line="$(list_candidates | fzf --prompt='project> ' --delimiter=$'\t' --with-nth=1 || true)" # show only the label
   [[ -n "$line" ]] || exit 0 # nothing chosen (Esc)
@@ -157,6 +154,11 @@ else
 fi
 
 [[ -n "$selected" ]] || exit 0 # empty argument
+# A linked worktree (its git dir differs from the shared one) is named by branch, repo = main folder,
+# whichever way it was chosen.
+gd="$(git -C "$selected" rev-parse --path-format=absolute --git-dir 2>/dev/null || true)"
+cd_="$(git -C "$selected" rev-parse --path-format=absolute --git-common-dir 2>/dev/null || true)"
+if [[ -n "$gd" && -n "$cd_" && "$gd" != "$cd_" ]]; then repo="$(basename "$(dirname "$cd_")")"; fi
 "$(dirname "$0")/dotfiles-log" tmux-sessionizer >/dev/null 2>&1 || true # count the run for dotfiles-usage
 
 if [[ -n "$repo" ]]; then
