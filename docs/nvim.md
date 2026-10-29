@@ -80,7 +80,7 @@ Only in files inside a git repo.
 
 | Keys | What it does |
 | --- | --- |
-| `]c` / `[c` | Next / previous hunk |
+| `]c` / `[c` | Next / previous hunk (in a diff, the next/previous diff change) |
 | `<leader>hs` | Stage hunk |
 | `<leader>hr` | Reset hunk |
 | `<leader>hp` | Preview hunk |

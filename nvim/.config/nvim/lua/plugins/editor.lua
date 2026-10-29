@@ -9,8 +9,12 @@ return {
         local function map(mode, lhs, rhs, desc)
           vim.keymap.set(mode, lhs, rhs, { buffer = bufnr, desc = "Git: " .. desc }) -- buffer-local map
         end
-        map("n", "]c", function() gs.nav_hunk("next") end, "Next hunk")
-        map("n", "[c", function() gs.nav_hunk("prev") end, "Previous hunk")
+        map("n", "]c", function() -- in diff mode keep the built-in jump
+          if vim.wo.diff then vim.cmd.normal({ "]c", bang = true }) else gs.nav_hunk("next") end
+        end, "Next hunk")
+        map("n", "[c", function()
+          if vim.wo.diff then vim.cmd.normal({ "[c", bang = true }) else gs.nav_hunk("prev") end
+        end, "Previous hunk")
         map("n", "<leader>hs", gs.stage_hunk, "Stage hunk")
         map("n", "<leader>hr", gs.reset_hunk, "Reset hunk")
         map("n", "<leader>hp", gs.preview_hunk, "Preview hunk")
