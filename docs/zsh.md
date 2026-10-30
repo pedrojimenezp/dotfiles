@@ -158,4 +158,4 @@ Open a new shell or run `exec zsh` to load it.
 
 - **No icons in `ls`**: the terminal font is not a Nerd Font, see [terminals.md](terminals.md).
 - **Command not found for a Homebrew tool**: open a new shell. On Linux check that `/home/linuxbrew/.linuxbrew/bin/brew` exists.
-- **Slow start**: run `time zsh -i -c exit`. The config avoids slow steps (`compinit -C` while the completion cache is under 24h old; a full `compinit` runs when the cache is older and the shell then touches the dump, so the full scan happens once a day).
+- **Slow start**: run `time zsh -i -c exit`. The config avoids slow steps (`compinit -C` while the completion cache is under 24h old; a full `compinit` runs when the cache is older and the shell then touches the dump, so the full scan happens once a day). If `compaudit` lists only paths owned by you or root, the scan runs `compinit -u` and does not prompt; a path owned by someone else still prompts (see [install.md](install.md) troubleshooting).

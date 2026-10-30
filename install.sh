@@ -88,6 +88,12 @@ if command -v brew >/dev/null 2>&1; then
   echo "==> Installing Homebrew packages"
   # Upgrades are a separate, deliberate `brew upgrade`.
   run brew bundle --no-upgrade --file="$REPO/Brewfile"
+  # zsh's compinit prompts about completion dirs that group or others can write (brew can recreate them that way).
+  echo "==> Removing group/other write from Homebrew's zsh completion dirs (chmod go-w)"
+  BREW_SHARE="$(brew --prefix)/share"                                              # parent of the completion dirs
+  for d in "$BREW_SHARE" "$BREW_SHARE/zsh" "$BREW_SHARE/zsh/site-functions" "$BREW_SHARE/zsh-completions"; do
+    [[ -d $d && -O $d ]] && run chmod go-w "$d"                                    # only dirs this user owns
+  done
 else
   cat <<'MSG'
 Homebrew was not found. Install it first (this script never uses sudo):

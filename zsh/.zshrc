@@ -95,7 +95,20 @@ zcompfresh=( ${ZDOTDIR:-$HOME}/.zcompdump(N.mh-24) )  # matches only if the dump
 if (( $#zcompfresh )); then
   compinit -C -d "$zcompdump"             # reuse it, skipping the security scan for speed
 else
-  compinit -d "$zcompdump"                # missing or stale: full scan
+  zmodload -F zsh/stat b:zstat            # owner lookup without forking
+  autoload -Uz compaudit                  # lists the dirs and files compinit considers insecure
+  zcompbad=( ${(f)"$(compaudit 2>/dev/null)"} )  # empty when everything is secure
+  zcompforeign=0                          # 1 when an insecure path belongs to someone else
+  for zcompitem in $zcompbad; do
+    zstat -A zcompowner -L +uid -- "$zcompitem" 2>/dev/null
+    (( zcompowner == UID || zcompowner == 0 )) || zcompforeign=1
+  done
+  if (( $#zcompbad && ! zcompforeign )); then
+    compinit -u -d "$zcompdump"           # insecure but owned by you or root: use without the prompt
+  else
+    compinit -d "$zcompdump"              # missing or stale: full scan, prompts about foreign-owned dirs
+  fi
+  unset zcompbad zcompforeign zcompitem zcompowner
   touch "$zcompdump"                      # compinit leaves the dump untouched when nothing changed, so renew its age here
 fi
 unset zcompdump zcompfresh

@@ -114,6 +114,7 @@ cd ~/projects/personal/dotfiles && git pull && ./install.sh
 - **"zsh was not found"**: install zsh with your package manager and run the script again.
 - **"Homebrew was not found"**: install it (command above), open a new shell, run again.
 - **stow reports a conflict**: a real file blocks a link. The backup step normally moves it away. Look for the path in the message, rename it, and run the script again.
+- **`zsh compinit: insecure directories` prompt**: a completion dir (often `$(brew --prefix)/share`) is writable by group or others. `install.sh` runs `chmod go-w` on Homebrew's dirs, and `.zshrc` skips the prompt when you or root own every insecure path. Brew can restore the permissions: run `compaudit`, then `chmod go-w` on each path it lists. A path owned by another user still prompts: check it first.
 - **A tmux plugin is missing**: in tmux press `Ctrl+Space`, then `Shift+i`.
 - **Icons look wrong**: the terminal font is not a Nerd Font ([terminals.md](terminals.md)).
 - **Colors did not change after `theme sync`**: see [theme.md](theme.md).
