@@ -25,9 +25,9 @@ fi
 # Features first (<x>/worktrees/<feature>, label "feature  [x]"), then repos (a folder with .git, label = path).
 # One find: prune hidden dirs and node_modules, print worktrees/ folders and .git entries without entering them.
 list_candidates() {
-  local p d f feats="" repos=""
+  local p d f w feats="" repos=""
   add_features() { # $1 = a worktrees/ folder
-    for f in "$1"/*/; do [[ -d "$f" ]] && feats+="$(basename "$f")  [$(basename "$(dirname "$1")")]"$'\t'"${f%/}"$'\n'; done
+    for f in "$1"/*/; do [[ -d "$f" ]] && { f="${f%/}"; w="${1%/*}"; feats+="${f##*/}  [${w##*/}]"$'\t'"$f"$'\n'; }; done
   }
   if ((${#roots[@]})); then # find with no path would search the current directory
     while IFS= read -r p; do
