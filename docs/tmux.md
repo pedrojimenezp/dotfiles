@@ -41,7 +41,7 @@ Forgot one? `prefix ?` opens a searchable list of every key from this config and
 | `prefix A` | (`Shift+a`) Toggle a Claude Code popup that keeps running. See [Popups](#popups) |
 | `prefix Space` | Copy with hints (tmux-fingers), see [Copy with hints](#copy-with-hints). Replaces the default `next-layout` |
 | `prefix j` | Jump mode (tmux-fingers): hints move the cursor to a match in copy mode, see [Copy with hints](#copy-with-hints) |
-| `prefix s` | Pick a session from a list (popup sessions are hidden) |
+| `prefix s` | Pick a session from a list sorted by name (`O` in the picker changes the sort order; popup sessions are hidden) |
 | `prefix N` | (`Shift+n`) New session: asks for a name (anything but letters, digits, `_` and `-` becomes `-`, so `my.app` is `my-app`; empty uses the folder's name), then opens an fzf popup to pick the folder: this pane's path first, then zoxide's folders, then the `prefix f` projects. Type a path that is not in the list and press Enter to use it (`~` works). An existing session with that name is just switched to; `Esc` cancels |
 | `prefix (` / `)` | Previous / next session (popup sessions skipped) |
 | `prefix X` | Kill the current session, after a `y/n` question |
