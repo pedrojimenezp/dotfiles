@@ -34,9 +34,11 @@ tmux set -gu @new_session_name 2>/dev/null || true # do not leave the name behin
 
 # Show $HOME as ~ in the list.
 display="$(list_candidates "$pane_path" | sed "s|^$HOME|~|")"
+# The preview runs in fzf's shell, which expands $HOME and the leading ~ of the line.
+# shellcheck disable=SC2016
 out="$(printf '%s\n' "$display" | fzf --print-query --prompt='folder> ' \
   --header='Enter: pick | type a path not in the list to use it | Esc: cancel' \
-  --preview='ls -1Ap {} 2>/dev/null | head -50' --preview-window=right:40% || true)"
+  --preview='p={}; case "$p" in "~"*) p="$HOME${p#"~"}" ;; esac; ls -1Ap "$p" 2>/dev/null | head -50' --preview-window=right:40% || true)"
 [[ -n "$out" ]] || exit 0 # Esc or Ctrl-C, nothing typed
 
 # fzf --print-query prints the typed query first, then the selected line (if any).
