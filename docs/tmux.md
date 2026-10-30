@@ -40,6 +40,7 @@ Forgot one? `prefix ?` opens a searchable list of every key from this config and
 | `` prefix ` `` | Toggle a scratch shell popup that keeps running. See [Popups](#popups) |
 | `prefix A` | (`Shift+a`) Toggle a Claude Code popup that keeps running. See [Popups](#popups) |
 | `prefix Space` | Copy with hints (tmux-fingers), see [Copy with hints](#copy-with-hints). Replaces the default `next-layout` |
+| `prefix j` | Jump mode (tmux-fingers): hints move the cursor to a match in copy mode, see [Copy with hints](#copy-with-hints) |
 | `prefix s` | Pick a session from a list (popup sessions are hidden) |
 | `prefix N` | (`Shift+n`) New session: asks for a name (anything but letters, digits, `_` and `-` becomes `-`, so `my.app` is `my-app`), then a folder (pre-filled with the pane's, so Enter keeps it; type `~` or `~/x` for another) and switches to it |
 | `prefix (` / `)` | Previous / next session (popup sessions skipped) |
@@ -169,6 +170,8 @@ Look: popups use the terminal's own background and text colors with a rounded bl
 | `Shift` + letter | Copy and paste it into the pane |
 | `Tab` | Multi mode: pick several matches, `Tab` again copies them all |
 | `q`, `Esc` | Leave |
+
+`prefix j` starts jump mode instead: pick a hint and copy mode opens with the cursor on that match. The plugin default is `prefix J`, which would replace our pane resize, so `@fingers-jump-key` is set to `j`.
 
 - **Clipboard**: the copy goes to the tmux buffer and the system clipboard (`pbcopy` on macOS, `wl-copy`/`xclip`/`xsel` on Linux with a display) and, through `set-clipboard on` (OSC 52), to your local clipboard even over SSH. One config works everywhere; there is no custom `@fingers-main-action`.
 - **`next-layout` is gone**: `prefix Space` used to cycle layouts. It is not rebound elsewhere; use `prefix : select-layout tiled` (or `even-horizontal`, ...) when you need a layout.
