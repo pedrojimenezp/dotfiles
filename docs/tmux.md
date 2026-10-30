@@ -41,7 +41,7 @@ Forgot one? `prefix ?` opens a searchable list of every key from this config and
 | `prefix A` | (`Shift+a`) Toggle a Claude Code popup that keeps running. See [Popups](#popups) |
 | `prefix Space` | Copy with hints (tmux-fingers), see [Copy with hints](#copy-with-hints). Replaces the default `next-layout` |
 | `prefix s` | Pick a session from a list (popup sessions are hidden) |
-| `prefix N` | (`Shift+n`) New session: asks for a name (anything but letters, digits, `_` and `-` becomes `-`, so `my.app` is `my-app`), starts in the pane's folder and switches to it |
+| `prefix N` | (`Shift+n`) New session: asks for a name (anything but letters, digits, `_` and `-` becomes `-`, so `my.app` is `my-app`), then a folder (pre-filled with the pane's, so Enter keeps it; type `~` or `~/x` for another) and switches to it |
 | `prefix (` / `)` | Previous / next session (popup sessions skipped) |
 | `prefix X` | Kill the current session, after a `y/n` question |
 | `prefix r` | Reload `tmux.conf` and show "tmux.conf reloaded" |

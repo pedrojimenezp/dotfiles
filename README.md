@@ -130,7 +130,7 @@ The full, searchable list is `prefix ?` or `dotfiles-help` (see [Help](#help)); 
 | `` prefix ` `` / `prefix A` | Toggle a persistent shell / Claude Code popup (same key or `prefix d` closes) |
 | `prefix Space` | Copy with hints: press a letter to copy a URL, path or hash (replaces `next-layout`) |
 | `prefix s` | Pick a session (popup sessions hidden) |
-| `prefix N` | New session by name, in the pane's folder |
+| `prefix N` | New session by name, in any folder (pre-filled with the pane's) |
 | `prefix X` | Kill the current session (asks first) |
 | `prefix d` | Detach (default) |
 | `prefix r` | Reload `tmux.conf` |
