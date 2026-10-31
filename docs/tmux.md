@@ -121,7 +121,7 @@ The left side is the user in a purple block, then the session name in a blue blo
 | Session block turns **yellow** | You pressed the prefix and tmux waits for the next key |
 | 🔔 after a window name, label turns yellow | A program in that window rang the bell (Claude Code does this when it needs you). It clears when you open the window. |
 | 🔍 after a window name | The pane is zoomed (`prefix z`) |
-| Magenta **●p** or cyan **●w** after a window name | A pane in that window runs Claude Code on the `personal` (magenta) or `work` (cyan) account. One mark per such pane. |
+| Magenta **●personal** or cyan **●work** after a window name | A pane in that window runs Claude Code on the `personal` (magenta) or `work` (cyan) account. One mark per such pane. In a client narrower than 120 columns the mark shortens to **●p** or **●w**; change the limit with `set -g @claude_label_min_width <columns>`. |
 | Red **SSH** badge on the left | The tmux server runs on a remote machine. It shows `user@host` (the server's name, see [Name this server](server.md#4-name-this-server)) and replaces the purple user block |
 
 With 2 or more panes in a window, each pane gets a label row at its top border: `index: command`. The active label is a blue block.

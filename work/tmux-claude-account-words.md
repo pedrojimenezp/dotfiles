@@ -9,18 +9,18 @@ Window list shows the full account word (●personal / ●work) when the client 
 3. Test on a private tmux server.
 
 ## Done
-Nothing yet.
+tmux.conf: labels use #{client_width} against @claude_label_min_width (default 120). docs/tmux.md updated. Tested with a control-mode client at 200/100/119/120 columns: full words at 120+, p/w below. Link check: 0 broken.
 
 ## Where we stopped
-Note created.
+Change done and committed.
 
 ## Next step
-Edit tmux.conf.
+Review, then merge.
 
 ## How to test
 Private server (`env -u TMUX tmux -S <temp socket>`), set @claude_account on panes, render window-status formats.
 
 ## Open questions
-Whether client_width resolves without an attached client.
+None. client_width is empty without a client (reads as 0, so short form).
 
 Updated: 2026-10-31 by personal@Pedros-MacBook-Pro-M4
