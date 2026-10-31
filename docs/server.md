@@ -165,7 +165,7 @@ Then finish the setup:
    ```sh
    chmod 600 ~/.zshrc.local
    ```
-3. On the server, name this machine (optional), as in [section 4](#4-name-this-server).
+3. On the server, name this machine and set its time zone (both optional), as in [section 4](#4-name-this-server).
 4. On the server, run `claude` once and log in.
 5. On the server, inside a project that needs other tool versions, run:
    ```sh
@@ -207,6 +207,18 @@ set -g @host_label "dev-box"
 ```
 
 Reload with `prefix r`. `local.conf` loads after the status settings, so it wins over `HOST_LABEL`.
+
+### Set the time zone
+
+Optional. A new EC2 server uses UTC. On the server, add one line to `~/.zshrc.local`:
+
+```sh
+export TZ=America/Bogota
+```
+
+The shell and the tools it starts, such as `date` and the prompt, then show that zone. Any IANA name works: `ls /usr/share/zoneinfo` or `timedatectl list-timezones` lists them. Like `HOST_LABEL`, it only affects your user (no sudo), so it is safe on a shared box. Open a new shell to see it.
+
+The tmux status bar clock reads `TZ` only when the tmux server starts. In a running tmux, `tmux set-environment -g TZ "$TZ"` changes new panes and windows, but not the clock. To change the clock, restart tmux: `tmux kill-server`, then `tssh my-ec2`. This ends its sessions; continuum restores the last save.
 
 ## 5. Daily use
 

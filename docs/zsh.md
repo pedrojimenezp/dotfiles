@@ -183,6 +183,7 @@ It runs `ssh -t` and starts (or attaches to) the tmux session named `main` on th
 - secrets and API keys (`export TOKEN=...`)
 - machine paths (`export PATH="$HOME/tools/bin:$PATH"`)
 - aliases only for this machine
+- the time zone on a server (`export TZ=America/Bogota`), see [server.md](server.md#set-the-time-zone)
 
 ```sh
 # ~/.zshrc.local
