@@ -28,6 +28,7 @@ return {
     opts = {
       spec = {
         { "<leader>s", group = "Search" }, -- label for the telescope group
+        { "<leader>f", group = "Files" }, -- label for the file explorer group
         { "<leader>g", group = "Git" }, -- label for the git group
         { "<leader>h", group = "Hunks" }, -- label for the gitsigns group
         { "<leader>d", group = "Diagnostics/symbols" }, -- label for the d group
@@ -41,6 +42,28 @@ return {
     dependencies = { "nvim-tree/nvim-web-devicons" }, -- file icons
     opts = { view_options = { show_hidden = true } }, -- show dotfiles
     keys = { { "-", "<cmd>Oil<CR>", desc = "Open parent directory (oil)" } },
+  },
+  {
+    "nvim-neo-tree/neo-tree.nvim",
+    branch = "v3.x",
+    cmd = "Neotree", -- load on first use
+    dependencies = {
+      "nvim-lua/plenary.nvim", -- helpers
+      "nvim-tree/nvim-web-devicons", -- file icons
+      "MunifTanjim/nui.nvim", -- UI components
+    },
+    keys = { { "<leader>fe", "<cmd>Neotree toggle reveal left<CR>", desc = "File explorer (neo-tree)" } },
+    opts = {
+      filesystem = {
+        follow_current_file = { enabled = true }, -- highlight the file being edited
+        hijack_netrw_behavior = "disabled", -- leave directory buffers to oil
+        filtered_items = {
+          visible = true, -- show hidden entries, dimmed
+          hide_dotfiles = false, -- show dotfiles
+          never_show = { ".git", ".zig-cache", "zig-out" }, -- noise
+        },
+      },
+    },
   },
   {
     "nvim-mini/mini.nvim",

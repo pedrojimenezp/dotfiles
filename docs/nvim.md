@@ -41,6 +41,7 @@ The **which-key** menu appears when you press `Space` and wait. Its groups:
 | After Space | Group |
 | --- | --- |
 | `s` | Search (telescope) |
+| `f` | Files (neo-tree) |
 | `g` | Git (telescope) |
 | `h` | Hunks (gitsigns) |
 | `d` | Diagnostics and symbols |
@@ -67,6 +68,7 @@ Neovim has modes. In **normal** mode, keys are commands. In **insert** mode, key
 | `Ctrl+h/j/k/l` | normal | Move between splits and tmux panes (vim-tmux-navigator) |
 | `Ctrl+w v` / `Ctrl+w s` | normal | Split vertical / horizontal (default) |
 | `-` | normal | Open the parent folder in oil |
+| `<leader>fe` | normal | Toggle the file tree on the left (neo-tree) |
 | `<leader>ut` | normal | Toggle light/dark theme |
 | `<leader>um` | normal | Toggle Markdown rendering (Markdown files only) |
 | `<leader>e` | normal | Show the diagnostic under the cursor |
@@ -92,6 +94,28 @@ Neovim has modes. In **normal** mode, keys are commands. In **insert** mode, key
 | `<leader>gb` | Git branches |
 
 In the telescope window: `Ctrl+n` / `Ctrl+p` move, `Enter` opens, `Esc` closes.
+
+### File tree (neo-tree)
+
+A sidebar that shows the project folders. Oil still handles `nvim .` and `-`. Dotfiles show up; `.git`, `.zig-cache` and `zig-out` stay hidden.
+
+| Keys | What it does |
+| --- | --- |
+| `<leader>fe` | Open the tree and select the current file, or close it |
+
+Inside the tree (`?` lists them all):
+
+| Keys | What it does |
+| --- | --- |
+| `Enter` | Open the file, or expand or collapse the folder |
+| `a` | Add a file (end the name with `/` for a folder) |
+| `d` | Delete |
+| `r` | Rename |
+| `H` | Show or hide dotfiles |
+| `?` | Show all keys |
+| `q` | Close the tree |
+
+`Ctrl+l` moves from the tree to the editor window, and `Ctrl+h` back (vim-tmux-navigator).
 
 ### Git hunks (gitsigns)
 
@@ -179,6 +203,7 @@ Check what is active with `:ConformInfo`.
 | which-key.nvim | Key hints menu |
 | render-markdown.nvim | Renders Markdown in the buffer: headings, code blocks, tables, lists (`<leader>um` toggles) |
 | oil.nvim | Edit the file system like a buffer (press `-`) |
+| neo-tree.nvim (+ nui) | File tree sidebar (`<leader>fe`) |
 | mini.nvim | surround, ai (text objects), statusline |
 | vim-tmux-navigator | `Ctrl+h/j/k/l` across tmux and nvim |
 | tokyonight.nvim, github-nvim-theme | Colorschemes picked by theme name |

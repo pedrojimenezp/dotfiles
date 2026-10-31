@@ -10,12 +10,14 @@ Add a neo-tree sidebar (`Space f e`) to the nvim config. Oil and Telescope stay 
 
 ## Done
 - Worktree and branch created.
+- Neo-tree spec, `<leader>fe`, Files which-key group, docs, lazy-lock.json.
+- Headless checks, checkhealth and repo tests pass.
 
 ## Where we stopped
-Starting the plugin spec.
+Implementation done and committed; waiting for review.
 
 ## Next step
-Add the spec, then test.
+Review in a real terminal, then `/merge`.
 
 ## How to test
 Headless: symlink the config into a temp XDG_CONFIG_HOME, run `Lazy! sync`, `Neotree show`, `checkhealth neo-tree`; then `bash tests/install_test.sh` and `bash tests/uninstall_test.sh`.
