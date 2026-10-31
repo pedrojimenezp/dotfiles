@@ -62,6 +62,23 @@ git -C "$ROOT/existing" init -q
 CLAUDE_SHARED_DIR="$ROOT/existing" run_install --dry-run --with-claude "$ROOT/none.git" --claude-accounts personal
 check "clone already there: installer still gets the name" grep -qE "existing/install.sh personal$" <<<"$OUT"
 
+echo "== old atuin config link"
+atuin_dir="$HOME/.config/atuin"
+mkdir -p "$atuin_dir"
+rel_to_repo="$(python3 -c 'import os,sys; print(os.path.relpath(sys.argv[1], sys.argv[2]))' "$(cd "$SRC" && pwd -P)" "$(cd "$atuin_dir" && pwd -P)")" # what stow writes: from the physical folder
+run_atuin() { # run_atuin <link target>: dry run with the config link pointing there
+  ln -sfn "$1" "$atuin_dir/config.toml"
+  run_install --dry-run
+}
+run_atuin "$rel_to_repo/atuin/.config/atuin/config.toml"
+check "relative stow-style link into the repo: removed" grep -qF "[dry-run] rm -f $atuin_dir/config.toml" <<<"$OUT"
+run_atuin "$SRC/atuin/.config/atuin/config.toml"
+check "absolute link into the repo: removed" grep -qF "[dry-run] rm -f $atuin_dir/config.toml" <<<"$OUT"
+run_atuin "$ROOT/mine/config.toml"
+check "foreign absolute link: kept" bash -c '! grep -qF "rm -f $1/config.toml" <<<"$2"' _ "$atuin_dir" "$OUT"
+run_atuin "../elsewhere/atuin/.config/atuin/config.toml"
+check "foreign relative link: kept" bash -c '! grep -qF "rm -f $1/config.toml" <<<"$2"' _ "$atuin_dir" "$OUT"
+
 echo
 echo "passed: $PASS, failed: $FAIL"
 [[ $FAIL -eq 0 ]]

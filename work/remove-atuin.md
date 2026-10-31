@@ -8,10 +8,10 @@ Drop atuin; go back to zsh history (Up/Down prefix search, Ctrl+R fzf). Plus fix
 2. Wording fix in a separate commit.
 
 ## Done
-Atuin removed everywhere except legacy cleanup; ssh wording fixed (see commits).
+Atuin removed everywhere except legacy cleanup; ssh wording fixed (see commits). Cleanup of the old config link resolves stow's relative target lexically and is covered by tests/install_test.sh.
 
 ## Where we stopped
-Tests running / ready for review.
+All tests and shellcheck pass; ready for review.
 
 ## Next step
 Review, then /merge.

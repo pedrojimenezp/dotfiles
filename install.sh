@@ -264,9 +264,27 @@ clone_plugin fzf-tab Aloxaf/fzf-tab                                # Tab complet
 
 # Step 3b2: remove what atuin left on a machine that had it (the tool is no longer used).
 ATUIN_CFG="$HOME/.config/atuin/config.toml"
+# Prints where the link $1 points as an absolute path with "." and ".." removed from the text. Needs no existing
+# target: stow makes relative links, and this one is dangling now that the package is gone.
+link_target_lexical() {
+  local t part
+  local -a parts out=()
+  t="$(readlink "$1")"
+  [[ "$t" == /* ]] || t="$(cd "$(dirname "$1")" && pwd -P)/$t" # relative targets start at the link's folder
+  IFS=/ read -ra parts <<<"$t"
+  for part in "${parts[@]}"; do
+    case "$part" in
+      "" | .) ;;
+      ..) [[ ${#out[@]} -gt 0 ]] && unset 'out[${#out[@]}-1]' ;;
+      *) out+=("$part") ;;
+    esac
+  done
+  printf '/%s' "${out[@]}"
+}
 if [[ -L "$ATUIN_CFG" ]]; then
-  atuin_target="$(readlink "$ATUIN_CFG")" # the link is dangling now, so realpath (is_repo_link) cannot resolve it
-  if [[ "$atuin_target" == "$REPO"/* || "$atuin_target" == "$REPO_REAL"/* ]]; then # only our own link
+  atuin_target="$(link_target_lexical "$ATUIN_CFG")" # realpath (is_repo_link) cannot resolve a dangling link
+  # Exactly the file the removed package linked: any other link is the user's own.
+  if [[ "$atuin_target" == "$REPO/atuin/.config/atuin/config.toml" || "$atuin_target" == "$REPO_REAL/atuin/.config/atuin/config.toml" ]]; then
     echo "==> Removing the old atuin config link"
     run rm -f "$ATUIN_CFG"
     run rmdir "$(dirname "$ATUIN_CFG")" 2>/dev/null || true # only if empty
