@@ -121,9 +121,14 @@ The left side is the user in a purple block, then the session name in a blue blo
 | Session block turns **yellow** | You pressed the prefix and tmux waits for the next key |
 | 🔔 after a window name, label turns yellow | A program in that window rang the bell (Claude Code does this when it needs you). It clears when you open the window. |
 | 🔍 after a window name | The pane is zoomed (`prefix z`) |
+| Magenta **●p** or cyan **●w** after a window name | A pane in that window runs Claude Code on the `personal` (magenta) or `work` (cyan) account. One mark per such pane. |
 | Red **SSH** badge on the left | The tmux server runs on a remote machine. It shows `user@host` (the server's name, see [Name this server](server.md#4-name-this-server)) and replaces the purple user block |
 
 With 2 or more panes in a window, each pane gets a label row at its top border: `index: command`. The active label is a blue block.
+
+A pane running Claude Code also shows its account at the end of its label, as a magenta `●personal` or a cyan `●work`.
+
+The account marks need the `claude` shell function from your private Claude config. It sets the pane option `@claude_account` (`personal` or `work`) while Claude runs and clears it on exit. Without that function nothing shows, which is harmless. Check by hand: `tmux set -p @claude_account work` marks the current pane, `tmux set -pu @claude_account` clears it.
 
 Other defaults: windows and panes are numbered from 1, scrollback is 50000 lines per pane, and `Esc` has a 10 ms delay so it is fast in vim. A window named like a version number (for example `2.1.312`) is shown as `claude`.
 

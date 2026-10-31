@@ -9,13 +9,13 @@ Show which Claude Code account (personal or work) runs in a tmux pane, in the wi
 3. Document in docs/tmux.md; test on a private tmux server.
 
 ## Done
-Note created.
+tmux.conf: window-list marks (@claude_window_label[_current]) and pane-border account text; docs/tmux.md; tested on a private server.
 
 ## Where we stopped
-Starting the tmux.conf change.
+Code and docs done, link check run.
 
 ## Next step
-Edit tmux.conf, test, document, run the link check.
+Merge when the user agrees (needs the claude-account-label branch of the shared config for the option to be set).
 
 ## How to test
 Private server (`env -u TMUX tmux -S <temp socket> -f tmux.conf`), `set -p @claude_account personal`, check `list-windows -F` and `display -p`.
