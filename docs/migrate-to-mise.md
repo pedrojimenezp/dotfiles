@@ -1,0 +1,81 @@
+# Move from Homebrew tools to mise
+
+The tools used to come from Homebrew. They now come from [mise](tools.md#mise), per user, and the zsh plugins are git clones. A machine that ran the old install still has the Homebrew copies. This page removes them after you have moved to the new install.
+
+You'll use it once per machine: after you `git pull` this change and rerun `./install.sh`.
+
+- [Before you remove anything](#before-you-remove-anything)
+- [macOS](#macos)
+- [Linux](#linux)
+- [Check it worked](#check-it-worked)
+
+## Before you remove anything
+
+1. Update the dotfiles and rerun the installer. It installs the mise tools and clones the zsh plugins, and removes nothing:
+   ```sh
+   cd ~/dotfiles && git pull && ./install.sh
+   ```
+2. Open a new shell (`exec zsh`) and check that each tool now comes from mise:
+   ```sh
+   which nvim tmux fzf rg
+   ```
+   Every path should be under `~/.local/share/mise` (a `shims` or `installs` folder), not `/opt/homebrew` or `/home/linuxbrew`. If one is not, stop: run `mise install`, open a new shell and check again before removing it.
+3. Quit tmux first (`tmux kill-server`, which ends its sessions; continuum restores the last save). The running server is still the old Homebrew tmux until you do.
+
+## macOS
+
+The `Brewfile` shrank to `mise`, `stow`, `btop` and the casks. Uninstall the formulae that moved:
+
+```sh
+brew uninstall neovim tmux tmux-fingers starship fzf zoxide eza bat ripgrep fd jq yq tealdeer hyperfine atuin git-delta lazygit lazydocker dive gh git-lfs shellcheck shfmt tree-sitter-cli golangci-lint zig zls zsh-autosuggestions zsh-syntax-highlighting zsh-completions fzf-tab
+brew autoremove
+```
+
+Notes:
+
+- `brew uninstall` refuses a formula that another formula needs. Leave that one in place (it does no harm: mise comes first on `PATH`) or uninstall the dependent one too.
+- `btop` stays in Homebrew because mise has no macOS build of it.
+- To preview what the shorter `Brewfile` would remove, run `brew bundle cleanup --file=Brewfile`. Without `--force` it only lists. **Do not add `--force`:** it removes every formula that is not in the `Brewfile`, including ones you installed yourself outside these dotfiles.
+
+## Linux
+
+The old install put everything in one shared Homebrew at `/home/linuxbrew/.linuxbrew`, owned by one user. Remove it only after every user of the machine has rerun `./install.sh` and checked their tools as above, because the other users' old tools may still point there.
+
+1. **The Homebrew owner** (the user who installed it) runs Homebrew's uninstall script:
+   ```sh
+   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/uninstall.sh)"
+   ```
+   It lists what it will remove and asks before it does anything.
+2. **The admin** removes what is left of the shared folder (the script cannot delete the `/home/linuxbrew` folder itself):
+   ```sh
+   sudo rm -rf /home/linuxbrew
+   ```
+3. **Each user** removes any `brew shellenv` line they added to their own files, such as `~/.zshrc.local`, `~/.zprofile` or `~/.bashrc`. Look for them with:
+   ```sh
+   grep -n "linuxbrew" ~/.zshrc.local ~/.zprofile ~/.zshenv ~/.bashrc ~/.profile 2>/dev/null
+   ```
+   The dotfiles' own `.zshrc` needs no change: it looks for `brew` and carries on without it.
+4. The old zsh plugins (autosuggestions, syntax highlighting, completions, fzf-tab) came from Homebrew. They now come from `~/.local/share/zsh-plugins`, which `install.sh` clones for each user. The `chmod go-w` on Homebrew's completion folders is gone with it.
+5. **Each user** can delete the shell cache once so the new tools are picked up: `rm -rf ~/.cache/zsh`.
+
+## Check it worked
+
+1. Open a new shell: `exec zsh`.
+2. List the mise tools. Each line should show a version, not `(missing)`:
+   ```sh
+   mise ls
+   ```
+3. Check where a few tools come from:
+   ```sh
+   which nvim tmux fzf rg starship
+   ```
+   All under `~/.local/share/mise`.
+4. Check the plugins: `ls ~/.local/share/zsh-plugins` shows four folders, and typing a command shows grey suggestions and colors.
+5. **Linux:** `command -v brew` prints nothing.
+6. Start `tmux` and `nvim` once. If something is missing, run `mise install`.
+
+## Related pages
+
+- [install.md](install.md): what `install.sh` does.
+- [server.md](server.md#7-several-users): one server, several users.
+- [tools.md](tools.md#mise): how mise is set up here.

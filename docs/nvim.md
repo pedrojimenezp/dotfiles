@@ -19,7 +19,7 @@ You'll use it for: editing code with search, git signs, completion, formatting a
 
 - Neovim 0.12 or newer.
 - `git` and internet access on the first start.
-- `tree-sitter-cli` (in the Brewfile) for syntax parsers. Also useful: `curl`, `ripgrep`, `fd`, and a C compiler for the telescope fuzzy matcher.
+- The `tree-sitter` CLI (in the mise config) for syntax parsers. Also useful: `curl`, `ripgrep`, `fd`, and a C compiler for the telescope fuzzy matcher.
 
 On servers without Neovim, see [vim.md](vim.md).
 
@@ -189,7 +189,7 @@ Mason installs these on first start:
 - Servers: `gopls`, `ts_ls` (TypeScript and JavaScript), `bashls`, `lua_ls`.
 - Tools: `gofumpt`, `goimports`, `prettierd`, `stylua`.
 
-Homebrew provides `zls` (Zig, so it always matches the installed `zig`), `shfmt`, `shellcheck` and `golangci-lint`.
+mise provides `zls` (pinned to the same version as `zig`), `shfmt`, `shellcheck` and `golangci-lint`.
 
 Open `:Mason` to see, install (`i`) or remove (`X`) tools by hand. `:checkhealth vim.lsp` shows the servers attached to the current buffer.
 
@@ -215,7 +215,7 @@ Check it worked: `:Lazy` lists the plugin without errors.
 
 1. Add its Mason name to `ensure_installed` in `lua/plugins/lsp.lua` (the `mason-lspconfig` list). Names are in `:Mason`. Example: `"pyright"`.
 2. Settings are optional: `vim.lsp.config("pyright", { settings = { ... } })`, next to the existing ones.
-3. For a server that is not in Mason (like `zls`), install it with Homebrew. Enable it with `vim.lsp.enable("name")` when `vim.fn.executable("name") == 1`.
+3. For a server that is not in Mason (like `zls`), install it with mise (add it to `mise/.config/mise/config.toml`). Enable it with `vim.lsp.enable("name")` when `vim.fn.executable("name") == 1`.
 4. For a formatter, add it to `formatters_by_ft` in `lua/plugins/format.lua` and to `mason-tool-installer`'s `ensure_installed`. For a linter, add it to `linters_by_ft` in the same file.
 5. For a new language's colors, add the parser name to the `parsers` list in `lua/plugins/treesitter.lua`.
 

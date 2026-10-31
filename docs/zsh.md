@@ -29,8 +29,9 @@ Open a new terminal, then try:
 
 ## What it sets up
 
-- **Homebrew**: finds `brew` and adds it to `PATH`.
-- **PATH**: `~/.local/bin` first (the `theme` and `tmux-sessionizer` scripts), then `~/go/bin`.
+- **Homebrew** (macOS): finds `brew` and adds it to `PATH`. Skipped where brew is absent.
+- **PATH**: `~/.local/bin` first (the mise binary and the `theme` and `tmux-sessionizer` scripts), then `~/go/bin`. mise is activated right after, so its tools come before any Homebrew copy.
+
 - **Editor**: `EDITOR` and `VISUAL` are `nvim` if installed, else `vim`. `PAGER` is `less`.
 - **History**: 100000 entries in `~/.zsh_history`, shared between open shells, no duplicates. A command that starts with a space is not saved, which helps with secrets.
 - **Options**:
@@ -40,7 +41,7 @@ Open a new terminal, then try:
   - Emacs key style: `Ctrl+a` goes to the start of the line, `Ctrl+e` to the end, `Ctrl+w` deletes a word. This is the zsh default. The other style is vi mode.
 - **Completion**: case-insensitive matching, colored like `ls`, grouped with headers. With fzf-tab installed, Tab opens an fzf list.
 - **Tools**: [fzf](glossary.md#fzf), [atuin](glossary.md#atuin), [zoxide](glossary.md#zoxide), [mise](glossary.md#mise) and [starship](glossary.md#starship) start only when installed. A missing tool never gives an error.
-- **Plugins** (from Homebrew): fzf-tab, autosuggestions and syntax highlighting.
+- **Plugins** (git clones in `~/.local/share/zsh-plugins`, made by `install.sh`): fzf-tab, autosuggestions, syntax highlighting and extra completions.
 - **OS parts**: **macOS:** `o` is `open`, `ls -G`, and the Ghostty command is added to `PATH`. **Linux:** `o` is `xdg-open` and `ls --color=auto`.
 
 ## Aliases
@@ -201,7 +202,8 @@ Two more optional files:
 ## Troubleshooting
 
 - **No icons in `ls`**: the terminal font is not a [Nerd Font](glossary.md#nerd-font), see [terminals.md](terminals.md).
-- **Command not found for a Homebrew tool**: open a new shell. **Linux:** check that `/home/linuxbrew/.linuxbrew/bin/brew` exists.
+- **Command not found for a tool**: open a new shell, then run `mise ls` to see if it is installed and `mise install` if not.
+- **No autosuggestions or highlighting**: check that `~/.local/share/zsh-plugins/<name>` exists; `./install.sh` clones it.
 - **A tool's init looks stale**: delete `~/.cache/zsh` and open a new shell.
 - **Slow start**: run `time zsh -i -c exit`.
 
@@ -209,8 +211,8 @@ Two more optional files:
 
 **Load order.** `.zshrc` runs top to bottom, and the order matters:
 
-1. Homebrew, `PATH`, options and your key bindings.
-2. `compinit` (the completion system), then fzf, atuin, zoxide, mise and starship.
+1. Homebrew, `PATH`, mise, options and your key bindings.
+2. The extra completions on `fpath`, `compinit` (the completion system), then fzf, atuin, zoxide and starship.
 3. fzf-tab, after `compinit` and fzf, then autosuggestions. Both wrap widgets, so they come after the tools.
 4. `claude.zsh`, then `~/.zshrc.local`.
 5. Syntax highlighting, last. It must load after everything that defines widgets.

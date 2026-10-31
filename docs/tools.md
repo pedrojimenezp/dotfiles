@@ -1,6 +1,6 @@
 # Tools
 
-The command-line tools this repo installs and configures. Everything below comes from the `Brewfile` (`brew bundle`, run by `install.sh`). A missing tool never breaks the shell config.
+The command-line tools this repo installs and configures. Almost everything below comes from [mise](#mise) (`mise/.config/mise/config.toml`), the same on macOS and Linux and installed per user with no sudo. `stow` and `btop` on macOS, and the apps, come from the `Brewfile` (macOS only). The zsh plugins are git clones. `install.sh` sets all of it up. A missing tool never breaks the shell config.
 
 You'll use it for: finding what a tool is for and how to start it. Run `tldr <tool>` for more examples.
 
@@ -11,13 +11,13 @@ You'll use it for: finding what a tool is for and how to start it. Run `tldr <to
 - [macOS-only (casks)](#macos-only-casks)
 - [Add or update a tool](#add-or-update-a-tool)
 - [Prompt: starship](#prompt-starship)
-- [Runtimes: mise](#runtimes-mise)
+- [mise](#mise)
 - [Usage report: dotfiles-usage](#usage-report-dotfiles-usage)
 - [How it works](#how-it-works)
 
 ## Quick start
 
-1. Run `brew bundle --file Brewfile` in the folder you cloned to (or `./install.sh`).
+1. Run `./install.sh` in the folder you cloned to (on macOS it runs `brew bundle`, then `mise install`).
 2. Open a new terminal.
 3. Try `ll`, `z <folder>`, `Ctrl+r` and `dotfiles-help`.
 
@@ -28,12 +28,14 @@ You'll use it for: finding what a tool is for and how to start it. Run `tldr <to
 | `neovim` | Main editor ([nvim.md](nvim.md)) | `nvim file.go` (or `vim file.go`) |
 | `tmux` | [Sessions](glossary.md#session), [windows](glossary.md#window), [panes](glossary.md#pane) ([tmux.md](tmux.md)) | `tmux new-session -A -s work` |
 | `tmux-fingers` | Binary behind the tmux hint-copy plugin ([tmux.md](tmux.md#copy-with-hints)) | `prefix Space`, then a hint letter (see [tmux.md](tmux.md)) |
-| `stow` | [Links](glossary.md#link) each [package](glossary.md#package) into `$HOME` | `stow --restow --no-folding -d ~/dotfiles -t ~ zsh` |
+| `stow` | [Links](glossary.md#link) each [package](glossary.md#package) into `$HOME` (Homebrew on macOS, apt on Linux) | `stow --restow --no-folding -d ~/dotfiles -t ~ zsh` |
 | `starship` | [Prompt](glossary.md#prompt) (see below) | `starship explain` |
 | `zsh-autosuggestions` | Grey history suggestion while you type | Press `Right` to accept |
 | `zsh-syntax-highlighting` | Colors valid and invalid commands | Type `foo` (red) vs `ls` (green) |
 | `zsh-completions` | More Tab completions | `git <Tab>` |
 | `fzf-tab` | Tab completion through fzf, with a folder preview for `cd` | `cd <Tab>` |
+
+The four zsh plugins are git clones in `~/.local/share/zsh-plugins`; `install.sh` clones them and updates them with `git pull --ff-only` on every run.
 
 ## Shell productivity
 
@@ -48,11 +50,11 @@ You'll use it for: finding what a tool is for and how to start it. Run `tldr <to
 | `fd` | Simple, fast `find` | `fd '\.lua$'` |
 | `jq` | JSON on the command line | `curl -s url \| jq '.items[0]'` |
 | `yq` | Same for YAML, TOML, XML | `yq '.services' compose.yaml` |
-| `btop` | System monitor | `btop` (`q` quits) |
+| `btop` | System monitor (mise on Linux, Homebrew on macOS) | `btop` (`q` quits) |
 | `tealdeer` (`tldr`) | Short command examples | `tldr tar` (first run: `tldr --update`) |
 | `hyperfine` | Benchmark commands | `hyperfine 'zsh -i -c exit'` |
 
-Optional, commented in the `Brewfile` (remove the `#` and run `brew bundle`):
+Optional, commented in the `Brewfile` (macOS: remove the `#` and run `brew bundle`; Linux: `sudo apt-get install -y mosh`):
 
 - `mosh`: SSH-like shell that survives sleep and roaming (`mosh myserver`).
 
@@ -60,7 +62,7 @@ Optional, commented in the `Brewfile` (remove the `#` and run `brew bundle`):
 
 | Tool | What it is for | Example |
 | --- | --- | --- |
-| `git-delta` | Diff pager for git, lazygit and `gh` (`GH_PAGER`) ([git.md](git.md)) | `git diff`, `gh pr diff` |
+| `delta` (git-delta) | Diff pager for git, lazygit and `gh` (`GH_PAGER`) ([git.md](git.md)) | `git diff`, `gh pr diff` |
 | `lazygit` | Git UI (alias `lg`) | `lg` (`?` shows keys, `q` quits) |
 | `lazydocker` | Docker UI (alias `lzd`) | `lzd` |
 | `dive` | Explore Docker image layers | `dive my-image:latest` |
@@ -71,12 +73,12 @@ Optional, commented in the `Brewfile` (remove the `#` and run `brew bundle`):
 
 | Tool | What it is for | Example |
 | --- | --- | --- |
-| `mise` | Per-project runtimes (see below) | `mise use node@22` |
-| `zig`, `zls` | Zig compiler and language server (kept in Homebrew so versions match) | `zig build` |
+| `mise` | Installs every tool here, and per-project runtimes (see below) | `mise use node@22` |
+| `zig`, `zls` | Zig compiler and language server (pinned to the same version in the mise config) | `zig build` |
 | `shellcheck` | Lints shell scripts (nvim runs it on save) | `shellcheck install.sh` |
 | `shfmt` | Formats shell scripts | `shfmt -w script.sh` |
 | `golangci-lint` | Go linters | `golangci-lint run` |
-| `tree-sitter-cli` | Builds treesitter parsers for nvim | Used by nvim; no manual command |
+| `tree-sitter` (CLI) | Builds treesitter parsers for nvim | Used by nvim; no manual command |
 
 ## macOS-only (casks)
 
@@ -87,9 +89,9 @@ On Linux, install Ghostty with your distro's package if you want it; the font is
 
 ## Add or update a tool
 
-- Add a line `brew "name"  # what it does` to the `Brewfile`, then run `brew bundle` in the folder you cloned to (or `./install.sh`).
-- Upgrade tools yourself with `brew upgrade`. `install.sh` never upgrades them.
-- List what is installed but not in the `Brewfile`: `brew bundle cleanup --file Brewfile` (it only lists; add `--force` to remove).
+- Add a line `name = "latest"  # what it does` under `[tools]` in `mise/.config/mise/config.toml`, then run `mise install` (or `./install.sh`). Find the name with `mise registry | grep <tool>`. A tool with no mise build for an OS can be limited with `{ version = "latest", os = ["linux"] }` and added to the `Brewfile` for the other.
+- Upgrade tools yourself with `mise upgrade`. `install.sh` never upgrades them. On macOS the Homebrew packages (`mise`, `stow`, `btop`, casks) upgrade with `brew upgrade`.
+- Old Homebrew copies of tools that moved to mise: see [migrate-to-mise.md](migrate-to-mise.md).
 
 ## Prompt: starship
 
@@ -122,19 +124,22 @@ To change the prompt:
 2. Open a new prompt. No restart is needed.
 3. Run `starship explain` to see what each part shows.
 
-## Runtimes: mise
+## mise
 
-mise installs and switches versions of node, go and other tools per project.
+mise installs the tools of this repo and switches versions of node, go and others per project. It installs into your home (`~/.local/share/mise`), so it needs no sudo. Linux gets it from `https://mise.run` into `~/.local/bin`; macOS gets it from the `Brewfile`.
 
-- **Global config**: `mise/.config/mise/config.toml`, linked to `~/.config/mise/config.toml`. It sets `node = "lts"` and `go = "latest"` as defaults. It also reads `.nvmrc` and `.node-version` files (`idiomatic_version_file_enable_tools = ["node"]`).
+- **Global config**: `mise/.config/mise/config.toml`, linked to `~/.config/mise/config.toml`. It lists every tool above (most as `latest`; `zig` and `zls` pinned together) and sets `node = "lts"` and `go = "latest"` as defaults. It also reads `.nvmrc` and `.node-version` files (`idiomatic_version_file_enable_tools = ["node"]`).
 - **New machine**: `install.sh` runs `mise install`. You can run it yourself any time.
 - **Per project**: inside the project, `mise use node@22 go@1.25` creates `mise.toml`; commit it. Versions switch when you `cd`. A project with `.nvmrc` works without `mise.toml`: run `mise install` there.
 - **Global change**: `mise use -g node@22` edits the repo file through the link, so commit the change.
 - **Secrets per project**: an untracked `mise.local.toml`. mise also supports `[env]` and `[tasks]` in `mise.toml`.
 - **See / update**: `mise ls` (installed and active), `mise outdated`, `mise upgrade`.
 - **Go**: the `toolchain` line in `go.mod` still works. `go install` tools land in `~/go/bin` (on `PATH`).
-- **Old mise**: a standalone mise in `~/.local/bin` would shadow the Homebrew one, so `install.sh` renames it to `mise.backup-<stamp>`.
-- Zig is not managed by mise: the zig and zls versions must match, so both come from Homebrew.
+- **Old mise (macOS)**: a standalone mise in `~/.local/bin` would shadow the Homebrew one, so `install.sh` renames it to `mise.backup-<stamp>`.
+- **PATH**: `.zshrc` activates mise early, so its tools come before any Homebrew copy of the same tool.
+- **Zig**: `zig` and `zls` must match, so both are pinned to one version in the config; change them together.
+- **tmux**: comes from mise too (build from `tmux/tmux-builds`), because apt's tmux is older than the 3.5 that `tmux.conf` needs. `tmux-fingers` is a GitHub release binary from the same config.
+- **Completions**: tools no longer bring Homebrew's zsh completions. Generate one when you want it, for example `gh completion -s zsh`.
 
 ## Usage report: dotfiles-usage
 
@@ -149,11 +154,11 @@ It lists how often each tool of this repo was used in that period, most used fir
 
 **Prompt.** Icons are written as `\uXXXX` escapes in the toml, so tools cannot strip them. The `username` module shows the user; `zsh/.zshrc` exports `PROMPT_HOST` over SSH only, and starship adds it as `@host`. Prompt modules time out at 500 ms. The first line uses plain connector words (`in`, `on`, `via`) like starship's classic style.
 
-**Installs.** `install.sh` runs `brew bundle --no-upgrade`, so it never upgrades. See [install.md](install.md#what-installsh-does-in-order).
+**Installs.** `install.sh` runs `mise install` (and `brew bundle --no-upgrade` on macOS), so it never upgrades. See [install.md](install.md#what-installsh-does-in-order).
 
 **dotfiles-usage internals.**
 
-- **Tool list.** Nothing is kept by hand. It reads the `brew` lines of the `Brewfile`, the scripts in `bin/.local/bin` and the `tssh` function. Plugins, libraries and helpers such as `zsh-*`, `fzf-tab` and `tree-sitter-cli` have no command, so they are skipped. Aliases in `zsh/.zshrc` count for their tool: `lg` is `lazygit`, `vim` is `nvim`, `tt` is `theme`, `ls` is `eza`, `z` is `zoxide`.
+- **Tool list.** Nothing is kept by hand. It reads the `brew` lines of the `Brewfile`, the tools of the mise config, the scripts in `bin/.local/bin` and the `tssh` function. Plugins, libraries and helpers such as `zls`, `git-lfs` and `tmux-fingers` have no command to count, so they are skipped. Aliases in `zsh/.zshrc` count for their tool: `lg` is `lazygit`, `vim` is `nvim`, `tt` is `theme`, `ls` is `eza`, `z` is `zoxide`.
 - **History.** It uses atuin (`atuin search --filter-mode global --after "N days ago"`) when installed, else `~/.zsh_history`. The zsh fallback needs `EXTENDED_HISTORY` and undercounts repeated commands, because `HIST_IGNORE_ALL_DUPS` keeps only the latest copy of each line. atuin keeps every run. `DOTFILES_USAGE_HISTFILE=file` reads another zsh history file, and `ATUIN_DB_PATH` points atuin at another database.
 - **Key-launched tools.** They do not reach shell history, so `tmux-popup`, `tmux-sessionizer`, `dotfiles-help` and `theme` call `dotfiles-log <tool>`. It appends `<epoch> <tool>` to `${XDG_STATE_HOME:-~/.local/state}/dotfiles/usage.log` and never fails. `dotfiles-log --path` prints the file, and deleting it resets the counts. A script that calls `dotfiles-log` is counted from that log only.
 - **What `theme` counts.** Only runs you start: `toggle`, `dark`, `light`, `auto`, `pick` and `set`, including nvim's `<leader>ut` and the `tt` alias. Automatic calls such as `theme apply` at shell start, `theme file`, `theme mode` and `sync` are not counted.

@@ -10,7 +10,8 @@ Every command says where it runs: "On your laptop" or "On the server". Your lapt
 - [4. Name this server](#4-name-this-server)
 - [5. Daily use](#5-daily-use)
 - [6. Updating the server later](#6-updating-the-server-later)
-- [7. Troubleshooting](#7-troubleshooting)
+- [7. Several users](#7-several-users)
+- [8. Troubleshooting](#8-troubleshooting)
 
 ## 1. What you get
 
@@ -53,7 +54,7 @@ Host *
   ServerAliveInterval 30
 ```
 
-For flaky networks, install `mosh` (uncomment it in the `Brewfile`): `mosh myserver` survives sleep and IP changes. Run tmux inside it.
+For flaky networks, install `mosh` (`sudo apt-get install -y mosh` on the server, and on your Mac uncomment it in the `Brewfile`): `mosh myserver` survives sleep and IP changes. Run tmux inside it.
 
 ### Share your GitHub key with the server
 
@@ -115,18 +116,13 @@ On your laptop, connect:
 ssh my-ec2
 ```
 
-On the server, install the prerequisites (the only step that needs sudo besides `chsh`):
+On the server, install the system packages (the only step that needs sudo besides `chsh`):
 
 ```sh
-sudo apt-get update && sudo apt-get install -y build-essential procps curl file git zsh
+sudo apt-get update && sudo apt-get install -y zsh git curl unzip stow libatomic1
 ```
 
-On the server, install Homebrew and add it to your PATH for this session:
-
-```sh
-NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-```
+No Homebrew is needed. `install.sh` installs [mise](tools.md#mise) into `~/.local/bin` and then every tool into your own home, so a user without sudo can do it too ([section 7](#7-several-users)).
 
 On the server, clone the dotfiles and install them:
 
@@ -136,7 +132,7 @@ cd ~/dotfiles
 ./install.sh --with-claude <git-url>
 ```
 
-Use `./install.sh` without `--with-claude <git-url>` if the server has no GitHub access (no forwarded key). Everything else (Homebrew, plugins, `git pull`) uses https and needs no key; only a private `--with-claude` repo and `git push` need SSH.
+Use `./install.sh` without `--with-claude <git-url>` if the server has no GitHub access (no forwarded key). Everything else (mise, tools, plugins, `git pull`) uses https and needs no key; only a private `--with-claude` repo and `git push` need SSH.
 
 The installer skips the Nerd Font on a server: your laptop's terminal draws the icons. If zsh is missing or is not your login shell, `install.sh` prints the exact command to run. Flags and every step it takes are in [install.md](install.md#flags).
 
@@ -167,7 +163,7 @@ Then finish the setup:
    ```
 3. On the server, name this machine and set its time zone (both optional), as in [section 4](#4-name-this-server).
 4. On the server, run `claude` once and log in.
-5. On the server, inside a project that needs other tool versions, run:
+5. On the server, inside a project that pins other tool versions, run:
    ```sh
    mise install
    ```
@@ -246,15 +242,52 @@ On the server:
 cd ~/dotfiles && git pull && ./install.sh
 ```
 
-`install.sh` is safe to run again. See [Update](install.md#update) for what a rerun does.
+`install.sh` is safe to run again. See [Update](install.md#update) for what a rerun does. It never upgrades tools; to upgrade them, run `mise upgrade`.
 
-## 7. Troubleshooting
+If this server ran the older Brew-based install, see [migrate-to-mise.md](migrate-to-mise.md#linux) to remove Homebrew.
+
+## 7. Several users
+
+Several people can share one server. Each user has their own home, their own tools and their own copy of the dotfiles. Only the system packages are shared, so only the admin needs sudo.
+
+**Admin, once** (a user with sudo):
+
+```sh
+sudo apt-get update && sudo apt-get install -y zsh git curl unzip stow libatomic1
+```
+
+**Admin, for each new user:**
+
+```sh
+sudo adduser <name>
+sudo chsh -s /usr/bin/zsh <name>
+```
+
+**Each user** (no sudo needed), logged in as themselves:
+
+```sh
+git clone https://github.com/pedrojimenezp/dotfiles ~/dotfiles
+cd ~/dotfiles
+./install.sh
+```
+
+If a package is missing, `install.sh` stops and prints the `apt-get` line for the admin. It never uses sudo.
+
+**Upgrades.** Each user upgrades their own tools with `mise upgrade`, and the dotfiles with `cd ~/dotfiles && git pull && ./install.sh`. The admin upgrades the system packages with `sudo apt-get upgrade`.
+
+**Good to know:**
+
+- Tools live in `~/.local/share/mise` and `~/.local/bin/mise`, about 1.3 GB per user with all the tools.
+- tmux comes from mise (apt's tmux is older than 3.5), so each user runs their own tmux and server. A user's sessions are private.
+- Everyone's `~/.zshrc.local`, git identity and `HOST_LABEL` are separate.
+
+## 8. Troubleshooting
 
 - **`tssh` says tmux not found.** Your login shell is not zsh. On the server, run the `chsh` step from section 3, then log out and in.
-- **tmux shows errors about unknown options right after login, or the install ended with "logins start the system tmux".** Your login shell is still bash, which does not put Homebrew on `PATH`, so logins start Ubuntu's older `/usr/bin/tmux` (tmux.conf needs 3.5+). Run the `chsh` step from section 3, log out and in, then stop the old server with `tmux kill-server` (this ends its sessions).
+- **tmux shows errors about unknown options right after login, or the install ended with "logins start the system tmux".** Your login shell is still bash, which does not put mise's tools on `PATH`, so logins start Ubuntu's older `/usr/bin/tmux` (tmux.conf needs 3.5+). Run the `chsh` step from section 3, log out and in, then stop the old server with `tmux kill-server` (this ends its sessions).
 - **GitHub clone asks for a password, or "permission denied".** Follow "Share your GitHub key with the server" in section 2, then reconnect.
 - **`--with-claude <git-url>` says "no GitHub SSH access on this machine" and exits with an error.** The installer tested `ssh git@github.com` and GitHub did not accept a key. It skips the Claude step and finishes the rest. Fix the forwarding as in the item above, reconnect, then run `./install.sh --with-claude <git-url>` again.
-- **Homebrew install or `git pull` says "Permission denied (publickey)".** The old git config sent all GitHub traffic over SSH. Run `git pull` in the dotfiles clone, or run `./install.sh` again, to get the current config. Now only pushes use SSH.
+- **`git pull` says "Permission denied (publickey)".** The old git config sent all GitHub traffic over SSH. Run `git pull` in the dotfiles clone, or run `./install.sh` again, to get the current config. Now only pushes use SSH.
 - **`git push` or a private `--with-claude` repo says "Permission denied (publickey)", and `echo $SSH_AUTH_SOCK` on the server prints a path.** Forwarding works, but the key is not in your laptop's agent. Do steps 2-4 of "Share your GitHub key with the server" in section 2.
 - **Same error, and `echo $SSH_AUTH_SOCK` on the server prints nothing.** Forwarding is off. Add `ForwardAgent yes` to the host entry (section 2), then reconnect.
 - **Colors or icons look wrong.** This is your laptop's terminal font or profile, not the server. The server sends text only; your laptop's terminal draws the icons. On macOS, check the terminal profile (for example iTerm) uses the Nerd Font. On Linux, the Nerd Font must be installed on the laptop (`install.sh` does this on Linux desktops; run `fc-cache -f` and restart the terminal) and selected in your terminal.
@@ -262,6 +295,7 @@ cd ~/dotfiles && git pull && ./install.sh
 ## Related pages
 
 - [install.md](install.md): what `install.sh` does, flags, and how to undo it.
+- [migrate-to-mise.md](migrate-to-mise.md): remove the old shared Homebrew.
 - [first-day.md](first-day.md): the keys you'll use most.
 - [tmux.md](tmux.md): every tmux key and the status bar.
 - [zsh.md](zsh.md#remote-tmux-tssh): the `tssh` function.

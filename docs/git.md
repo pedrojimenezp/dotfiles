@@ -123,7 +123,7 @@ lg                         # lazygit (shell alias)
 
 - **Commits show the wrong name or email**: run `git config --show-origin user.email`. Edit `~/.config/git/local`, or check for a stray `~/.gitconfig`.
 - **`git push` asks for a password or fails**: pushes use SSH, so add a GitHub key, see [server.md](server.md) for servers.
-- **Git fails on `git-lfs`**: install it with `brew install git-lfs`, or remove the `filter.lfs` section if you do not need it.
+- **Git fails on `git-lfs`**: run `mise install` (the mise config has it), or remove the `filter.lfs` section if you do not need it.
 
 ## How it works
 

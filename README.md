@@ -17,7 +17,7 @@ Anyone. Fork it and use it as your own, or read it and copy the pieces you like.
 
 ## Quick start
 
-One script installs everything: it backs up your old files, links the configs and installs the tools with Homebrew.
+One script installs everything: it backs up your old files, links the configs and installs the tools with mise, per user, the same on macOS and Linux.
 
 - **macOS or a Linux desktop**: follow [install.md](docs/install.md).
 - **A remote Ubuntu server**: follow [server.md](docs/server.md).
@@ -42,7 +42,8 @@ Forgot a key? Press `prefix ?` in tmux (`Ctrl+Space`, then `?`) or run `dotfiles
 | | [zsh.md](docs/zsh.md) | Aliases, keys, history, fzf, zoxide, `~/.zshrc.local` |
 | | [nvim.md](docs/nvim.md) | Neovim keys, plugins, language servers |
 | | [git.md](docs/git.md) | Git settings, aliases, `~/.config/git/local` |
-| | [tools.md](docs/tools.md) | Every Brewfile tool with an example, starship, mise |
+| | [tools.md](docs/tools.md) | Every tool with an example, starship, mise |
+| | [migrate-to-mise.md](docs/migrate-to-mise.md) | Remove the old Homebrew copies after moving the tools to mise |
 | Reference | [terminals.md](docs/terminals.md) | Ghostty, iTerm2, font, terminal keys |
 | | [theme.md](docs/theme.md) | The `theme` command and light/dark mode |
 | | [vim.md](docs/vim.md) | The small plugin-free `.vimrc` for servers |

@@ -8,7 +8,7 @@ You'll use it to move between projects and feature branches in two key presses.
 
 `fzf`, `tmux` and `find`. It works with bash 3.2 (macOS) and newer.
 
-Install them the way [install.md](install.md) describes: Homebrew on macOS and Linux (`brew install fzf tmux`). `install.sh` does this for you. See [tmux.md](tmux.md#requirements) for why the apt version of tmux is not enough.
+`install.sh` installs `fzf` and `tmux` with mise on macOS and Linux (see [tools.md](tools.md#mise)). See [tmux.md](tmux.md#requirements) for why the apt version of tmux is not enough.
 
 ## Quick start
 

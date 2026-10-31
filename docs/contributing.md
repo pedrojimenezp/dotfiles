@@ -84,7 +84,7 @@ Use an existing area name (`tmux plugin`, `zsh tool`, `terminal`, `nvim`, `comma
 
 ## Add a new tool
 
-1. Add it to the `Brewfile`.
+1. Add it to the `[tools]` table of `mise/.config/mise/config.toml` (or to the `Brewfile` if mise has no build for macOS).
 2. If it has a config, add a [package](glossary.md#package) (a top-level folder that mirrors your home folder) and add its name to `PACKAGES` in `install.sh`.
 3. Describe its keys as above.
 4. Document it in the matching page under `docs/`, and in [tools.md](tools.md) if it is a command-line tool.

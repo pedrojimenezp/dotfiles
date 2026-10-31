@@ -14,11 +14,9 @@ You'll use it for splits, tabs, project sessions, popups, and work that survives
 
 ## Requirements
 
-tmux 3.5 or newer. The `Brewfile` installs a current version.
+tmux 3.5 or newer. The mise config installs a current version, on macOS and Linux (`install.sh` runs `mise install`).
 
-**macOS:** `brew bundle` (run by `install.sh`) installs it.
-
-**Linux:** use Homebrew's tmux, as in [install.md](install.md). The tmux in apt is too old and prints errors for options it does not know.
+**Linux:** do not use the tmux from apt. It is older than 3.5 and prints errors for options it does not know.
 
 The config is `tmux/.config/tmux/tmux.conf`, linked to `~/.config/tmux/tmux.conf`. Every line has a comment.
 
@@ -190,7 +188,7 @@ Saves hold sessions, windows, panes, their folders and the visible text of each 
 ## Troubleshooting
 
 - **Errors about unknown options on start**: your tmux is older than 3.5. See [Requirements](#requirements).
-- **`prefix Space` does nothing**: the `tmux-fingers` binary is missing. Run `brew bundle`. Otherwise the first load shows an install menu: pick "Download standalone binary" (Linux x86_64 and macOS arm64) or build from source (needs Crystal).
+- **`prefix Space` does nothing**: the `tmux-fingers` binary is missing. Run `mise install` and restart tmux (the binary comes from the mise config). The plugin never makes tmux print an error without it. Otherwise the first load shows an install menu: pick "Download standalone binary" (Linux x86_64 and macOS arm64) or build from source (needs Crystal).
 - **A plugin is missing**: press `prefix I`.
 - **`Cmd+K` does nothing**: the pane runs vim or nvim, by design. Or you are not in Ghostty or iTerm.
 - **You need a layout**: `prefix Space` no longer cycles layouts. Use `prefix :` then `select-layout tiled` (or `even-horizontal`).
