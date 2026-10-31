@@ -15,14 +15,15 @@ In iTerm2 on macOS, `Cmd+V` in a tab whose foreground job is `ssh` (also `tssh`)
 
 - Work note.
 - Script `iterm/Library/Application Support/iTerm2/Scripts/AutoLaunch/dotfiles_image_paste.py` (stowed into AutoLaunch) and `tests/iterm_image_paste_test.py` (21 tests pass). `.gitignore` now ignores only the old DynamicProfiles path.
+- Template maps `Cmd+V` (`0x76-0x100000`) to action 60 `dotfiles_image_paste()`; `pngpaste` in the Brewfile.
 
 ## Where we stopped
 
-Script and tests done.
+Script, key mapping and Brewfile done.
 
 ## Next step
 
-Cmd+V mapping in the profile template, Brewfile, docs.
+Docs: terminals.md section, server.md link, cheatsheet.tsv, README.
 
 ## How to test
 

@@ -6,6 +6,7 @@ cask_args appdir: "~/Applications" # per-user app folder: casks never need sudo 
 brew "mise"                    # installs the CLI tools of this setup, per user
 brew "stow"                    # symlink manager that links this repo into $HOME
 brew "btop"                    # resource monitor (CPU, memory, disks, network); mise has no macOS build
+brew "pngpaste"                # saves the clipboard image as a PNG file
 # brew "mosh"                  # optional: SSH-like shell that survives roaming and sleep
 
 # --- macOS-only apps and fonts ---
