@@ -347,7 +347,7 @@ login_shell_hint() {
   echo "  chsh -s /bin/bash"
   echo "If chsh asks for a password you do not have:"
   echo "  sudo chsh -s /bin/bash \"\$USER\""
-  echo "With SSH connection sharing (ControlMaster), also run 'ssh -O exit <host>' on your laptop, or reconnecting keeps the old shell."
+  echo "With SSH connection sharing (ControlMaster), also run 'ssh -O exit <user>@<host>' (the same destination you ssh to) on your laptop, or reconnecting keeps the old shell."
 }
 
 # Returns 0 when a removed file is one that an already-open shell may still load or run:
