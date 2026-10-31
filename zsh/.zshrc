@@ -1,7 +1,7 @@
 # ~/.zshrc: interactive zsh config. Plain zsh, no framework, so startup stays fast.
 # Secrets and machine-specific settings go in ~/.zshrc.local (sourced just before syntax highlighting, not tracked).
 
-# --- Homebrew (macOS Apple Silicon/Intel, Linux) ---
+# --- Homebrew (macOS; skipped where brew is absent) ---
 # Find brew in the usual locations and export its PATH, MANPATH, etc.
 for brew_bin in /opt/homebrew/bin/brew /usr/local/bin/brew /home/linuxbrew/.linuxbrew/bin/brew; do
   if [[ -x $brew_bin ]]; then       # first brew that exists wins
@@ -13,7 +13,22 @@ unset brew_bin                      # keep the shell namespace clean
 
 # --- PATH ---
 typeset -U path                     # keep PATH entries unique
-path=("$HOME/.local/bin" $path)     # user scripts (tmux-sessionizer, mise)
+path=("$HOME/.local/bin" $path)     # user scripts and the mise binary
+
+# Sources the cached output of `<tool> <args>`; forking each tool on every start costs ~30 ms.
+_cache_init() {
+  local rc=${ZDOTDIR:-$HOME}/.zshrc bin=${commands[$1]:A}      # resolve symlinks so upgrades count
+  local f=${XDG_CACHE_HOME:-$HOME/.cache}/zsh/$1${2:+.${(j:_:)${@[2,-1]//[^[:alnum:]]/_}}}.zsh  # args are in the name
+  if [[ ! -s $f || $bin -nt $f || ${rc:A} -nt $f ]]; then      # missing, tool upgraded or .zshrc edited
+    mkdir -p ${f:h} && "$@" >$f.$$ 2>/dev/null && mv -f $f.$$ $f || rm -f $f.$$  # tmp + mv: never half-written
+  fi
+  [[ -s $f ]] && source $f
+}
+
+# mise puts its tools ahead of Homebrew's on PATH. Activate it here so the checks below find those tools.
+if (( $+commands[mise] )); then
+  _cache_init mise activate zsh           # tool versions per project, global defaults from ~/.config/mise/config.toml
+fi
 
 # --- Environment ---
 if command -v nvim >/dev/null 2>&1; then  # prefer Neovim when installed
@@ -85,9 +100,10 @@ zle -N edit-command-line                  # register the widget
 bindkey '^X^E' edit-command-line          # edit the command line in $VISUAL
 
 # --- Completion ---
-# Extra completions from Homebrew must be on fpath before compinit.
-if [[ -n ${HOMEBREW_PREFIX:-} && -d $HOMEBREW_PREFIX/share/zsh-completions ]]; then
-  fpath=("$HOMEBREW_PREFIX/share/zsh-completions" $fpath)
+ZSH_PLUGIN_DIR=${XDG_DATA_HOME:-$HOME/.local/share}/zsh-plugins  # git clones made by install.sh
+# Extra completions (cloned by install.sh) must be on fpath before compinit.
+if [[ -d $ZSH_PLUGIN_DIR/zsh-completions/src ]]; then
+  fpath=("$ZSH_PLUGIN_DIR/zsh-completions/src" $fpath)
 fi
 autoload -Uz compinit                     # load the completion system loader
 zcompdump=${ZDOTDIR:-$HOME}/.zcompdump   # where compinit keeps its cache
@@ -158,7 +174,7 @@ add-zsh-hook precmd long_cmd_bell         # runs just before each prompt
 
 # --- Remote tmux ---
 # tssh <ssh args>: connect and attach to (or create) the remote tmux session "main".
-# -t forces a tty for tmux; the remote shell is interactive login (-lic) so .zshrc puts Homebrew's tmux on PATH.
+# -t forces a tty for tmux; the remote shell is interactive login (-lic) so .zshrc puts mise's tmux on PATH.
 # The single-quoted command is expanded by the remote shell, so $SHELL is the server's.
 tssh() { ssh -t "$@" 'exec $SHELL -lic "tmux new-session -A -s main"'; }
 compdef tssh=ssh                          # complete hosts and options like ssh
@@ -190,15 +206,7 @@ if command -v nvim >/dev/null 2>&1; then  # only where Neovim exists; servers ke
 fi
 
 # --- Tool integrations (each guarded: a missing tool never errors) ---
-# Sources the cached output of `<tool> <args>`; forking each tool on every start costs ~30 ms.
-_cache_init() {
-  local rc=${ZDOTDIR:-$HOME}/.zshrc bin=${commands[$1]:A}      # resolve symlinks so brew upgrades count
-  local f=${XDG_CACHE_HOME:-$HOME/.cache}/zsh/$1${2:+.${(j:_:)${@[2,-1]//[^[:alnum:]]/_}}}.zsh  # args are in the name
-  if [[ ! -s $f || $bin -nt $f || ${rc:A} -nt $f ]]; then      # missing, tool upgraded or .zshrc edited
-    mkdir -p ${f:h} && "$@" >$f.$$ 2>/dev/null && mv -f $f.$$ $f || rm -f $f.$$  # tmp + mv: never half-written
-  fi
-  [[ -s $f ]] && source $f
-}
+# mise is activated earlier (PATH section); _cache_init is defined there too.
 if (( $+commands[fzf] )); then
   _cache_init fzf --zsh                   # Ctrl-R history, Ctrl-T files, Alt-C cd, ** completion
 fi
@@ -210,9 +218,6 @@ if (( $+commands[atuin] )); then
 fi
 if (( $+commands[zoxide] )); then
   _cache_init zoxide init zsh             # adds `z` and `zi` jump commands
-fi
-if (( $+commands[mise] )); then
-  _cache_init mise activate zsh           # per-project tool versions
 fi
 if (( $+commands[starship] )); then
   _cache_init starship init zsh           # prompt
@@ -246,13 +251,11 @@ if [[ -z ${SSH_CONNECTION:-}${SSH_TTY:-}${TMUX:-} && -t 1 ]] && command -v theme
   unset theme_state theme_mode
 fi
 
-# --- Plugins from Homebrew (fzf-tab after compinit and fzf, before the widget wrappers; syntax-highlighting is at the end of the file) ---
-if [[ -n ${HOMEBREW_PREFIX:-} ]]; then
-  [[ -f $HOMEBREW_PREFIX/opt/fzf-tab/share/fzf-tab/fzf-tab.zsh ]] &&
-    source "$HOMEBREW_PREFIX/opt/fzf-tab/share/fzf-tab/fzf-tab.zsh"                   # Tab completion through fzf
-  [[ -f $HOMEBREW_PREFIX/share/zsh-autosuggestions/zsh-autosuggestions.zsh ]] &&
-    source "$HOMEBREW_PREFIX/share/zsh-autosuggestions/zsh-autosuggestions.zsh"       # grey history suggestions
-fi
+# --- Plugins (fzf-tab after compinit and fzf, before the widget wrappers; syntax-highlighting is at the end of the file) ---
+[[ -f $ZSH_PLUGIN_DIR/fzf-tab/fzf-tab.plugin.zsh ]] &&
+  source "$ZSH_PLUGIN_DIR/fzf-tab/fzf-tab.plugin.zsh"                                # Tab completion through fzf
+[[ -f $ZSH_PLUGIN_DIR/zsh-autosuggestions/zsh-autosuggestions.zsh ]] &&
+  source "$ZSH_PLUGIN_DIR/zsh-autosuggestions/zsh-autosuggestions.zsh"               # grey history suggestions
 
 # --- Claude Code shared shell helpers ---
 [[ -f $HOME/.config/claude-shared/zsh/claude.zsh ]] && source "$HOME/.config/claude-shared/zsh/claude.zsh"  # optional
@@ -263,6 +266,6 @@ if [[ -f $HOME/.zshrc.local ]]; then source "$HOME/.zshrc.local"; fi  # an if ke
 if [[ -n ${SSH_CONNECTION:-} ]]; then export PROMPT_HOST=${HOST_LABEL:-${HOST%%.*}}; else unset PROMPT_HOST; fi
 
 # --- Syntax highlighting: must load after everything that defines widgets, so keep it last ---
-if [[ -n ${HOMEBREW_PREFIX:-} && -f $HOMEBREW_PREFIX/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ]]; then
-  source "$HOMEBREW_PREFIX/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"  # command coloring
+if [[ -f $ZSH_PLUGIN_DIR/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ]]; then
+  source "$ZSH_PLUGIN_DIR/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"  # command coloring
 fi

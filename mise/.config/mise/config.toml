@@ -1,9 +1,45 @@
 # Global mise config. `mise use -g <tool>@<version>` edits this file through the symlink, so commit the change.
-# Zig stays in Homebrew (see Brewfile): the zig and zls versions must match.
+# Same tools on macOS and Linux, installed per user (no sudo). Upgrade them with `mise upgrade`.
 
 [tools]
 node = "lts"    # global default; projects pin their own in mise.toml
 go = "latest"   # global default; projects pin their own in mise.toml
+
+# --- Editor and terminal ---
+neovim = "latest"         # main editor (Lua config in nvim/)
+tmux = "latest"           # terminal multiplexer; tmux.conf needs 3.5+, newer than apt ships
+"github:Morantron/tmux-fingers" = "latest"  # binary for the tmux-fingers plugin: hint-based copy (prefix Space)
+starship = "latest"       # fast, customizable shell prompt
+
+# --- Shell productivity ---
+fzf = "latest"            # fuzzy finder: Ctrl-R history, Ctrl-T files, Alt-C dirs
+zoxide = "latest"         # smarter cd: `z foo` jumps to a frequent directory
+eza = "latest"            # modern ls with colors and git status
+bat = "latest"            # cat with syntax highlighting
+ripgrep = "latest"        # very fast recursive grep (`rg`)
+fd = "latest"             # simple, fast find alternative
+jq = "latest"             # JSON processor for the command line
+yq = "latest"             # jq-like processor for YAML/TOML/XML
+btop = { version = "latest", os = ["linux"] }  # resource monitor (CPU, memory, disks, network); no macOS build, the Brewfile has it
+tealdeer = "latest"       # fast tldr client: short command examples (`tldr tar`)
+hyperfine = "latest"      # command-line benchmarking
+atuin = "latest"          # searchable shell history (Up and Ctrl+R), local only
+
+# --- Git and containers ---
+delta = "latest"          # syntax-highlighting pager for git diff/log (git-delta)
+lazygit = "latest"        # terminal UI for git
+lazydocker = "latest"     # terminal UI for Docker
+dive = "latest"           # explore Docker image layers
+gh = "latest"             # GitHub CLI
+git-lfs = "latest"        # large file storage for git (referenced in the git config filter)
+
+# --- Languages and dev tools ---
+zig = "0.17.0"            # Zig compiler
+zls = "0.17.0"            # Zig language server: keep the same version as zig
+shellcheck = "latest"     # linter for shell scripts
+shfmt = "latest"          # formatter for shell scripts
+tree-sitter = "latest"    # CLI that nvim-treesitter (main branch) needs to compile parsers
+golangci-lint = "latest"  # Go linter aggregator
 
 [settings]
 idiomatic_version_file_enable_tools = ["node"]  # also read .nvmrc and .node-version

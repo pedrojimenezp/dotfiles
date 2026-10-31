@@ -44,16 +44,24 @@ if [[ $WITH_CLAUDE -eq 1 && ( -z "$CLAUDE_REPO_URL" || "$CLAUDE_REPO_URL" == -* 
   exit 1
 fi
 
-# Prerequisite: zsh must exist (the configs are zsh-only). This script never uses sudo, so it only prints the command.
-if ! command -v zsh >/dev/null 2>&1; then # nothing to link against without zsh
+# Prerequisites. zsh must exist (the configs are zsh-only). Linux also needs git and curl (mise and the zsh plugins),
+# unzip and xz-utils (mise unpacks archives) and stow. This script never uses sudo, so it only prints the command.
+NEEDED=(zsh)                                                              # commands that must exist
+[[ "$OSTYPE" == linux* ]] && NEEDED+=(git curl unzip xz stow)             # macOS ships git, curl and unzip; brew installs stow
+MISSING=()                                                                # commands not found
+for cmd in "${NEEDED[@]}"; do
+  command -v "$cmd" >/dev/null 2>&1 || MISSING+=("$cmd")                  # collect every gap, so one run reports them all
+done
+if [[ ${#MISSING[@]} -gt 0 ]]; then
   if [[ "$OSTYPE" == linux* ]] && command -v apt-get >/dev/null 2>&1; then # Debian/Ubuntu
-    echo "zsh was not found. Install it first (this script never uses sudo):" >&2 # tell the user what to run
-    echo "  sudo apt-get update && sudo apt-get install -y zsh" >&2             # exact command
+    PKGS=("${MISSING[@]/xz/xz-utils}")                                    # the xz command comes from the xz-utils package
+    echo "Missing: ${MISSING[*]}. An admin installs them once (this script never uses sudo):" >&2 # tell the user what to run
+    echo "  sudo apt-get update && sudo apt-get install -y ${PKGS[*]}" >&2       # exact command
   else
-    echo "zsh was not found. Install zsh with your package manager, then run this script again." >&2 # no known installer
+    echo "Missing: ${MISSING[*]}. Install them with your package manager, then run this script again." >&2 # no known installer
   fi
   if [[ $DRY -eq 1 ]]; then # a preview should still show the rest of the plan
-    echo "[dry-run] continuing without zsh" >&2 # make the skipped exit visible
+    echo "[dry-run] continuing without ${MISSING[*]}" >&2 # make the skipped exit visible
   else
     exit 1 # stop before any change
   fi
@@ -83,48 +91,38 @@ if [[ "$OSTYPE" == darwin* ]]; then
   PACKAGES+=(iterm)
 fi
 
-# Step 1: Homebrew packages.
-# A fresh SSH login (bash) has no brew on PATH: look in the standard prefixes and load it for this script.
-if ! command -v brew >/dev/null 2>&1; then
-  for brew_bin in /opt/homebrew/bin/brew /usr/local/bin/brew /home/linuxbrew/.linuxbrew/bin/brew "$HOME/.linuxbrew/bin/brew"; do
-    if [[ -x $brew_bin ]]; then # first existing install wins
-      eval "$("$brew_bin" shellenv)" # sets HOMEBREW_PREFIX and updates PATH
-      break
-    fi
-  done
-fi
-if command -v brew >/dev/null 2>&1; then
-  echo "==> Installing Homebrew packages"
-  # Upgrades are a separate, deliberate `brew upgrade`.
-  run brew bundle --no-upgrade --file="$REPO/Brewfile"
-  # zsh's compinit prompts about completion dirs that group or others can write (brew can recreate them that way).
-  echo "==> Removing group/other write from Homebrew's zsh completion dirs (chmod go-w)"
-  BREW_SHARE="$(brew --prefix)/share"                                              # parent of the completion dirs
-  for d in "$BREW_SHARE" "$BREW_SHARE/zsh" "$BREW_SHARE/zsh/site-functions" "$BREW_SHARE/zsh-completions"; do
-    [[ -d $d && -O $d ]] && run chmod go-w "$d"                                    # only dirs this user owns
-  done
-elif [[ "$OSTYPE" == linux* && -z "${DISPLAY:-}${WAYLAND_DISPLAY:-}" ]]; then # headless server
-  cat <<'MSG'
-Homebrew was not found. Install it first (this script never uses sudo):
-  NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-  eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-Then run this script again.
-MSG
-  if [[ $DRY -eq 1 ]]; then # a preview should still show the rest of the plan
-    echo "[dry-run] continuing without Homebrew" >&2 # make the skipped exit visible
-  else
-    exit 1 # stop before any change
+# Step 1: Homebrew packages (macOS only: Linux installs its tools with mise, per user).
+if [[ "$OSTYPE" == darwin* ]]; then
+  # A fresh SSH login (bash) has no brew on PATH: look in the standard prefixes and load it for this script.
+  if ! command -v brew >/dev/null 2>&1; then
+    for brew_bin in /opt/homebrew/bin/brew /usr/local/bin/brew; do
+      if [[ -x $brew_bin ]]; then # first existing install wins
+        eval "$("$brew_bin" shellenv)" # sets HOMEBREW_PREFIX and updates PATH
+        break
+      fi
+    done
   fi
-else
-  cat <<'MSG'
+  if command -v brew >/dev/null 2>&1; then
+    echo "==> Installing Homebrew packages"
+    # Upgrades are a separate, deliberate `brew upgrade`.
+    run brew bundle --no-upgrade --file="$REPO/Brewfile"
+    # zsh's compinit prompts about completion dirs that group or others can write (brew can recreate them that way).
+    echo "==> Removing group/other write from Homebrew's zsh completion dirs (chmod go-w)"
+    BREW_SHARE="$(brew --prefix)/share"                                              # parent of the completion dirs
+    for d in "$BREW_SHARE" "$BREW_SHARE/zsh" "$BREW_SHARE/zsh/site-functions"; do
+      [[ -d $d && -O $d ]] && run chmod go-w "$d"                                    # only dirs this user owns
+    done
+  else
+    cat <<'MSG'
 Homebrew was not found. Install it first (this script never uses sudo):
   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 Then follow the "Next steps" it prints to add brew to your PATH, and run this script again.
 MSG
-  if [[ $DRY -eq 1 ]]; then # a preview should still show the rest of the plan
-    echo "[dry-run] continuing without Homebrew" >&2 # make the skipped exit visible
-  else
-    exit 1 # stop before any change
+    if [[ $DRY -eq 1 ]]; then # a preview should still show the rest of the plan
+      echo "[dry-run] continuing without Homebrew" >&2 # make the skipped exit visible
+    else
+      exit 1 # stop before any change
+    fi
   fi
 fi
 
@@ -196,13 +194,37 @@ else
   done
 fi
 
-# Step 3b: install the global runtimes from the mise config.
+# Step 3b: install mise if missing (per user, no sudo), then every tool of its config.
+export PATH="$HOME/.local/bin:$PATH" # where the mise installer puts the binary
+if ! command -v mise >/dev/null 2>&1; then
+  echo "==> Installing mise into ~/.local/bin"
+  run sh -c 'curl -fsSL https://mise.run | sh' || echo "Warning: could not install mise; run it again later" >&2 # the official installer
+fi
 if command -v mise >/dev/null 2>&1; then
-  echo "==> Installing runtimes with mise"
-  run mise install # reads ~/.config/mise/config.toml
+  echo "==> Installing tools with mise"
+  run mise install || echo "Warning: some mise tools failed; run 'mise install' later" >&2 # reads ~/.config/mise/config.toml
+  # Later steps (tmux plugins, atuin) need the mise tools on PATH; a new shell gets them from `mise activate` in .zshrc.
+  [[ $DRY -eq 1 ]] || eval "$(mise env -s bash)" || true
 else
   echo "==> Skipping mise install: mise not found"
 fi
+
+# Step 3b1: zsh plugins as git clones, the same on every OS (.zshrc sources them from here).
+ZSH_PLUGIN_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/zsh-plugins" # one folder per plugin
+clone_plugin() { # clone, or fast-forward an existing clone: $1 = folder name, $2 = repo path on GitHub
+  local dir="$ZSH_PLUGIN_DIR/$1"
+  if [[ -d "$dir/.git" ]]; then
+    run git -C "$dir" pull --ff-only --quiet || echo "Warning: could not update $1; keeping it as it is" >&2 # offline or local edits
+  else
+    run git clone --depth 1 --quiet "https://github.com/$2" "$dir" || echo "Warning: could not clone $1" >&2 # public repos: https, no key
+  fi
+}
+echo "==> Installing zsh plugins in $ZSH_PLUGIN_DIR"
+run mkdir -p "$ZSH_PLUGIN_DIR"
+clone_plugin zsh-autosuggestions zsh-users/zsh-autosuggestions     # fish-style suggestions from history
+clone_plugin zsh-syntax-highlighting zsh-users/zsh-syntax-highlighting # colors commands as you type
+clone_plugin zsh-completions zsh-users/zsh-completions             # extra tab-completion definitions
+clone_plugin fzf-tab Aloxaf/fzf-tab                                # Tab completion through fzf
 
 # Step 3b2: import the zsh history into atuin once.
 ATUIN_DB="${XDG_DATA_HOME:-$HOME/.local/share}/atuin/history.db" # atuin's default database
@@ -390,7 +412,7 @@ suggest_login_shell() {
   local sys_ver                                                                 # /usr/bin/tmux version, e.g. 3.4 (empty if none)
   sys_ver="$(/usr/bin/tmux -V 2>/dev/null | sed -n 's/^tmux \([0-9]*\.[0-9]*\).*/\1/p')"
   if [[ -n "$sys_ver" ]] && (( ${sys_ver%%.*} < 3 || ( ${sys_ver%%.*} == 3 && ${sys_ver#*.} < 5 ) )); then # tmux.conf needs 3.5+
-    echo "Until then, bash does not put Homebrew on PATH, so logins start the system tmux $sys_ver and tmux.conf shows errors."
+    echo "Until then, bash does not put mise's tools on PATH, so logins start the system tmux $sys_ver and tmux.conf shows errors."
     echo "After switching, stop the old server with: tmux kill-server"
   fi
 }
