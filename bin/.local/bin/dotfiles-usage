@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Count how often each tool of these dotfiles was used lately, to decide what to remove.
 # Usage: dotfiles-usage [week|2weeks|month]   (uses per tool and last use; default week)
-# Tools: Brewfile brew entries, aliases in zsh/.zshrc, scripts in bin/.local/bin, and tssh. Nothing is listed by hand.
+# Tools: Brewfile brew entries, tools of the mise config, aliases in zsh/.zshrc, scripts in bin/.local/bin, and tssh. Nothing is listed by hand.
 # Source: atuin history if installed, else ~/.zsh_history (needs EXTENDED_HISTORY). Scripts started by a key
 # do not reach history: every script that calls dotfiles-log logs "<epoch> <tool>" to usage.log, and is counted from that log only.
 # Approximate: counts the first word of each command and of each part of a pipe or && chain, after env vars and sudo.
@@ -22,7 +22,7 @@ case "${1:-week}" in
   *) sed -n '3p' "$0" | sed 's/^# //'; exit 2 ;; # unknown period: show the usage line
 esac
 
-# Tools: command names from the Brewfile, where the command differs from the formula name or is no command at all.
+# Tools: command names from the Brewfile and the mise config, where the command differs from the formula name or is no command at all.
 tools="tssh" # a zsh function, not a file; z and zi are only aliases of zoxide below
 while read -r name; do
   case "$name" in
@@ -30,7 +30,10 @@ while read -r name; do
     ripgrep) name=rg ;; git-delta) name="delta" ;; tealdeer) name=tldr ;; neovim) name=nvim ;; # command differs from formula
   esac
   tools="$tools $name"
-done < <(sed -n 's/^brew "\([^"]*\)".*/\1/p' "$ROOT/Brewfile")
+done < <({
+  sed -n 's/^brew "\([^"]*\)".*/\1/p' "$ROOT/Brewfile"
+  sed -n '/^\[tools\]/,/^\[/s/^\([A-Za-z0-9_-]*\) *=.*/\1/p' "$ROOT/mise/.config/mise/config.toml" # plain keys only: "github:..." backends are libraries or helpers
+})
 for f in "$ROOT"/bin/.local/bin/*; do [[ ${f##*/} == dotfiles-log ]] || tools="$tools ${f##*/}"; done # our own scripts; the log helper is only called by others
 logged="$(grep -lE '^[^#]*dotfiles-log" +[a-z]' "$ROOT"/bin/.local/bin/* | sed 's|.*/||' | tr '\n' ' ' || true)" # scripts that call dotfiles-log (key-launched): counted from the log only
 aliases="z=zoxide zi=zoxide $(grep -oE "alias [^= ]+='[^ ']+" "$ROOT/zsh/.zshrc" | sed "s/alias \(.*\)='\(.*\)/\1=\2/" | tr '\n' ' ')" # name=first word
