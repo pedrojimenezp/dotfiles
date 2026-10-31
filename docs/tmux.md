@@ -202,22 +202,7 @@ Saves hold sessions, windows, panes, their folders and the visible text of each 
 
 **Why `prefix k` shows raw keys.** `prefix ?` is the help popup now. `Shift+?` is no separate key on a US keyboard, and `prefix /` stays tmux's "describe one key". `k` is free in the defaults.
 
-**Help popup.** `prefix ?` runs `dotfiles-help` (`bin/.local/bin/dotfiles-help`) in a popup of 80% of the window. It reads the repo at every open, so nothing is synced by hand:
-
-| Area | Source |
-| --- | --- |
-| `tmux` | The `bind -N "..."` lines of `tmux.conf` |
-| `zsh key`, `zsh alias`, `zsh function` | Comments on `bindkey` and `alias` lines in `zsh/.zshrc`, and above each function |
-| `command` | Line 2 and the `# Usage:` lines of each script in `bin/.local/bin` |
-| `tmux plugin`, `zsh tool`, `terminal`, `nvim`, `command` for `theme` | [cheatsheet.tsv](cheatsheet.tsv): keys no config file states |
-
-Plugins bind their own keys and cannot carry a note, so they go in `docs/cheatsheet.tsv`. Check that every binding has a note:
-
-```sh
-grep -E '^\s*bind' tmux/.config/tmux/tmux.conf | grep -v -- ' -N '
-```
-
-No output means every binding has a note.
+**Help popup.** `prefix ?` runs `dotfiles-help` (`bin/.local/bin/dotfiles-help`) in a popup of 80% of the window. It reads the repo at every open, so nothing is synced by hand. Where each row comes from (`bind -N` notes, `.zshrc` comments, script headers, [cheatsheet.tsv](cheatsheet.tsv)) is in [contributing.md](contributing.md#how-it-works).
 
 **Order of `prefix Ctrl+l`.** vim-tmux-navigator owns plain `Ctrl+l` (move right) and also sets `prefix Ctrl+l` to a plain clear. So `tmux.conf` defines `prefix Ctrl+l` again at the very end, after TPM runs. Bindings that must override a plugin key go there. The scrollback clears 0.3 seconds after the screen, because the shell redraw would otherwise push the old screen back into history. In vim or nvim the binding is skipped, because the `Ctrl+l` would reach the editor and move focus.
 

@@ -72,7 +72,7 @@ The text the shell prints before your cursor, waiting for a command. Here [stars
 
 ## scrollback
 
-The lines that scrolled off the top of the screen and that you can scroll back to. tmux keeps 50,000 lines per pane.
+The lines that scrolled off the top of the screen and that you can scroll back to. See [tmux.md](tmux.md#status-bar-and-pane-labels) for how much tmux keeps.
 
 ## session
 
@@ -92,7 +92,7 @@ GNU Stow, the tool that creates the [links](#link) from your home folder into th
 
 ## tpm
 
-Tmux Plugin Manager. It downloads the tmux plugins listed in `tmux.conf`. `prefix Shift+I` installs them and `prefix Shift+U` updates them.
+Tmux Plugin Manager. It downloads the tmux plugins listed in `tmux.conf`. Its keys are in [tmux.md](tmux.md#add-a-plugin).
 
 ## treesitter
 

@@ -136,6 +136,23 @@ Run these in the folder you cloned to. The installer only made [links](glossary.
 5. Delete the clone folder.
 6. Open a new terminal.
 
+### Restore one file
+
+To get back a single file without undoing the rest, for example `~/.zshrc`:
+
+1. Find its backups:
+   ```sh
+   ls ~/.zshrc.backup-*
+   ```
+2. Remove the [link](glossary.md#link) and put the backup back. Use the name the first step printed:
+   ```sh
+   rm ~/.zshrc
+   mv ~/.zshrc.backup-20260101-120000 ~/.zshrc
+   ```
+3. Open a new shell to load it: `exec zsh`.
+
+A later `./install.sh` backs it up again and puts the link back.
+
 ## Per-machine files
 
 These files belong to one machine and are never in the repo.
@@ -150,6 +167,8 @@ These files belong to one machine and are never in the repo.
 | `~/.ssh/config` | SSH hosts ([server.md](server.md)) |
 
 ## Troubleshooting
+
+`install.sh` prints every step to the terminal and keeps no log file. Run `./install.sh --dry-run` to see what it would do.
 
 - **"zsh was not found."** Install zsh with your package manager and run the installer again.
 - **"Homebrew was not found."** Install it (see your OS above), open a new shell, and run the installer again.

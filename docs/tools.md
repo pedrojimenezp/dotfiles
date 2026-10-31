@@ -148,7 +148,7 @@ It lists how often each tool of this repo was used in that period, most used fir
 
 **Prompt.** Icons are written as `\uXXXX` escapes in the toml, so tools cannot strip them. `zsh/.zshrc` exports `PROMPT_HOST` over SSH only, and starship shows it. Prompt modules time out at 500 ms. The first line uses plain connector words (`in`, `on`, `via`) like starship's classic style.
 
-**Installs.** `install.sh` runs `brew bundle --no-upgrade`, so it never upgrades. The cask font installs into `~/Applications`, so no admin rights are needed.
+**Installs.** `install.sh` runs `brew bundle --no-upgrade`, so it never upgrades. See [install.md](install.md#what-installsh-does-in-order).
 
 **dotfiles-usage internals.**
 

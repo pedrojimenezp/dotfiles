@@ -67,33 +67,11 @@ More in [nvim.md](nvim.md).
   rm -rf ~/.cache/zsh && exec zsh
   ```
 - **tmux ignores your edit to `tmux.conf`.** Reload it with `prefix r`.
-- **A tmux plugin is missing.** Press `prefix Shift+I` to install the plugins again.
-- **Neovim shows errors on start.** Run `:Lazy` to check plugins, `:Mason` to check language tools, and `:checkhealth` for a full report.
+- **A tmux plugin is missing.** Press `prefix Shift+I` to install the plugins again. More in [tmux troubleshooting](tmux.md#troubleshooting).
+- **Neovim shows errors on start.** Run `:Lazy` to check plugins, `:Mason` to check language tools, and `:checkhealth` for a full report. More in [nvim troubleshooting](nvim.md#troubleshooting).
 - **Icons show as boxes or question marks.** Your terminal font is not a [Nerd Font](glossary.md#nerd-font). See [terminals.md](terminals.md).
-- **You want an old config file back.** See below.
-
-### Restore a file the installer replaced
-
-Before linking, the installer renames each file it would replace to `<file>.backup-<date>-<time>`, in the same folder. Nothing is deleted.
-
-1. Find the backups, for example of `~/.zshrc`:
-   ```sh
-   ls ~/.zshrc.backup-*
-   ```
-2. Remove the [link](glossary.md#link) and put the backup back. Use the name the first step printed:
-   ```sh
-   rm ~/.zshrc
-   mv ~/.zshrc.backup-20260101-120000 ~/.zshrc
-   ```
-3. Open a new shell to load it: `exec zsh`.
-
-To remove every link at once, see "Undo" in [install.md](install.md#undo-or-uninstall).
-
-### Where to look
-
-- **Installer output**: `install.sh` prints every step to the terminal and keeps no log file. Run `./install.sh --dry-run` to see what it would do.
-- **Backups**: next to the original file, named `<file>.backup-<date>-<time>`.
-- **Your machine-only settings**: `~/.zshrc.local` and `~/.config/git/local`. They are not in the repo.
+- **You want an old config file back.** The installer renamed it to `<file>.backup-<date>-<time>` next to the original. See [Restore one file](install.md#restore-one-file).
+- **The install itself failed.** See [install troubleshooting](install.md#troubleshooting). Your machine-only settings live in the [per-machine files](install.md#per-machine-files).
 
 ## Related pages
 

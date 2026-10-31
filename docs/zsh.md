@@ -121,7 +121,7 @@ Without atuin installed, `Up` uses the prefix search and `Ctrl+r` uses fzf.
 
 ### Import your old history
 
-`install.sh` runs `atuin import zsh` once, when the database does not exist yet. To import again by hand, run it yourself. It may add duplicates.
+`install.sh` runs `atuin import zsh` once, when the database does not exist yet and `~/.zsh_history` has content ([install.md](install.md#what-installsh-does-in-order)). To import again by hand, run it yourself. It may add duplicates.
 
 ```sh
 atuin import zsh
@@ -230,7 +230,7 @@ The program name is the first word of the line, after skipping:
 
 **Theme at start.** In a new local terminal, if you saved `dark` or `light`, `.zshrc` runs `theme apply`. It does nothing over SSH or inside tmux, so a server never changes your local colors. `bat` uses `BAT_THEME=ansi`, so it follows any terminal theme.
 
-**Help list.** `dotfiles-help` reads `.zshrc` comments. Keep an end-of-line comment on every `alias` and `bindkey` line, and a comment line above every function (for example `# tssh <ssh args>: ...`). A line without a comment is left out.
+**Help list.** `dotfiles-help` reads `.zshrc` comments; a line without one is left out. The comment format is in [contributing.md](contributing.md#add-a-zsh-alias-key-or-function).
 
 ## Related
 

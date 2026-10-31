@@ -22,7 +22,13 @@ The help list shows it as `prefix f`. It also understands these flags:
 | `bind -N "..." -T copy-mode-vi v` | `copy mode: v` |
 | `bind -N "..." -r H` | `prefix Shift+H` (uppercase letters get `Shift+`) |
 
-A `bind` without `-N` does not appear in the list.
+A `bind` without `-N` does not appear in the list. Check that every binding has a note (no output means they all do):
+
+```sh
+grep -E '^\s*bind' tmux/.config/tmux/tmux.conf | grep -v -- ' -N '
+```
+
+Plugins bind their own keys and cannot carry a note, so their keys go in [cheatsheet.tsv](#add-a-plugin-tool-or-terminal-key).
 
 ## Add a zsh alias, key or function
 
