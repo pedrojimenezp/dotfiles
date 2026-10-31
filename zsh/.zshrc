@@ -261,7 +261,7 @@ fi
   source "$ZSH_PLUGIN_DIR/zsh-autosuggestions/zsh-autosuggestions.zsh"               # grey history suggestions
 
 # --- Claude Code shared shell helpers ---
-[[ -f $HOME/.config/claude-shared/zsh/claude.zsh ]] && source "$HOME/.config/claude-shared/zsh/claude.zsh"  # optional
+[[ -f $HOME/.config/claude-shared/claude.sh ]] && source "$HOME/.config/claude-shared/claude.sh"  # optional
 
 # --- Local, untracked overrides (secrets, machine settings): keep it after the plugins, before syntax highlighting ---
 if [[ -f $HOME/.zshrc.local ]]; then source "$HOME/.zshrc.local"; fi  # an if keeps $? at 0 when the file is missing (a failed [[ ]] would turn the prompt red)

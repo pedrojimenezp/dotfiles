@@ -265,14 +265,25 @@ prune_up() {
   done
 }
 
+# Print the Claude config folders: every ~/.claude-<name> plus the legacy ~/.claude.
+claude_account_dirs() {
+  local d
+  for d in "$HOME"/.claude "$HOME"/.claude-*; do
+    [[ -d "$d" && ! -L "$d" ]] && echo "$d"
+  done
+}
+
 # Remove the links the Claude installer made in the Claude and pi account folders, restoring its .bak-* files.
 undo_claude_links() {
-  local root file n=0 dest
-  local -a found=()
-  for root in "$HOME/.claude" "$HOME/.claude-personal" "$PI_DIR"; do
+  local root file n=0 dest claude_real
+  local -a found=() roots=()
+  claude_real="$(cd "$CLAUDE_DIR" && pwd -P)"
+  while IFS= read -r root; do roots+=("$root"); done < <(claude_account_dirs)
+  roots+=("$PI_DIR")
+  for root in "${roots[@]}"; do
     [[ -d "$root" ]] || continue
     while IFS= read -r -d '' file; do
-      if link_points_into "$file" "$(cd "$CLAUDE_DIR" && pwd -P)"; then found+=("$file"); fi
+      if link_points_into "$file" "$claude_real"; then found+=("$file"); fi
     done < <(find "$root" -maxdepth 4 -type l -print0)
   done
   if [[ ${#found[@]} -gt 0 ]]; then
@@ -287,21 +298,22 @@ undo_claude_links() {
   echo "Claude links removed: $n"
 }
 
-# Delete the lines the Claude installer appended to a shell rc file.
-undo_claude_zsh_line() {
+# Delete the lines the Claude installer appended to a shell rc file: the claude.sh line, an old claude.zsh
+# line and the "# Claude Code accounts" comment. A symlinked rc file belongs to a repo and is left alone.
+undo_claude_shell_line() {
   local rc tmp
-  for rc in "$HOME/.zshrc.local" "$HOME/.zshrc"; do
+  for rc in "$HOME/.zshrc.local" "$HOME/.zshrc" "$HOME/.bashrc"; do
     [[ -f "$rc" && ! -L "$rc" ]] || continue
-    grep -q 'claude-shared/zsh/claude\.zsh' "$rc" || continue
+    grep -qE 'claude-shared/(zsh/claude\.zsh|claude\.sh)' "$rc" || continue
     tmp="$rc.uninstall.$$"
     if [[ $DRY -eq 1 ]]; then
-      echo "[dry-run] remove the claude.zsh lines from $rc"
+      echo "[dry-run] remove the claude.sh lines from $rc"
     else
-      grep -v -e 'claude-shared/zsh/claude\.zsh' -e '^# Claude Code accounts$' "$rc" >"$tmp" || true # exit 1 = nothing left
+      grep -vE -e 'claude-shared/(zsh/claude\.zsh|claude\.sh)' -e '^# Claude Code accounts$' "$rc" >"$tmp" || true # exit 1 = nothing left
       cat "$tmp" >"$rc" # keeps the file's owner and mode
       rm -f "$tmp"
     fi
-    REMOVED+=("claude.zsh lines in $rc")
+    REMOVED+=("claude.sh lines in $rc")
   done
 }
 
@@ -353,7 +365,8 @@ print_plan() {
   while IFS= read -r p; do echo "    $p"; done < <(existing_data)
   [[ ! -f "$HOME/.local/bin/mise" ]] || echo "    $HOME/.local/bin/mise (the mise binary)"
   if [[ $WITH_CLAUDE -eq 1 && -d "$CLAUDE_DIR" ]]; then
-    echo "  the Claude config: its links in ~/.claude, ~/.claude-personal and $PI_DIR, then the clone $CLAUDE_DIR"
+    echo "  the Claude config: its links in every ~/.claude-<name> folder (and a legacy ~/.claude) and in $PI_DIR,"
+    echo "    its line in ~/.zshrc.local, ~/.zshrc (not a symlink) and ~/.bashrc, then the clone $CLAUDE_DIR"
     echo "    (the clone's untracked local files, such as coaching logs, go with it)"
   fi
   if [[ $KEEP_REPO -eq 0 ]]; then
@@ -441,8 +454,8 @@ main() {
     step "Undoing the Claude config in $CLAUDE_DIR"
     if [[ -d "$CLAUDE_DIR" ]]; then
       undo_claude_links
-      undo_claude_zsh_line
-      SKIPPED+=("settings.json in ~/.claude and ~/.claude-personal (copies that Claude Code also writes; delete them yourself if you want)")
+      undo_claude_shell_line
+      SKIPPED+=("settings.json in each ~/.claude-<name> folder (copies that Claude Code also writes; delete them yourself if you want)")
       if reason="$(clone_unsafe_reason "$CLAUDE_DIR")"; then
         SKIPPED+=("$CLAUDE_DIR (kept: $reason)")
       else

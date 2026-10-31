@@ -216,23 +216,53 @@ echo "== --with-claude undoes the Claude links and removes a clean clone"
 B="$ROOT/claude"
 make_machine "$B" plain
 h="$B/home"
-make_clone "$B/claude-origin.git" "$h/.config/claude-shared"
-mkdir -p "$h/.config/claude-shared/skills/foo" "$h/.claude/skills" "$h/.claude-personal"
-git -C "$h/.config/claude-shared" add -A
-git -C "$h/.config/claude-shared" commit -q --allow-empty -m skills
-git -C "$h/.config/claude-shared" push -q origin HEAD:main
-ln -s "$h/.config/claude-shared/skills/foo" "$h/.claude/skills/foo"
+c="$h/.config/claude-shared"
+make_clone "$B/claude-origin.git" "$c"
+mkdir -p "$c/skills/foo" "$c/accounts/niche/agents" "$c/accounts/personal/rules" "$h/.claude/skills" \
+  "$h/.claude-niche/skills" "$h/.claude-personal" "$h/.pi/agent"
+git -C "$c" add -A
+git -C "$c" commit -q --allow-empty -m skills
+git -C "$c" push -q origin HEAD:main
+ln -s "$c/skills/foo" "$h/.claude/skills/foo"                      # legacy folder
+ln -s "$c/skills/foo" "$h/.claude-niche/skills/foo"
+ln -s "$c/accounts/niche/agents" "$h/.claude-niche/agents"
+ln -s "$c/accounts/personal/rules" "$h/.claude-personal/rules"
 echo bak >"$h/.claude-personal/CLAUDE.md.bak-20260101000000"
-ln -s "$h/.config/claude-shared/CLAUDE.md" "$h/.claude-personal/CLAUDE.md"
-printf 'export A=1\n\n# Claude Code accounts\nsource "%s/.config/claude-shared/zsh/claude.zsh"\n' "$h" >"$h/.zshrc.local"
+ln -s "$c/CLAUDE.md" "$h/.claude-personal/CLAUDE.md"
+ln -s "$c/CLAUDE.md" "$h/.pi/agent/CLAUDE.md"
+echo '{}' >"$h/.claude-personal/settings.json"
+echo '{}' >"$h/.claude-niche/settings.json"
+ln -s "$h/real.txt" "$h/.claude-niche/keep-link"                    # a link elsewhere stays
+echo real >"$h/real.txt"
+printf 'export A=1\n\n# Claude Code accounts\nsource "%s/.config/claude-shared/claude.sh"\n' "$h" >"$h/.zshrc.local"
+printf 'export B=1\nsource "%s/.config/claude-shared/zsh/claude.zsh"\n' "$h" >"$h/.bashrc"
 run_un "$B" --yes --keep-repo >"$ROOT/claude0.out" 2>&1 || { cat "$ROOT/claude0.out"; bad "exit 0"; }
-check "without --with-claude the clone is kept" test -d "$h/.config/claude-shared"
-check "without --with-claude its links are kept" is_link "$h/.claude/skills/foo"
+check "without --with-claude the clone is kept" test -d "$c"
+check "without --with-claude its links are kept" is_link "$h/.claude-niche/skills/foo"
 (cd "$h/dotfiles" && env HOME="$h" /bin/bash ./uninstall.sh --yes --keep-repo --with-claude >"$ROOT/claude1.out" 2>&1) || { cat "$ROOT/claude1.out"; bad "exit 0"; }
-check "Claude skill link removed" gone "$h/.claude/skills/foo"
+check "legacy ~/.claude link removed" gone "$h/.claude/skills/foo"
+check "~/.claude-niche skill link removed" gone "$h/.claude-niche/skills/foo"
+check "agents link removed" gone "$h/.claude-niche/agents"
+check "rules link removed" gone "$h/.claude-personal/rules"
+check "pi link removed" gone "$h/.pi/agent/CLAUDE.md"
 check "Claude backup restored" has_text "$h/.claude-personal/CLAUDE.md" bak
-check "claude.zsh line removed, other lines kept" has_text "$h/.zshrc.local" "export A=1"
-check "Claude clone removed" gone "$h/.config/claude-shared"
+check "link to somewhere else kept" is_link "$h/.claude-niche/keep-link"
+check "settings.json copies kept" test -f "$h/.claude-niche/settings.json" -a -f "$h/.claude-personal/settings.json"
+check "settings.json copies reported" grep -q "settings.json in each" "$ROOT/claude1.out"
+check "claude.sh line removed, other lines kept" has_text "$h/.zshrc.local" "export A=1"
+check "claude.zsh line removed from ~/.bashrc" has_text "$h/.bashrc" "export B=1"
+check "Claude clone removed" gone "$c"
+
+echo "== a symlinked ~/.zshrc is not edited"
+B="$ROOT/claudelink"
+make_machine "$B" plain
+h="$B/home"
+make_clone "$B/claude-origin.git" "$h/.config/claude-shared"
+printf 'source "%s/.config/claude-shared/claude.sh"\n' "$h" >"$h/dotfiles/zsh/.zshrc.extra"
+rm -f "$h/.zshrc"
+ln -s "$h/dotfiles/zsh/.zshrc.extra" "$h/.zshrc"
+(cd "$h/dotfiles" && env HOME="$h" /bin/bash ./uninstall.sh --yes --keep-repo --with-claude >"$ROOT/claude2.out" 2>&1) || { cat "$ROOT/claude2.out"; bad "exit 0"; }
+check "file behind the symlink keeps its line" grep -q "claude.sh" "$h/dotfiles/zsh/.zshrc.extra"
 
 echo
 echo "passed: $PASS, failed: $FAIL"
