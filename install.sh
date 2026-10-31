@@ -84,6 +84,15 @@ if [[ "$OSTYPE" == darwin* ]]; then
 fi
 
 # Step 1: Homebrew packages.
+# A fresh SSH login (bash) has no brew on PATH: look in the standard prefixes and load it for this script.
+if ! command -v brew >/dev/null 2>&1; then
+  for brew_bin in /opt/homebrew/bin/brew /usr/local/bin/brew /home/linuxbrew/.linuxbrew/bin/brew "$HOME/.linuxbrew/bin/brew"; do
+    if [[ -x $brew_bin ]]; then # first existing install wins
+      eval "$("$brew_bin" shellenv)" # sets HOMEBREW_PREFIX and updates PATH
+      break
+    fi
+  done
+fi
 if command -v brew >/dev/null 2>&1; then
   echo "==> Installing Homebrew packages"
   # Upgrades are a separate, deliberate `brew upgrade`.
@@ -94,6 +103,18 @@ if command -v brew >/dev/null 2>&1; then
   for d in "$BREW_SHARE" "$BREW_SHARE/zsh" "$BREW_SHARE/zsh/site-functions" "$BREW_SHARE/zsh-completions"; do
     [[ -d $d && -O $d ]] && run chmod go-w "$d"                                    # only dirs this user owns
   done
+elif [[ "$OSTYPE" == linux* && -z "${DISPLAY:-}${WAYLAND_DISPLAY:-}" ]]; then # headless server
+  cat <<'MSG'
+Homebrew was not found. Install it first (this script never uses sudo):
+  NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+Then run this script again.
+MSG
+  if [[ $DRY -eq 1 ]]; then # a preview should still show the rest of the plan
+    echo "[dry-run] continuing without Homebrew" >&2 # make the skipped exit visible
+  else
+    exit 1 # stop before any change
+  fi
 else
   cat <<'MSG'
 Homebrew was not found. Install it first (this script never uses sudo):

@@ -13,7 +13,7 @@ cd ~/projects/personal/dotfiles
 ./install.sh
 ```
 
-Install [Homebrew](https://brew.sh) first if `brew` is missing. `install.sh` prints the command and stops. Apps (casks) go into `~/Applications`, so no admin rights are needed.
+Install [Homebrew](https://brew.sh) first if `brew` is missing. `install.sh` looks in the standard prefixes (`/opt/homebrew`, `/usr/local`, `~/.linuxbrew`, `/home/linuxbrew/.linuxbrew`) before deciding it is missing; if it is, it prints the command and stops. Apps (casks) go into `~/Applications`, so no admin rights are needed.
 
 ## Linux desktop
 
@@ -65,7 +65,7 @@ Flags can be combined (`--dry-run --with-claude <git-url>`). `--with-claude=<git
 ## What `install.sh` does, in order
 
 1. Checks that `zsh` exists. Without it the script stops (with `--dry-run` it continues).
-2. **Homebrew packages**: `brew bundle --no-upgrade`. It installs what is missing and never upgrades. If `brew` is missing it prints the install command and stops (with `--dry-run` it continues).
+2. **Homebrew packages**: `brew bundle --no-upgrade`. It installs what is missing and never upgrades. `brew` is found in the standard prefixes even when it is not on `PATH`. If it is missing it prints the install command and stops (with `--dry-run` it continues).
 3. Decides the package list. `zsh nvim tmux vim git starship mise atuin bin theme`, plus `iterm` on macOS, plus `ghostty` when Ghostty is installed.
 4. Renames an old standalone `~/.local/bin/mise` that would shadow the Homebrew one.
 5. **Backs up** every real file a package would link: `<file>.backup-YYYYmmdd-HHMMSS`. Files that are already links into this repo are left alone. `~/.gitconfig` is backed up too, because it beats `~/.config/git/config`.
