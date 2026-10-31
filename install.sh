@@ -185,10 +185,13 @@ fi
 
 # Step 3b2: import the zsh history into atuin once.
 ATUIN_DB="${XDG_DATA_HOME:-$HOME/.local/share}/atuin/history.db" # atuin's default database
+ZSH_HIST="${HISTFILE:-$HOME/.zsh_history}"                       # same default as zsh/.zshrc, which atuin reads through $HISTFILE
 if { command -v atuin >/dev/null 2>&1 || [[ $DRY -eq 1 ]]; }; then # in dry-run atuin may not be installed yet
-  if [[ ! -e "$ATUIN_DB" ]]; then # first run only: a later run never imports again
+  if [[ ! -e "$ATUIN_DB" && ( -s "$ZSH_HIST" || $DRY -eq 1 ) ]]; then # first run only; a fresh machine has no history to import
     echo "==> Importing the zsh history into atuin"
-    run atuin import zsh || echo "warning: atuin import failed; run 'atuin import zsh' later" >&2 # non-fatal
+    run env HISTFILE="$ZSH_HIST" atuin import zsh || echo "warning: atuin import failed; run 'atuin import zsh' later" >&2 # non-fatal
+  elif [[ ! -e "$ATUIN_DB" ]]; then # no database is created, so a later run imports once history exists
+    echo "==> Skipping the atuin import: no zsh history yet"
   fi
 fi
 
@@ -198,10 +201,25 @@ if [[ ! -d "$TPM" ]] && command -v git >/dev/null 2>&1; then
   echo "==> Cloning TPM"
   run git clone --depth 1 https://github.com/tmux-plugins/tpm "$TPM" # public repo over https, no key needed
 fi
-# Download the plugins listed in tmux.conf; works without a running tmux server (public repos: https, no SSH key)
-if [[ -x "$TPM/bin/install_plugins" || $DRY -eq 1 ]]; then
+# TPM reads TMUX_PLUGIN_MANAGER_PATH from a running tmux server (set-environment in tmux.conf), so
+# install_plugins needs one. Start a throwaway detached session to load the config, then kill only that session.
+install_tmux_plugins() {
+  local sess="dotfiles-tpm-$$" rc=0 # unique name: never touches the user's own sessions
+  run tmux new-session -d -s "$sess" || return 1 # starts a server (and sources tmux.conf) if none runs
+  run "$TPM/bin/install_plugins" || rc=1 # public repos: https, no SSH key
+  run tmux kill-session -t "$sess" || true # the server exits with it when it was ours
+  return "$rc"
+}
+TMUX_PLUGINS_OK=0 # 1 = plugins were installed, so the final message can say so
+if [[ ( -x "$TPM/bin/install_plugins" || $DRY -eq 1 ) ]] && { command -v tmux >/dev/null 2>&1 || [[ $DRY -eq 1 ]]; }; then
   echo "==> Installing tmux plugins"
-  run "$TPM/bin/install_plugins" || echo "Warning: tmux plugin install failed; press prefix + I in tmux" >&2
+  if install_tmux_plugins; then
+    TMUX_PLUGINS_OK=1
+  else
+    echo "Warning: tmux plugin install failed; press prefix + I in tmux" >&2
+  fi
+else
+  echo "==> Skipping tmux plugins: tmux or TPM not found"
 fi
 
 # Step 5: Nerd Font for Linux desktop terminals (Ghostty and macOS need nothing).
@@ -304,10 +322,16 @@ ensure_git_identity() {
 }
 ensure_git_identity
 
-cat <<'MSG'
+if [[ $TMUX_PLUGINS_OK -eq 1 ]]; then # the first step depends on how the plugin install went
+  TMUX_STEP="Open tmux; the plugins are installed already (if one is missing: Ctrl+Space, then Shift+i)."
+else
+  TMUX_STEP="Open tmux and press Ctrl+Space, then Shift+i, to install the plugins (the install above did not finish)."
+fi
+
+cat <<MSG
 
 Done. Next steps:
-  1. Open tmux; plugins are installed already (prefix + I, Ctrl+Space then Shift+i, retries).
+  1. $TMUX_STEP
   2. Open nvim once and let lazy.nvim install plugins (run :Mason to check LSP tools).
   3. Move secrets and machine-specific settings into ~/.zshrc.local (loaded near the end, after all other settings).
   4. Put other machine-specific git settings (work email, signing) in ~/.config/git/local.
