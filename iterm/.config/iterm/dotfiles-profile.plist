@@ -37,8 +37,8 @@
         <key>Action</key><integer>11</integer>
         <key>Text</key><string>0x00 0x0c</string>
       </dict>
-      <!-- Cmd-V (0x76 = v): action 60 invokes the AutoLaunch script function; it uploads an image over ssh or runs the normal Paste -->
-      <key>0x76-0x100000</key>
+      <!-- Cmd-Ctrl-V (0x76 = v, 0x140000 = Command + Control): action 60 invokes the AutoLaunch script function; it uploads an image over ssh or runs the normal Paste. Cmd-V is left as iTerm's own Paste -->
+      <key>0x76-0x140000</key>
       <dict>
         <key>Action</key><integer>60</integer>
         <key>Text</key><string>dotfiles_image_paste()</string>

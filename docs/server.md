@@ -234,7 +234,7 @@ Rules:
 - To leave, press `Ctrl+Space`, then `d` (detach). Or close the tab. Everything keeps running on the server, and the SSH connection ends with it.
 - For a shell on the server without tmux (for example to run `tmux kill-server`), use plain `ssh my-ec2`.
 - To come back, open a tab and run `tssh my-ec2` again.
-- To show Claude Code on the server a screenshot, copy the image and press `Cmd+V` in the `tssh` tab: it uploads the image and types its path. **iTerm2 only**, not Ghostty. See [terminals.md](terminals.md#paste-an-image-to-a-server-iterm2-only).
+- To show Claude Code on the server a screenshot, copy the image and press `Cmd+Ctrl+V` in the `tssh` tab: it uploads the image and types its path. **iTerm2 only**, not Ghostty. See [terminals.md](terminals.md#paste-an-image-to-a-server-iterm2-only).
 
 ## 6. Updating the server later
 

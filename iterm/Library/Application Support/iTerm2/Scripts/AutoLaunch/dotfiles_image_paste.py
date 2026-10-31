@@ -270,7 +270,7 @@ async def main(connection):
     async def guarded(session_id):
         try:
             await handle(session_id)
-        except Exception as error:  # an error must never leave Cmd+V dead: fall back to Paste
+        except Exception as error:  # an error must never swallow the paste: fall back to Paste
             print(f"dotfiles_image_paste: {error!r}")
             await paste()
 

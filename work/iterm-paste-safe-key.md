@@ -10,13 +10,13 @@ Cmd+V must always be iTerm's normal Paste. The image upload script moves to a se
 4. Run tests, plutil lint, temp profile generation and the link check.
 
 ## Done
-Nothing yet.
+Template: Cmd+V mapping removed, script bound to Cmd+Ctrl+V (`0x76-0x140000`). Docs, cheatsheet and troubleshooting updated. Tests, plutil, temp-HOME `theme sync` and link check pass.
 
 ## Where we stopped
-Work note created.
+Change committed; waiting for review and merge.
 
 ## Next step
-Edit the template and docs.
+Merge, then run `theme sync` on the Mac and restart iTerm if needed.
 
 ## How to test
 `python3 -I tests/iterm_image_paste_test.py`, `plutil -lint` on the template, generate the profile into a temp file and check the keys.
