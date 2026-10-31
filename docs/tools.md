@@ -60,7 +60,7 @@ Optional, commented in the `Brewfile` (remove the `#` and run `brew bundle`):
 
 | Tool | What it is for | Example |
 | --- | --- | --- |
-| `git-delta` | Diff pager ([git.md](git.md)) | `git diff` |
+| `git-delta` | Diff pager for git, lazygit and `gh` (`GH_PAGER`) ([git.md](git.md)) | `git diff`, `gh pr diff` |
 | `lazygit` | Git UI (alias `lg`) | `lg` (`?` shows keys, `q` quits) |
 | `lazydocker` | Docker UI (alias `lzd`) | `lzd` |
 | `dive` | Explore Docker image layers | `dive my-image:latest` |

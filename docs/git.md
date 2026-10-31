@@ -33,6 +33,7 @@ Do not keep a `~/.gitconfig`: it wins over `~/.config/git/config`. `install.sh` 
 | `core.excludesFile` | `~/.config/git/ignore` | Global ignore list. |
 | `interactive.diffFilter` | `delta --color-only` | `git add -p` is colored too. |
 | `delta.*` | navigate, line numbers, unified view, `ansi` syntax theme, auto light/dark | In a diff, `n` / `N` jump between files. `ansi` follows the terminal's colors, so any theme works. |
+| `credential.https://github.com.helper` | `gh auth git-credential` | HTTPS GitHub remotes use the `gh auth login` token. Does nothing without `gh`. SSH is unaffected. |
 | `pull.rebase` | `true` | `git pull` rebases instead of merging. See below. |
 | `rebase.autoStash` | `true` | Uncommitted changes are set aside and restored around a rebase. |
 | `rebase.autoSquash` | `true` | `fixup!` / `squash!` commits are placed automatically in `git rebase -i`. |
@@ -73,6 +74,8 @@ Git aliases (type `git <alias>`):
 | `git amend` | `commit --amend --no-edit` (add staged changes to the last commit) |
 
 Shell aliases from `.zshrc` (`gs`, `gd`, `gl`, `gp`, `lg`) are in [zsh.md](zsh.md). The shell `lg` is lazygit, and `git lg` is the log.
+
+lazygit and `gh` use delta too. `lazygit/.config/lazygit/config.yml` sets `git.diffRenderers` (press `|` in lazygit to switch between side by side and inline; delta's light/dark flag comes from `theme effective`, because lazygit can't read the terminal background under tmux), and `.zshrc` sets `LG_CONFIG_FILE` so macOS reads that file. `.zshrc` also sets `GH_PAGER="delta -s"`, so `gh pr diff` is side by side.
 
 ## Per-machine settings: `~/.config/git/local`
 

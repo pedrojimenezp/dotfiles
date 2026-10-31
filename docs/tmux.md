@@ -60,8 +60,9 @@ Keys from this config. The mouse is on: click a pane or window name, drag a bord
 | `` prefix ` `` | Scratch shell popup that keeps running |
 | `prefix A` | Claude Code popup that keeps running |
 | `prefix Space` | Copy with hints (tmux-fingers). Replaces the default `next-layout`. |
-| `prefix s` | Pick a session (popup sessions are hidden) |
-| `prefix N` | New session: asks for a name, starts in the pane's folder |
+| `prefix j` | Jump mode (tmux-fingers): hints move the copy-mode cursor to a match, see [Copy with hints](#copy-with-hints) |
+| `prefix s` | Pick a session from a list sorted by name (`O` in the picker changes the sort order; popup sessions are hidden) |
+| `prefix N` | New session: asks for a name (anything but letters, digits, `_` and `-` becomes `-`, so `my.app` is `my-app`; empty uses the folder's name), then opens an fzf popup to pick the folder: this pane's path first, then zoxide's folders, then the `prefix f` projects. Type a path that is not in the list and press `Enter` to use it (`~` works). An existing session with that name is just switched to; `Esc` cancels |
 | `prefix (` / `prefix )` | Previous / next session (popup sessions skipped) |
 | `prefix X` | Kill the current session, after a `y/n` question |
 | `prefix r` | Reload `tmux.conf` |
@@ -108,6 +109,8 @@ Press the same key again to hide a persistent popup (either key works inside any
 | `Shift` + letter | Copy and paste it into the pane |
 | `Tab` | Multi mode: pick several matches, `Tab` again copies them all |
 | `q` or `Esc` | Leave |
+
+`prefix j` starts jump mode instead: pick a hint and copy mode opens with the cursor on that match. The plugin default is `prefix J`, which would replace the pane resize, so `@fingers-jump-key` is set to `j`.
 
 The copy goes to the tmux buffer, the system clipboard and, through [OSC 52](glossary.md#osc-52), your local clipboard even over SSH.
 

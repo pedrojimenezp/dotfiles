@@ -24,6 +24,7 @@ fi
 export VISUAL=$EDITOR                     # same editor for programs that read VISUAL
 export PAGER=less                         # default pager
 export LESS='-R -F -X'                    # colors, quit if one screen, no screen clear
+command -v delta >/dev/null 2>&1 && export GH_PAGER="delta -s"  # gh diffs side by side with delta
 
 # --- Go ---
 export GOPATH="$HOME/go"                  # Go workspace and `go install` target
@@ -94,7 +95,20 @@ zcompfresh=( ${ZDOTDIR:-$HOME}/.zcompdump(N.mh-24) )  # matches only if the dump
 if (( $#zcompfresh )); then
   compinit -C -d "$zcompdump"             # reuse it, skipping the security scan for speed
 else
-  compinit -d "$zcompdump"                # missing or stale: full scan
+  zmodload -F zsh/stat b:zstat            # owner lookup without forking
+  autoload -Uz compaudit                  # lists the dirs and files compinit considers insecure
+  zcompbad=( ${(f)"$(compaudit 2>/dev/null)"} )  # empty when everything is secure
+  zcompforeign=0                          # 1 when an insecure path belongs to someone else
+  for zcompitem in $zcompbad; do
+    zstat -A zcompowner -L +uid -- "$zcompitem" 2>/dev/null
+    (( zcompowner == UID || zcompowner == 0 )) || zcompforeign=1
+  done
+  if (( $#zcompbad && ! zcompforeign )); then
+    compinit -u -d "$zcompdump"           # insecure but owned by you or root: use without the prompt
+  else
+    compinit -d "$zcompdump"              # missing or stale: full scan, prompts about foreign-owned dirs
+  fi
+  unset zcompbad zcompforeign zcompitem zcompowner
   touch "$zcompdump"                      # compinit leaves the dump untouched when nothing changed, so renew its age here
 fi
 unset zcompdump zcompfresh
@@ -161,6 +175,7 @@ else
 fi
 command -v bat >/dev/null 2>&1 && alias cat='bat --paging=never'  # highlighted cat
 command -v lazygit >/dev/null 2>&1 && alias lg='lazygit'          # git UI
+export LG_CONFIG_FILE="$HOME/.config/lazygit/config.yml"           # macOS would read ~/Library/Application Support/lazygit
 command -v lazydocker >/dev/null 2>&1 && alias lzd='lazydocker'    # docker UI
 command -v docker >/dev/null 2>&1 && alias dcu='docker compose up'    # compose up
 command -v docker >/dev/null 2>&1 && alias dcd='docker compose down'  # compose down

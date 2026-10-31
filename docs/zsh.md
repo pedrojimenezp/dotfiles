@@ -218,7 +218,7 @@ atuin loads after fzf so its `Ctrl+r` wins, and after the `Up` binding so its `U
 
 **Tool init cache.** Starting each tool on every shell would cost about 30 ms each. `.zshrc` saves the output of `fzf --zsh`, `atuin init zsh`, `zoxide init zsh`, `mise activate zsh` and `starship init zsh` in `~/.cache/zsh`. A file refreshes when the tool is upgraded or `.zshrc` changes. Delete the folder to force a refresh.
 
-**Completion cache.** `compinit -C` skips the security scan while the dump file is under 24 hours old. When it is older, a full `compinit` runs and the shell touches the dump, so the full scan happens once a day. The config sets `menu no`, which fzf-tab requires.
+**Completion cache.** `compinit -C` skips the security scan while the dump file is under 24 hours old. When it is older, a full `compinit` runs and the shell touches the dump, so the full scan happens once a day. If `compaudit` lists only paths owned by you or root, the scan runs `compinit -u` and does not prompt; a path owned by someone else still prompts (see [install.md](install.md#troubleshooting)). The config sets `menu no`, which fzf-tab requires.
 
 **Bell hooks.** Two zsh hooks drive the bell. `preexec` records the start time and the program name. `precmd` runs before the next prompt: it rings `\a` if the command took `LONG_CMD_BELL_SECONDS` or more, stdout is a terminal and the program is not in `LONG_CMD_BELL_IGNORE`.
 

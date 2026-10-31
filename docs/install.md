@@ -29,7 +29,7 @@ How to install these [dotfiles](glossary.md#dotfiles) on macOS, a Linux desktop 
    ```sh
    xcode-select --install
    ```
-2. Install [Homebrew](https://brew.sh) if `brew` is missing. The installer prints the command and stops without it.
+2. Install [Homebrew](https://brew.sh) if `brew` is missing. The installer looks in the standard prefixes (`/opt/homebrew`, `/usr/local`, `/home/linuxbrew/.linuxbrew`, `~/.linuxbrew`) first; if it finds none, it prints the install command and stops.
 3. Clone the repo and run the installer:
    ```sh
    git clone https://github.com/pedrojimenezp/dotfiles ~/dotfiles
@@ -141,7 +141,7 @@ Run these in the folder you cloned to. The installer only made [links](glossary.
 1. Remove the links. List the same packages the installer printed after "Linking packages":
    ```sh
    cd ~/dotfiles
-   stow --delete --dir="$PWD" --target="$HOME" zsh nvim tmux vim git starship mise atuin bin theme
+   stow --delete --dir="$PWD" --target="$HOME" zsh nvim tmux vim git lazygit starship mise atuin bin theme
    ```
    **macOS:** add `iterm`. Add `ghostty` if Ghostty was installed.
 2. Find the backups the installer made:
@@ -173,8 +173,9 @@ These files belong to one machine and are never in the repo.
 
 - **"zsh was not found."** Install zsh with your package manager and run the installer again.
 - **"Homebrew was not found."** Install it (see your OS above), open a new shell, and run the installer again.
+- **`zsh compinit: insecure directories` prompt.** A completion folder (often `$(brew --prefix)/share`) is writable by group or others. `install.sh` runs `chmod go-w` on Homebrew's folders, and `.zshrc` skips the prompt when you or root own every insecure path. Brew can restore the permissions: run `compaudit`, then `chmod go-w` on each path it lists. A path owned by another user still prompts: check it first.
 - **stow reports a conflict.** A real file blocks a link. Find its path in the message, rename it, and run the installer again.
-- **A tmux plugin is missing.** In tmux, press `prefix Shift+I`.
+- **A tmux plugin is missing.** The installer says so when the plugin install failed. In tmux, press `prefix Shift+I`.
 - **Icons look wrong.** Your terminal font is not a Nerd Font ([terminals.md](terminals.md)).
 - **Colors did not change after `theme sync`.** See [theme.md](theme.md).
 - **`--with-claude` says "no GitHub SSH access".** Forward or add your GitHub key as in [server.md](server.md), then run it again.
@@ -194,10 +195,11 @@ Each top-level folder of the repo is a [package](glossary.md#package) whose cont
 | `tmux` | `~/.config/tmux/tmux.conf` | tmux with prefix `Ctrl+Space`, vi copy mode, plugins, status bar |
 | `vim` | `~/.vimrc` | Small plugin-free vimrc for servers |
 | `git` | `~/.config/git/{config,ignore}` | Git defaults, delta pager, aliases, global ignores |
+| `lazygit` | `~/.config/lazygit/config.yml` | lazygit renders diffs with delta; `.zshrc` sets `LG_CONFIG_FILE` so macOS reads it too |
 | `starship` | `~/.config/starship.toml` | Two-line framed prompt |
 | `atuin` | `~/.config/atuin/config.toml` | Shell history search, local only (no sync) |
 | `mise` | `~/.config/mise/config.toml` | Global node (LTS) and go (latest) |
-| `bin` | `~/.local/bin` | Scripts: `tmux-sessionizer`, `tmux-popup`, `theme`, `dotfiles-help`, `dotfiles-usage`, `dotfiles-log` |
+| `bin` | `~/.local/bin` | Scripts: `tmux-sessionizer`, `tmux-new-session`, `tmux-popup`, `theme`, `dotfiles-help`, `dotfiles-usage`, `dotfiles-log` |
 | `theme` | `~/.config/theme/config` | The light/dark theme pair |
 | `ghostty` | `~/.config/ghostty/config` | Ghostty terminal; linked only when Ghostty is installed |
 | `iterm` | `~/.config/iterm/dotfiles-profile.plist` | iTerm2 profile template; macOS only |
@@ -205,19 +207,19 @@ Each top-level folder of the repo is a [package](glossary.md#package) whose cont
 ### What `install.sh` does, in order
 
 1. Checks that `zsh` exists. Without it, the script stops.
-2. Runs `brew bundle --no-upgrade` to install what is missing. Without `brew`, it prints the install command and stops.
-3. Picks the packages: the ten above, plus `iterm` on macOS and `ghostty` when Ghostty is installed.
+2. Runs `brew bundle --no-upgrade` to install what is missing, then `chmod go-w` on Homebrew's zsh completion folders. `brew` is found in the standard prefixes even when it is not on `PATH`. Without it, the script prints the install command and stops; on a headless Linux server that command is the `NONINTERACTIVE=1` one from [server.md](server.md#3-on-the-server-once).
+3. Picks the packages: the first eleven above, plus `iterm` on macOS and `ghostty` when Ghostty is installed.
 4. Backs up an old standalone `~/.local/bin/mise` that would hide the Homebrew one.
 5. Backs up every real file a package would replace, as `<file>.backup-YYYYmmdd-HHMMSS`. Links that already point into the repo stay. `~/.gitconfig` is backed up too, because git reads it before `~/.config/git/config`.
 6. Links the packages with `stow --restow --no-folding`. Without `stow`, it makes plain links.
 7. Runs `mise install` for the global runtimes.
-8. On the first run only, imports `~/.zsh_history` into atuin. A failure only prints a warning.
-9. Clones [TPM](glossary.md#tpm) into `~/.config/tmux/plugins/tpm` and installs the tmux plugins.
+8. On the first run only (no atuin database yet), imports `~/.zsh_history` (or `$HISTFILE`) into atuin. With no zsh history yet it skips the import, so a later run imports once history exists. A failure only prints a warning.
+9. Clones [TPM](glossary.md#tpm) into `~/.config/tmux/plugins/tpm` and installs the tmux plugins. TPM needs a tmux server that has loaded the config, so this runs on a private, throwaway tmux server. It never touches a tmux you already have running, and works even when the installer runs inside tmux.
 10. **Linux desktop:** installs the Monaspace Nerd Font into `~/.local/share/fonts`.
 11. Runs `theme sync` to write the Ghostty and iTerm color files. A failure only prints a warning.
 12. Runs the `--with-claude` step, if you asked for it.
 13. Asks for your git name and email if none is set. A piped or `--dry-run` run prints the two commands instead.
-14. Prints the next steps and, if zsh is not your login shell, the `chsh` command.
+14. Prints the next steps (it says so when the tmux plugin install failed) and, if zsh is not your login shell, the `chsh` command. When `/usr/bin/tmux` is also older than 3.5, it warns that logins start that system tmux until you switch (bash does not put Homebrew on `PATH`), and tells you to run `tmux kill-server` after switching.
 
 With `--dry-run`, steps 1 and 2 continue instead of stopping, so you see the whole plan.
 
@@ -227,10 +229,10 @@ By default, stow links a whole folder when it can. `--no-folding` links each fil
 
 ### The `--with-claude` step in detail
 
-- If the target folder already holds a git repo, it is not pulled.
+- If the target folder already holds a git repo, it is updated with `git pull --rebase --autostash`. When the pull fails (no GitHub SSH access, conflicts), a warning is printed, the clone stays as it is, and its `install.sh` still runs.
 - Before cloning, the installer tests GitHub SSH access. Without access, it skips this step, finishes the rest, and exits with an error at the end.
 - If the folder exists but is not a git repo, the step is skipped the same way.
-- In `--dry-run`, it only prints that it would check access and clone.
+- In `--dry-run`, it only prints that it would check access and clone or pull.
 - `.zshrc` loads `~/.config/claude-shared/zsh/claude.zsh` only if that file exists, so the dotfiles work without it.
 
 ## Related pages

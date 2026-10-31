@@ -76,7 +76,7 @@ github_ssh_ok() {
 }
 
 # Packages to link.
-PACKAGES=(zsh nvim tmux vim git starship mise atuin bin theme)
+PACKAGES=(zsh nvim tmux vim git lazygit starship mise atuin bin theme)
 
 # iTerm Dynamic Profile template (theme sync builds the real profile): macOS only.
 if [[ "$OSTYPE" == darwin* ]]; then
@@ -84,10 +84,37 @@ if [[ "$OSTYPE" == darwin* ]]; then
 fi
 
 # Step 1: Homebrew packages.
+# A fresh SSH login (bash) has no brew on PATH: look in the standard prefixes and load it for this script.
+if ! command -v brew >/dev/null 2>&1; then
+  for brew_bin in /opt/homebrew/bin/brew /usr/local/bin/brew /home/linuxbrew/.linuxbrew/bin/brew "$HOME/.linuxbrew/bin/brew"; do
+    if [[ -x $brew_bin ]]; then # first existing install wins
+      eval "$("$brew_bin" shellenv)" # sets HOMEBREW_PREFIX and updates PATH
+      break
+    fi
+  done
+fi
 if command -v brew >/dev/null 2>&1; then
   echo "==> Installing Homebrew packages"
   # Upgrades are a separate, deliberate `brew upgrade`.
   run brew bundle --no-upgrade --file="$REPO/Brewfile"
+  # zsh's compinit prompts about completion dirs that group or others can write (brew can recreate them that way).
+  echo "==> Removing group/other write from Homebrew's zsh completion dirs (chmod go-w)"
+  BREW_SHARE="$(brew --prefix)/share"                                              # parent of the completion dirs
+  for d in "$BREW_SHARE" "$BREW_SHARE/zsh" "$BREW_SHARE/zsh/site-functions" "$BREW_SHARE/zsh-completions"; do
+    [[ -d $d && -O $d ]] && run chmod go-w "$d"                                    # only dirs this user owns
+  done
+elif [[ "$OSTYPE" == linux* && -z "${DISPLAY:-}${WAYLAND_DISPLAY:-}" ]]; then # headless server
+  cat <<'MSG'
+Homebrew was not found. Install it first (this script never uses sudo):
+  NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+Then run this script again.
+MSG
+  if [[ $DRY -eq 1 ]]; then # a preview should still show the rest of the plan
+    echo "[dry-run] continuing without Homebrew" >&2 # make the skipped exit visible
+  else
+    exit 1 # stop before any change
+  fi
 else
   cat <<'MSG'
 Homebrew was not found. Install it first (this script never uses sudo):
@@ -179,10 +206,13 @@ fi
 
 # Step 3b2: import the zsh history into atuin once.
 ATUIN_DB="${XDG_DATA_HOME:-$HOME/.local/share}/atuin/history.db" # atuin's default database
+ZSH_HIST="${HISTFILE:-$HOME/.zsh_history}"                       # same default as zsh/.zshrc, which atuin reads through $HISTFILE
 if { command -v atuin >/dev/null 2>&1 || [[ $DRY -eq 1 ]]; }; then # in dry-run atuin may not be installed yet
-  if [[ ! -e "$ATUIN_DB" ]]; then # first run only: a later run never imports again
+  if [[ ! -e "$ATUIN_DB" && ( -s "$ZSH_HIST" || $DRY -eq 1 ) ]]; then # first run only; a fresh machine has no history to import
     echo "==> Importing the zsh history into atuin"
-    run atuin import zsh || echo "warning: atuin import failed; run 'atuin import zsh' later" >&2 # non-fatal
+    run env HISTFILE="$ZSH_HIST" atuin import zsh || echo "warning: atuin import failed; run 'atuin import zsh' later" >&2 # non-fatal
+  elif [[ ! -e "$ATUIN_DB" ]]; then # no database is created, so a later run imports once history exists
+    echo "==> Skipping the atuin import: no zsh history yet"
   fi
 fi
 
@@ -192,10 +222,29 @@ if [[ ! -d "$TPM" ]] && command -v git >/dev/null 2>&1; then
   echo "==> Cloning TPM"
   run git clone --depth 1 https://github.com/tmux-plugins/tpm "$TPM" # public repo over https, no key needed
 fi
-# Download the plugins listed in tmux.conf; works without a running tmux server (public repos: https, no SSH key)
-if [[ -x "$TPM/bin/install_plugins" || $DRY -eq 1 ]]; then
+# TPM reads TMUX_PLUGIN_MANAGER_PATH from a tmux server (set-environment in tmux.conf). A server that is already
+# running (or the one we are inside) started before the config was linked, so it lacks the variable. Run the
+# whole install on a private server instead: its own TMUX_TMPDIR socket, TMUX unset, killed at the end.
+install_tmux_plugins() {
+  local tmp rc=0 # tmp: socket directory of the private server
+  if [[ $DRY -eq 1 ]]; then tmp="<temp dir>"; else tmp="$(mktemp -d)" || return 1; fi
+  local -a priv=(env -u TMUX TMUX_TMPDIR="$tmp") # every tmux call, TPM's included, inherits this and hits the private server
+  run "${priv[@]}" tmux new-session -d -s dotfiles-tpm || rc=1 # starts the server and sources tmux.conf
+  [[ $rc -eq 0 ]] && { run "${priv[@]}" "$TPM/bin/install_plugins" || rc=1; } # public repos: https, no SSH key
+  run "${priv[@]}" tmux -S "$tmp/tmux-$(id -u)/default" kill-server || true # by socket path: only the private server dies
+  [[ $DRY -eq 1 ]] || rm -rf "$tmp"
+  return "$rc"
+}
+TMUX_PLUGINS_OK=0 # 1 = plugins were installed, so the final message can say so
+if [[ ( -x "$TPM/bin/install_plugins" || $DRY -eq 1 ) ]] && { command -v tmux >/dev/null 2>&1 || [[ $DRY -eq 1 ]]; }; then
   echo "==> Installing tmux plugins"
-  run "$TPM/bin/install_plugins" || echo "Warning: tmux plugin install failed; press prefix + I in tmux" >&2
+  if install_tmux_plugins; then
+    TMUX_PLUGINS_OK=1
+  else
+    echo "Warning: tmux plugin install failed; press prefix + I in tmux" >&2
+  fi
+else
+  echo "==> Skipping tmux plugins: tmux or TPM not found"
 fi
 
 # Step 5: Nerd Font for Linux desktop terminals (Ghostty and macOS need nothing).
@@ -254,7 +303,13 @@ ERR
   elif [[ ! -e "$CLAUDE_DIR" ]]; then
     run git clone "$CLAUDE_REPO_URL" "$CLAUDE_DIR" # access was checked above
   elif git -C "$CLAUDE_DIR" rev-parse --git-dir >/dev/null 2>&1; then
-    echo "Claude config already there: $CLAUDE_DIR (not pulling)"
+    echo "Claude config already there: $CLAUDE_DIR (pulling)"
+    # a failed pull (offline, conflicts) keeps the clone as it is; its installer still runs
+    if [[ $DRY -eq 0 ]] && ! github_ssh_ok; then # the pull needs your GitHub key like the clone
+      echo "Warning: no GitHub SSH access, not pulling $CLAUDE_DIR (see docs/server.md)" >&2
+    else
+      run git -C "$CLAUDE_DIR" pull --rebase --autostash || echo "Warning: could not pull $CLAUDE_DIR; keeping it as it is" >&2
+    fi
   else
     CLAUDE_SKIPPED=1 # its installer must not run from an unknown folder; reported at the end
     echo "Warning: $CLAUDE_DIR exists but is not a git repo: skipping" >&2
@@ -292,10 +347,16 @@ ensure_git_identity() {
 }
 ensure_git_identity
 
-cat <<'MSG'
+if [[ $TMUX_PLUGINS_OK -eq 1 ]]; then # the first step depends on how the plugin install went
+  TMUX_STEP="Open tmux; the plugins are installed already (if one is missing: Ctrl+Space, then Shift+i)."
+else
+  TMUX_STEP="Open tmux and press Ctrl+Space, then Shift+i, to install the plugins (the install above did not finish)."
+fi
+
+cat <<MSG
 
 Done. Next steps:
-  1. Open tmux; plugins are installed already (prefix + I, Ctrl+Space then Shift+i, retries).
+  1. $TMUX_STEP
   2. Open nvim once and let lazy.nvim install plugins (run :Mason to check LSP tools).
   3. Move secrets and machine-specific settings into ~/.zshrc.local (loaded near the end, after all other settings).
   4. Put other machine-specific git settings (work email, signing) in ~/.config/git/local.
@@ -325,6 +386,12 @@ suggest_login_shell() {
     echo "  chsh -s $zsh_path"                                                  # changes the current user
   else
     echo "  sudo chsh -s $zsh_path \"\$USER\""                                    # EC2-style users have no password
+  fi
+  local sys_ver                                                                 # /usr/bin/tmux version, e.g. 3.4 (empty if none)
+  sys_ver="$(/usr/bin/tmux -V 2>/dev/null | sed -n 's/^tmux \([0-9]*\.[0-9]*\).*/\1/p')"
+  if [[ -n "$sys_ver" ]] && (( ${sys_ver%%.*} < 3 || ( ${sys_ver%%.*} == 3 && ${sys_ver#*.} < 5 ) )); then # tmux.conf needs 3.5+
+    echo "Until then, bash does not put Homebrew on PATH, so logins start the system tmux $sys_ver and tmux.conf shows errors."
+    echo "After switching, stop the old server with: tmux kill-server"
   fi
 }
 suggest_login_shell

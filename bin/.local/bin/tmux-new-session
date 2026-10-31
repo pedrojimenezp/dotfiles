@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+# Pick a folder with fzf and create (or switch to) a tmux session for it.
+# Usage: tmux-new-session <pane path>   (the session name is read from the tmux option @new_session_name)
+#        tmux-new-session --list [pane path]  (print the candidate folders, one per line, and exit)
+# Candidates, deduplicated and existing only: the pane path, zoxide's folders, the tmux-sessionizer projects.
+# Typing a path that is not in the list uses it as typed (a leading ~ is expanded).
+# An empty name becomes the folder's basename. Esc leaves without creating anything.
+set -euo pipefail # stop on errors, unset variables and failed pipes
+
+# A popup may start without the Homebrew or user paths.
+# Adds the existing folders that are not in PATH yet. Linuxbrew is skipped on macOS: /home is an autofs mount there and every lookup through it is slow.
+for d in /home/linuxbrew/.linuxbrew/bin /usr/local/bin /opt/homebrew/bin "$HOME/.local/bin"; do
+  [[ "$d" == /home/* && "$(uname)" == Darwin ]] && continue
+  [[ ":$PATH:" == *":$d:"* || ! -d "$d" ]] || PATH="$d:$PATH" # each added folder goes first, so the last in this list wins
+done
+export PATH
+
+clean() { printf '%s' "$1" | tr -c 'A-Za-z0-9_\n-' '-' | tr -s '-'; } # tmux rejects dots and colons
+
+# Print the existing candidate folders, deduplicated, in order of priority.
+list_candidates() {
+  {
+    [[ -n "${1:-}" ]] && printf '%s\n' "$1" # the pane path first
+    if command -v zoxide >/dev/null 2>&1; then zoxide query -l 2>/dev/null || true; fi
+    if command -v tmux-sessionizer >/dev/null 2>&1; then
+      tmux-sessionizer --list 2>/dev/null | awk -F'\t' '{ print $2 }' || true # 2nd field is the path
+    fi
+  } | awk 'NF && !seen[$0]++' | while IFS= read -r d; do [[ -d "$d" ]] && printf '%s\n' "$d"; done
+}
+
+if [[ "${1:-}" == "--list" ]]; then
+  list_candidates "${2:-}"
+  exit 0
+fi
+
+pane_path="${1:-$PWD}" # starting folder, listed first
+name_raw="$(tmux show -gv @new_session_name 2>/dev/null || true)" # passed as an option, which avoids quoting the name
+tmux set -gu @new_session_name 2>/dev/null || true # do not leave the name behind
+
+# Show $HOME as ~ in the list.
+display="$(list_candidates "$pane_path" | sed "s|^$HOME|~|")"
+# The preview runs in fzf's shell, which expands $HOME and the leading ~ of the line.
+# shellcheck disable=SC2016
+out="$(printf '%s\n' "$display" | fzf --print-query --prompt='folder> ' \
+  --header='Enter: pick | type a path not in the list to use it | Esc: cancel' \
+  --preview='p={}; case "$p" in "~"*) p="$HOME${p#"~"}" ;; esac; ls -1Ap "$p" 2>/dev/null | head -50' --preview-window=right:40% || true)"
+[[ -n "$out" ]] || exit 0 # Esc or Ctrl-C, nothing typed
+
+# fzf --print-query prints the typed query first, then the selected line (if any).
+query="$(printf '%s\n' "$out" | sed -n 1p)"
+match="$(printf '%s\n' "$out" | sed -n 2p)"
+chosen="${match:-$query}" # a match wins; otherwise the typed text
+[[ -n "$chosen" ]] || exit 0
+tilde='~' # a typed ~ is not expanded by the shell, so do it here
+if [[ "$chosen" == "$tilde" ]]; then
+  chosen="$HOME"
+elif [[ "$chosen" == "$tilde"/* ]]; then
+  chosen="$HOME/${chosen#"$tilde"/}"
+fi
+
+# A typed path may not exist: tell the user instead of creating a session.
+if [[ ! -d "$chosen" ]]; then
+  tmux display-message "no such folder: $chosen"
+  exit 0
+fi
+dir="$(CDPATH='' cd -- "$chosen" && pwd -P)" # absolute and symlink-free
+
+name="$(clean "$name_raw")"
+[[ -n "$name" ]] || name="$(clean "$(basename "$dir")")" # empty name: use the folder
+[[ -n "$name" ]] || name="session"
+
+tmux has-session -t "=$name" 2>/dev/null || tmux new-session -d -s "$name" -c "$dir" # existing session: just switch
+# Switch the client to the session.
+tmux switch-client -t "=$name"
