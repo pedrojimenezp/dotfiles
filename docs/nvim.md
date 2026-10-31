@@ -68,6 +68,7 @@ Neovim has modes. In **normal** mode, keys are commands. In **insert** mode, key
 | `Ctrl+w v` / `Ctrl+w s` | normal | Split vertical / horizontal (default) |
 | `-` | normal | Open the parent folder in oil |
 | `<leader>ut` | normal | Toggle light/dark theme |
+| `<leader>um` | normal | Toggle Markdown rendering (Markdown files only) |
 | `<leader>e` | normal | Show the diagnostic under the cursor |
 | `<leader>dq` | normal | Send diagnostics to the location list |
 
@@ -176,6 +177,7 @@ Check what is active with `:ConformInfo`.
 | nvim-lint | Linters: golangci-lint (Go), shellcheck (sh, bash) |
 | gitsigns.nvim | Git signs in the gutter, hunk actions |
 | which-key.nvim | Key hints menu |
+| render-markdown.nvim | Renders Markdown in the buffer: headings, code blocks, tables, lists (`<leader>um` toggles) |
 | oil.nvim | Edit the file system like a buffer (press `-`) |
 | mini.nvim | surround, ai (text objects), statusline |
 | vim-tmux-navigator | `Ctrl+h/j/k/l` across tmux and nvim |
@@ -241,7 +243,7 @@ Run `:checkhealth`, or a narrower check: `:checkhealth vim.lsp`, `:checkhealth m
 | `lua/config/autocmds.lua` | Automatic actions (highlight on yank, restore cursor, Go tabs, theme sync) |
 | `lua/config/lazy.lua` | Installs lazy.nvim and loads `lua/plugins/*.lua` |
 | `lua/config/theme.lua` | Colors that follow the dotfiles theme, see [theme.md](theme.md) |
-| `lua/plugins/*.lua` | One file per topic: completion, editor, format, lsp, telescope, theme, treesitter |
+| `lua/plugins/*.lua` | One file per topic: completion, editor, format, lsp, markdown, telescope, theme, treesitter |
 
 **Key timeout.** `timeoutlen` is 0.4 s. It only limits key sequences that have no which-key menu, because the menu itself waits for you.
 
