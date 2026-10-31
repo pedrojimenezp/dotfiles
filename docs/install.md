@@ -9,7 +9,6 @@ How to install these [dotfiles](glossary.md#dotfiles) on macOS or a Linux deskto
 - [Check it worked](#check-it-worked)
 - [After installing](#after-installing)
 - [Update](#update)
-- [Move an older Brew-based install to mise](migrate-to-mise.md)
 - [Flags](#flags)
 - [Undo or uninstall](#undo-or-uninstall)
 - [Per-machine files](#per-machine-files)
@@ -22,7 +21,7 @@ How to install these [dotfiles](glossary.md#dotfiles) on macOS or a Linux deskto
 - **Pick any folder.** These steps clone into `~/dotfiles`, but any path works. Commands below that start with `cd ~/dotfiles` mean "the folder you cloned to".
 - **Have your git name and email ready.** If git has no identity yet, the installer asks for both. It stores them in `~/.config/git/local`, outside the repo.
 - **Nothing is deleted.** The installer renames any file it would replace to `<file>.backup-<date>-<time>`. See [Undo or uninstall](#undo-or-uninstall).
-- **No sudo.** `install.sh` never uses sudo and never upgrades what you already have. On Linux an admin installs a few system packages once; every user then installs their own tools into their home with [mise](tools.md#mise).
+- **No sudo.** `install.sh` never uses sudo and never upgrades your tools. On Linux an admin installs a few system packages once; every user then installs their own tools into their home with [mise](tools.md#mise).
 
 ## macOS
 
@@ -44,9 +43,9 @@ Apps go into `~/Applications`, so you need no admin rights.
 
 1. Install the system packages (once per machine; use sudo if your system needs it). On Ubuntu or Debian:
    ```sh
-   sudo apt-get update && sudo apt-get install -y zsh git curl unzip stow libatomic1
+   sudo apt-get update && sudo apt-get install -y zsh git curl unzip stow libatomic1 xz-utils
    ```
-   If one is missing, the installer stops and prints this line with the missing names. It needs no Homebrew: it installs [mise](tools.md#mise) into `~/.local/bin` and then every tool into your home.
+   `xz-utils` unpacks the [Nerd Font](glossary.md#nerd-font). If one is missing, the installer stops and prints this line with the missing names. It needs no Homebrew: it installs [mise](tools.md#mise) into `~/.local/bin` and then every tool into your home.
 2. Clone the repo and run the installer:
    ```sh
    git clone https://github.com/pedrojimenezp/dotfiles ~/dotfiles
@@ -100,7 +99,29 @@ Run this in the folder you cloned to:
 cd ~/dotfiles && git pull && ./install.sh
 ```
 
-The installer is safe to run again. It refreshes links, skips what is installed, and never upgrades. Upgrade the tools with `mise upgrade`, and on macOS the Homebrew packages with `brew upgrade`.
+The installer is safe to run again. It refreshes links, installs what is missing and fast-forwards the zsh plugins, but never upgrades your tools. Upgrade them yourself:
+
+1. The tools in the mise config:
+   ```sh
+   mise outdated   # list what has a newer version
+   mise upgrade    # install the newer versions
+   ```
+2. mise itself.
+
+   **macOS** (mise comes from Homebrew):
+   ```sh
+   brew upgrade mise
+   ```
+   A plain `brew upgrade` also upgrades `stow`, `btop` and the apps, and every other Homebrew package you have.
+
+   **Linux** (mise lives in `~/.local/bin`):
+   ```sh
+   mise self-update
+   ```
+3. Clear the shell's tool cache, then open a new shell. The cache can keep the setup of the old version ([zsh.md](zsh.md#how-it-works)):
+   ```sh
+   rm -rf ~/.cache/zsh && exec zsh
+   ```
 
 Already ran the older Brew-based install? See [migrate-to-mise.md](migrate-to-mise.md) to remove the Homebrew copies of the tools that moved.
 

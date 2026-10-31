@@ -13,7 +13,7 @@ Anyone. Fork it and use it as your own, or read it and copy the pieces you like.
 - **Neovim** with file search, language servers, formatting and git signs.
 - **One light/dark theme** shared by the terminal, tmux and Neovim.
 - **Built-in help**: `prefix ?` in tmux or `dotfiles-help` in a shell searches every key.
-- **A safe installer**: it backs up your files, never uses sudo and never upgrades what you have.
+- **A safe installer**: it backs up your files, never uses sudo and never upgrades your tools.
 
 ## Quick start
 
