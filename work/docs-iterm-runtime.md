@@ -7,13 +7,13 @@ Fix the iTerm image-paste setup docs to match the real iTerm menus.
 Fix the runtime menu name, reorder setup steps, mark the feature as verified.
 
 ## Done
-Note created.
+Fixed runtime menu name and setup step order in docs/terminals.md. Confirmed working end to end by the user.
 
 ## Where we stopped
-Starting the docs edit.
+Docs done.
 
 ## Next step
-Edit docs/terminals.md.
+None, ready for review and merge.
 
 ## How to test
 Run the linkcheck script on the repo.

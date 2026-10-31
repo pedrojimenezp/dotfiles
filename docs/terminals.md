@@ -126,9 +126,10 @@ The path is typed, not pasted, so Claude Code shows it as text, not as `[Image #
 1. Run `./install.sh`. It installs `pngpaste` (Brewfile) and links the script into `~/Library/Application Support/iTerm2/Scripts/AutoLaunch/`.
 2. Run `theme sync` (install.sh does it). The **Dotfiles** profile now maps `Cmd+Ctrl+V` to the script.
 3. In iTerm: Settings > General > Magic > turn on **Enable Python API**.
-4. Quit iTerm with `Cmd+Q` and open it again. iTerm starts every script in the AutoLaunch folder.
-5. If iTerm asks to download the Python runtime, accept. If it asks whether the script may use the API, choose to allow it.
-6. Check it runs: Scripts > Manage > Console lists `dotfiles_image_paste.py` as running.
+4. Scripts > Manage > **Check for Updated Runtime**. Accept the download.
+5. Quit iTerm with `Cmd+Q` and open it again.
+6. Start the script once: Scripts > AutoLaunch > `dotfiles_image_paste.py`. If iTerm asks whether the script may use the API, allow it.
+7. Check it runs: Scripts > Manage > Console (`⌥⌘J`) shows `dotfiles_image_paste.py` running.
 
 If the script is not running, `Cmd+Ctrl+V` does nothing (harmless) and `Cmd+V` still pastes. Fix the setup when you want the upload (see [Troubleshooting](#troubleshooting)).
 
@@ -157,7 +158,7 @@ If the script is not running, `Cmd+Ctrl+V` does nothing (harmless) and `Cmd+V` s
 
 - **After pulling an update, the key does not change.** Run `theme sync` so the profile picks it up.
 - **`Cmd+Ctrl+V` does nothing, or iTerm reports a script function error.** The script is not running. Check Scripts > Manage > Console. If it is missing, check **Enable Python API** is on, then run it once from Scripts > AutoLaunch > `dotfiles_image_paste.py`.
-- **The Console shows Python errors on start, or the runtime is missing.** Scripts > Manage > Install Python Runtime, then restart iTerm.
+- **The Console shows Python errors on start, or the runtime is missing.** Scripts > Manage > Check for Updated Runtime (accept the download), then restart iTerm.
 - **Image in an `ssh` tab, but no question, only the normal Paste.** The tab does not use the **Dotfiles** profile, `theme sync` has not run since the update, or iTerm does not see `ssh` as the job (for example `ssh` inside a local tmux). The Console prints errors as `dotfiles_image_paste: ...`.
 - **"Upload to ... failed" with `Permission denied (publickey)` or `Host key verification failed`.** Set up key login, or connect once by hand with `ssh my-server` to save the host key.
 - **"pngpaste not found".** Run `brew install pngpaste` (or `./install.sh` again).
