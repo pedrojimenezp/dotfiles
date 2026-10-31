@@ -9,6 +9,7 @@ You'll use it for: finding what a tool is for and how to start it. Run `tldr <to
 - [Shell productivity](#shell-productivity)
 - [Git and containers](#git-and-containers)
 - [Languages and dev tools](#languages-and-dev-tools)
+- [Reading Markdown](#reading-markdown)
 - [macOS-only (casks)](#macos-only-casks)
 - [Add or update a tool](#add-or-update-a-tool)
 - [Prompt: starship](#prompt-starship)
@@ -80,6 +81,16 @@ Optional, commented in the `Brewfile` (macOS: remove the `#` and run `brew bundl
 | `shfmt` | Formats shell scripts | `shfmt -w script.sh` |
 | `golangci-lint` | Go linters | `golangci-lint run` |
 | `tree-sitter` (CLI) | Builds treesitter parsers for nvim | Used by nvim; no manual command |
+| `glow` | Renders Markdown in the terminal | `glow docs/` (see [Reading Markdown](#reading-markdown)) |
+| `mermaid-ascii` | Draws Mermaid diagrams as text | `mermaid-ascii -f diagram.mmd` |
+
+## Reading Markdown
+
+Three tools, all from mise, so they also work on a server over SSH and inside tmux:
+
+- `glow file.md` renders one file in a pager (`q` quits). `glow docs/` opens a browser for the Markdown files in a folder. Add `-p` to page the output. The style follows the terminal background; force one with `glow -s dark file.md`.
+- `mermaid-ascii -f diagram.mmd` draws a Mermaid diagram as text. It supports only flowcharts (`graph` or `flowchart`, with `TD`, `TB`, `BT`, `LR` or `RL`) and sequence diagrams (`sequenceDiagram`). Other types (class, state, gantt, pie) fail with an "unsupported graph type" error. glow shows a `mermaid` code block as plain text, so copy the block into a `.mmd` file to draw it.
+- In nvim, [render-markdown.nvim](nvim.md#plugins) renders headings, code blocks, tables and lists in the buffer; `<leader>um` toggles it.
 
 ## macOS-only (casks)
 

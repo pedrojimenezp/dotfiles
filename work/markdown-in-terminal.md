@@ -10,13 +10,15 @@ Read Markdown rendered in the terminal (macOS, and Linux over SSH/tmux), includi
 4. Docs: tools.md, nvim.md, cheatsheet.tsv if keys.
 
 ## Done
-Nothing yet.
+- glow and mermaid-ascii in the mise config (aqua backend, all platforms), tested.
+- nvim/lua/plugins/markdown.lua (render-markdown.nvim, `<leader>um`), headless test OK.
+- Docs: tools.md, nvim.md, cheatsheet.tsv.
 
 ## Where we stopped
-Starting.
+All steps done; waiting for review.
 
 ## Next step
-Add glow to the mise config.
+Review, then /merge.
 
 ## How to test
 `glow -s dark docs/install.md | head`, `mermaid-ascii -f x.mmd`, headless nvim with temp XDG dirs.
