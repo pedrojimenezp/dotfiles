@@ -1,6 +1,6 @@
 # Remote Ubuntu dev server
 
-A step-by-step guide to set up an Ubuntu server (for example an EC2 instance) with these dotfiles and work on it over SSH.
+A step-by-step guide to set up an Ubuntu server (22.04 or 24.04, for example an EC2 instance) with these dotfiles and work on it over SSH. This page is the only home for server setup; [install.md](install.md) covers macOS and Linux desktops and the installer reference.
 
 Every command says where it runs: "On your laptop" or "On the server". Your laptop can be a Mac or a Linux machine. Where a step is different, it is marked **macOS** or **Linux**. If a step has no mark, it is the same on both.
 
@@ -34,7 +34,26 @@ Host my-ec2
 
 Security trade-off: while you are connected, anyone with root on the server can use your forwarded keys. Only enable it for servers you trust.
 
-You do not need `SetEnv TERM=...` or `RequestTTY` in the entry. Ghostty's ssh-terminfo and `tssh -t` already cover them.
+You do not need `SetEnv TERM=...` or `RequestTTY` in the entry. Ghostty's ssh-terminfo ([terminals.md](terminals.md#how-it-works)) and `tssh -t` already cover them.
+
+### Optional: faster, steadier SSH
+
+Keep `~/.ssh/config` out of this repo (it is private). These settings help for every host:
+
+```sshconfig
+# ~/.ssh/config (example, not stowed)
+Host *
+  # Reuse one connection for many sessions
+  ControlMaster auto
+  # Socket file for the shared connection
+  ControlPath ~/.ssh/cm-%r@%h:%p
+  # Keep it open 10 minutes after the last use
+  ControlPersist 10m
+  # Keepalive so idle sessions do not drop
+  ServerAliveInterval 30
+```
+
+For flaky networks, install `mosh` (uncomment it in the `Brewfile`): `mosh myserver` survives sleep and IP changes. Run tmux inside it.
 
 ### Share your GitHub key with the server
 
@@ -119,7 +138,7 @@ cd ~/dotfiles
 
 Use `./install.sh` without `--with-claude <git-url>` if the server has no GitHub access (no forwarded key). Everything else (Homebrew, plugins, `git pull`) uses https and needs no key; only a private `--with-claude` repo and `git push` need SSH.
 
-If zsh is missing or is not your login shell, `install.sh` prints the exact command to run.
+The installer skips the Nerd Font on a server: your laptop's terminal draws the icons. If zsh is missing or is not your login shell, `install.sh` prints the exact command to run. Flags and every step it takes are in [install.md](install.md#flags).
 
 On the server, make zsh your login shell (EC2 users have no password, so use sudo):
 
@@ -215,11 +234,12 @@ On the server:
 cd ~/dotfiles && git pull && ./install.sh
 ```
 
-`install.sh` is safe to run again.
+`install.sh` is safe to run again. See [Update](install.md#update) for what a rerun does.
 
 ## 7. Troubleshooting
 
 - **`tssh` says tmux not found.** Your login shell is not zsh. On the server, run the `chsh` step from section 3, then log out and in.
+- **tmux shows errors about unknown options right after login, or the install ended with "logins start the system tmux".** Your login shell is still bash, which does not put Homebrew on `PATH`, so logins start Ubuntu's older `/usr/bin/tmux` (tmux.conf needs 3.5+). Run the `chsh` step from section 3, log out and in, then stop the old server with `tmux kill-server` (this ends its sessions).
 - **GitHub clone asks for a password, or "permission denied".** Follow "Share your GitHub key with the server" in section 2, then reconnect.
 - **`--with-claude <git-url>` says "no GitHub SSH access on this machine" and exits with an error.** The installer tested `ssh git@github.com` and GitHub did not accept a key. It skips the Claude step and finishes the rest. Fix the forwarding as in the item above, reconnect, then run `./install.sh --with-claude <git-url>` again.
 - **Homebrew install or `git pull` says "Permission denied (publickey)".** The old git config sent all GitHub traffic over SSH. Run `git pull` in the dotfiles clone, or run `./install.sh` again, to get the current config. Now only pushes use SSH.

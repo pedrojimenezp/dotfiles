@@ -1,6 +1,6 @@
 # Install
 
-How to install these [dotfiles](glossary.md#dotfiles) on macOS, a Linux desktop or an Ubuntu server, and how to update or remove them. You'll use it once per machine, then again to update.
+How to install these [dotfiles](glossary.md#dotfiles) on macOS or a Linux desktop, and how to update or remove them. You'll use it once per machine, then again to update.
 
 - [Before you start](#before-you-start)
 - [macOS](#macos)
@@ -62,27 +62,7 @@ Ghostty is not in the Brewfile on Linux. Install it from your distro if you want
 
 ## Ubuntu server
 
-This is the short version for Ubuntu 22.04 or 24.04. For SSH setup and daily use, follow the full guide in [server.md](server.md).
-
-Run these on the server, as a normal user with sudo:
-
-```sh
-# 1. Prerequisites (the only step that needs sudo)
-sudo apt-get update && sudo apt-get install -y build-essential procps curl file git zsh
-
-# 2. Homebrew and its PATH
-NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-
-# 3. Clone and install
-git clone https://github.com/pedrojimenezp/dotfiles ~/dotfiles
-cd ~/dotfiles && ./install.sh
-
-# 4. Make zsh the login shell, then log out and in
-sudo chsh -s /usr/bin/zsh "$USER"
-```
-
-The server skips the Nerd Font: your laptop's terminal draws the icons. Git fetches use https, so the install works without a GitHub key.
+Follow [server.md](server.md): SSH setup on your laptop, the install steps on the server, and daily use.
 
 ## Check it worked
 
@@ -178,7 +158,7 @@ These files belong to one machine and are never in the repo.
 - **A tmux plugin is missing.** The installer says so when the plugin install failed. In tmux, press `prefix Shift+I`.
 - **Icons look wrong.** Your terminal font is not a Nerd Font ([terminals.md](terminals.md)).
 - **Colors did not change after `theme sync`.** See [theme.md](theme.md).
-- **`--with-claude` says "no GitHub SSH access".** Forward or add your GitHub key as in [server.md](server.md), then run it again.
+- **`--with-claude` says "no GitHub SSH access".** Forward or add your GitHub key as in [server.md](server.md#share-your-github-key-with-the-server), then run it again.
 
 For more recovery steps, see [first-day.md](first-day.md#if-something-breaks).
 

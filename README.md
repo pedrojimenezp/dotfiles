@@ -17,19 +17,10 @@ Anyone. Fork it and use it as your own, or read it and copy the pieces you like.
 
 ## Quick start
 
-1. Install [Homebrew](https://brew.sh) and git.
-2. Clone the repo. Any folder works; fork it first if you want your own copy:
-   ```sh
-   git clone https://github.com/pedrojimenezp/dotfiles ~/dotfiles
-   cd ~/dotfiles
-   ```
-3. Run the installer, then open a new shell:
-   ```sh
-   ./install.sh
-   exec zsh
-   ```
+One script installs everything: it backs up your old files, links the configs and installs the tools with Homebrew.
 
-The installer runs `brew bundle`, backs up your old files, links the configs with stow, runs `mise install`, then installs the tmux plugins and syncs the theme. Full steps for each OS, including Linux and servers, are in [install.md](docs/install.md).
+- **macOS or a Linux desktop**: follow [install.md](docs/install.md).
+- **A remote Ubuntu server**: follow [server.md](docs/server.md).
 
 ## Start here
 

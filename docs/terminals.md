@@ -8,7 +8,6 @@ You'll use this page to choose a terminal, change its settings, and fix font or 
 - [Requirements](#requirements)
 - [Ghostty](#ghostty)
 - [iTerm2 (macOS only)](#iterm2-macos-only)
-- [SSH config tips](#ssh-config-tips)
 - [How it works](#how-it-works)
 
 ## Which terminal should I use?
@@ -98,25 +97,6 @@ One manual step per machine: iTerm Settings > Profiles > select **Dotfiles** > O
 
 Dynamic Profiles are **read-only** in the iTerm UI. To change something, edit the template in the repo, then run `theme sync`. iTerm reloads the profile by itself. If it misses a change, quit with `Cmd+Q` and open it again.
 
-## SSH config tips
-
-Keep `~/.ssh/config` out of this repo (it is private). Server setup is in [server.md](server.md). Useful for every host:
-
-```sshconfig
-# ~/.ssh/config (example, not stowed)
-Host *
-  # Reuse one connection for many sessions
-  ControlMaster auto
-  # Socket file for the shared connection
-  ControlPath ~/.ssh/cm-%r@%h:%p
-  # Keep it open 10 minutes after the last use
-  ControlPersist 10m
-  # Keepalive so idle sessions do not drop
-  ServerAliveInterval 30
-```
-
-For flaky networks, install `mosh` (uncomment it in the `Brewfile`): `mosh myserver` survives sleep and IP changes. Run tmux inside it.
-
 ## How it works
 
 **Switch fonts.** Change these together: `NERD_FONT` and `NERD_FONT_FAMILY` in `install.sh`, the cask in the `Brewfile`, `font-family` and `font-family-italic` in the Ghostty config, and `Normal Font` in the iTerm template.
@@ -138,5 +118,5 @@ mdls -name com_apple_ats_name_postscript <font file>
 
 - [theme.md](theme.md): colors for both terminals
 - [tmux.md](tmux.md): `Cmd+K` and `prefix Ctrl+l`
-- [server.md](server.md): SSH setup
+- [server.md](server.md#2-on-your-laptop-once): SSH settings on your laptop (`~/.ssh/config`, connection reuse, `mosh`)
 - [glossary.md](glossary.md#nerd-font)
