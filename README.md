@@ -24,7 +24,7 @@ One script installs everything: it backs up your old files, links the configs an
 
 ## Start here
 
-1. [install.md](docs/install.md): install, check it worked, update, undo.
+1. [install.md](docs/install.md): install, check it worked, update, undo (`./uninstall.sh`).
 2. [first-day.md](docs/first-day.md): the keys you'll use most, and what to do when something breaks.
 3. [tmux.md](docs/tmux.md), [zsh.md](docs/zsh.md) and [nvim.md](docs/nvim.md): every key, by tool.
 
@@ -34,7 +34,7 @@ Forgot a key? Press `prefix ?` in tmux (`Ctrl+Space`, then `?`) or run `dotfiles
 
 | Group | Page | What is in it |
 | --- | --- | --- |
-| Start here | [install.md](docs/install.md) | Install on each OS, flags, update and upgrade tools, undo, troubleshooting |
+| Start here | [install.md](docs/install.md) | Install on each OS, flags, update and upgrade tools, undo with `uninstall.sh`, troubleshooting |
 | | [first-day.md](docs/first-day.md) | The keys you'll use most, help, recovery |
 | | [server.md](docs/server.md) | A remote Ubuntu server over SSH, `tssh`, GitHub key forwarding, several users |
 | Everyday tools | [tmux.md](docs/tmux.md) | Prefix, every key, status bar, popups, saved sessions |

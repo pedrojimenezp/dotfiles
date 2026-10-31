@@ -10,6 +10,7 @@ Every command says where it runs: "On your laptop" or "On the server". Your lapt
 - [4. Name this server](#4-name-this-server)
 - [5. Daily use](#5-daily-use)
 - [6. Updating the server later](#6-updating-the-server-later)
+- [Remove the dotfiles](#remove-the-dotfiles)
 - [7. Several users](#7-several-users)
 - [8. Troubleshooting](#8-troubleshooting)
 
@@ -249,6 +250,10 @@ cd ~/dotfiles && git pull && ./install.sh
 `install.sh` is safe to run again, but it never upgrades tools. To upgrade them and mise itself (`mise upgrade`, then `mise self-update`), follow [Update](install.md#update).
 
 If this server ran the older Brew-based install, see [migrate-to-mise.md](migrate-to-mise.md#linux) to remove Homebrew.
+
+## Remove the dotfiles
+
+To put the server back as it was, run `./uninstall.sh` in the dotfiles clone. It removes the links, restores your old files from their backups, deletes the data the installer made and, last, the clone. Preview first with `./uninstall.sh --dry-run`. It never changes your login shell: if zsh is your login shell, it prints the `chsh -s /bin/bash` line to run afterwards. Details and flags: [install.md](install.md#undo-or-uninstall).
 
 ## 7. Several users
 

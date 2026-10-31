@@ -20,7 +20,7 @@ How to install these [dotfiles](glossary.md#dotfiles) on macOS or a Linux deskto
 - **Fork it if you want your own copy.** Fork the repo on GitHub and clone your fork instead of the URL below. Then you can commit your changes and pull them on every machine.
 - **Pick any folder.** These steps clone into `~/dotfiles`, but any path works. Commands below that start with `cd ~/dotfiles` mean "the folder you cloned to".
 - **Have your git name and email ready.** If git has no identity yet, the installer asks for both. It stores them in `~/.config/git/local`, outside the repo.
-- **Nothing is deleted.** The installer renames any file it would replace to `<file>.backup-<date>-<time>`. See [Undo or uninstall](#undo-or-uninstall).
+- **Nothing is deleted.** The installer renames any file it would replace to `<file>.backup-<date>-<time>`. `./uninstall.sh` puts them back. See [Undo or uninstall](#undo-or-uninstall).
 - **No sudo.** `install.sh` never uses sudo and never upgrades your tools. On Linux an admin installs a few system packages once; every user then installs their own tools into their home with [mise](tools.md#mise).
 
 ## macOS
@@ -137,25 +137,32 @@ You can combine flags: `--dry-run --with-claude <git-url>`. `--with-claude=<git-
 
 ## Undo or uninstall
 
-Run these in the folder you cloned to. The installer only made [links](glossary.md#link) and renamed your old files, so undoing it is safe.
+`uninstall.sh` puts the machine back as it was before `install.sh`. It works on macOS, Linux desktops and Linux servers, uses only tools every one of them has, and never uses sudo.
 
-1. Remove the links. List the same packages the installer printed after "Linking packages":
-   ```sh
-   cd ~/dotfiles
-   stow --delete --dir="$PWD" --target="$HOME" zsh nvim tmux vim git lazygit starship mise atuin bin theme
-   ```
-   **macOS:** add `iterm`. Add `ghostty` if Ghostty was installed.
-2. Find the backups the installer made:
-   ```sh
-   find ~ -maxdepth 5 -name '*.backup-*' 2>/dev/null
-   ```
-3. Put back the files you want. For each one, remove the `.backup-<date>-<time>` part of the name:
-   ```sh
-   mv ~/.zshrc.backup-20260101-120000 ~/.zshrc
-   ```
-4. Remove what the installer added, if you no longer want it: tmux plugins in `~/.config/tmux/plugins`, the zsh plugins in `~/.local/share/zsh-plugins`, the tools in `~/.local/share/mise` (`mise implode` removes mise and everything it installed), and on macOS the Homebrew packages from the `Brewfile`.
-5. Delete the clone folder.
-6. Open a new terminal.
+```sh
+cd ~/dotfiles
+./uninstall.sh --dry-run   # show the plan, change nothing
+./uninstall.sh             # show the plan, ask "Continue? [y/N]", then do it
+```
+
+Flags:
+
+| Flag | What it does |
+| --- | --- |
+| `--dry-run` | Print the plan and every command, change nothing. |
+| `--yes` | Skip the "Continue?" question. |
+| `--with-claude` | Also undo your Claude config (see below). Kept by default. |
+| `--keep-repo` | Keep this clone. |
+
+What it does, in order:
+
+1. **Links.** Removes only [links](glossary.md#link) that point into this repo (`stow --delete`, then a sweep for the plain-symlink fallback). A real file is never deleted.
+2. **Backups.** For each removed link, it puts back the newest `<file>.backup-<date>-<time>` if the path is free. It does the same for `~/.gitconfig` and `~/.local/bin/mise`. Older backups stay; the summary lists them.
+3. **Generated data.** Deletes what the installer and the tools created: `~/.local/bin/mise` and mise's data, state and cache; the zsh plugins and zsh cache; the tmux plugins; atuin's data (the imported history, not `~/.zsh_history`); Neovim's data, state and cache; zoxide, lazygit and starship data; `~/.config/git/local` (your git name and email); the files `theme sync` generated (including the Ghostty theme files and, on macOS, the iTerm profile); and on a Linux desktop the Nerd Font in `~/.local/share/fonts`. Every delete refuses a path outside `$HOME`.
+4. **Claude config** (only with `--with-claude`). Removes the links its own installer made in `~/.claude`, `~/.claude-personal` and `~/.pi/agent`, restores their `.bak-*` files, removes its line from `~/.zshrc.local`, then deletes `~/.config/claude-shared`. The `settings.json` copies in the two Claude folders stay (Claude Code writes them too).
+5. **This clone**, last. If it has uncommitted changes or commits that are not on a remote branch, it is kept and the script says why.
+
+It never uninstalls Homebrew packages (on macOS it prints the `brew uninstall` lines for the `Brewfile`), never changes your login shell (it prints the `chsh -s /bin/bash` line, and a `sudo chsh` variant, when the shell is zsh) and never starts or stops tmux. Open a new terminal afterwards.
 
 ### Restore one file
 
