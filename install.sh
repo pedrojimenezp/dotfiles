@@ -45,10 +45,15 @@ if [[ $WITH_CLAUDE -eq 1 && ( -z "$CLAUDE_REPO_URL" || "$CLAUDE_REPO_URL" == -* 
 fi
 
 # Prerequisites. zsh must exist (the configs are zsh-only). Linux also needs git and curl (mise and the zsh plugins),
-# unzip and xz-utils (mise unpacks archives) and stow. This script never uses sudo, so it only prints the command.
+# unzip (mise unpacks zip archives), stow, and libatomic1 (a library node needs). A desktop also needs xz for the font.
+# This script never uses sudo, so it only prints the command.
 NEEDED=(zsh)                                                              # commands that must exist
-[[ "$OSTYPE" == linux* ]] && NEEDED+=(git curl unzip xz stow)             # macOS ships git, curl and unzip; brew installs stow
-MISSING=()                                                                # commands not found
+MISSING=()                                                                # commands and libraries not found
+if [[ "$OSTYPE" == linux* ]]; then
+  NEEDED+=(git curl unzip stow)                                           # macOS ships git, curl and unzip; brew installs stow
+  [[ -n "${DISPLAY:-}${WAYLAND_DISPLAY:-}" ]] && NEEDED+=(xz)             # the Nerd Font archive is .tar.xz
+  { /sbin/ldconfig -p 2>/dev/null || ldconfig -p 2>/dev/null || true; } | grep -q 'libatomic\.so\.1' || MISSING+=(libatomic1)
+fi
 for cmd in "${NEEDED[@]}"; do
   command -v "$cmd" >/dev/null 2>&1 || MISSING+=("$cmd")                  # collect every gap, so one run reports them all
 done

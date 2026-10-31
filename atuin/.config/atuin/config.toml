@@ -2,7 +2,7 @@
 # Local only: no account, no sync. The history lives in ~/.local/share/atuin/history.db.
 
 auto_sync = false                          # never talk to a sync server (no account needed)
-update_check = false                       # no network call to look for new versions; `brew upgrade` handles updates
+update_check = false                       # no network call to look for new versions; `mise upgrade` handles updates
 
 search_mode = "fuzzy"                      # typed letters match anywhere, in order (the default, like fzf)
 filter_mode = "global"                     # Ctrl+R searches the history of every shell, session and folder

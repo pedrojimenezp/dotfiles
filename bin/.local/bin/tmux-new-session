@@ -7,9 +7,9 @@
 # An empty name becomes the folder's basename. Esc leaves without creating anything.
 set -euo pipefail # stop on errors, unset variables and failed pipes
 
-# A popup may start without the Homebrew or user paths.
+# A popup may start without the Homebrew, user or mise paths.
 # Adds the existing folders that are not in PATH yet. Linuxbrew is skipped on macOS: /home is an autofs mount there and every lookup through it is slow.
-for d in /home/linuxbrew/.linuxbrew/bin /usr/local/bin /opt/homebrew/bin "$HOME/.local/bin"; do
+for d in /home/linuxbrew/.linuxbrew/bin /usr/local/bin /opt/homebrew/bin "$HOME/.local/bin" "$HOME/.local/share/mise/shims"; do
   [[ "$d" == /home/* && "$(uname)" == Darwin ]] && continue
   [[ ":$PATH:" == *":$d:"* || ! -d "$d" ]] || PATH="$d:$PATH" # each added folder goes first, so the last in this list wins
 done

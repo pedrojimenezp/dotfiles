@@ -1,5 +1,5 @@
 -- LSP: language servers installed by Mason, configured with the Neovim 0.11 API.
--- zls is the exception: it comes from Homebrew so it always matches the installed zig.
+-- zls is the exception: it comes from mise, pinned to the same version as zig.
 return {
   {
     "neovim/nvim-lspconfig", -- ships default configs in its lsp/ folder (cmd, filetypes, root markers)
@@ -63,10 +63,10 @@ return {
         automatic_enable = { exclude = { "zls" } }, -- enable installed servers, except zls
       })
       require("mason-tool-installer").setup({
-        ensure_installed = { "gofumpt", "goimports", "prettierd", "stylua" }, -- shfmt/shellcheck/golangci-lint come from brew
+        ensure_installed = { "gofumpt", "goimports", "prettierd", "stylua" }, -- shfmt/shellcheck/golangci-lint come from mise
       })
 
-      -- zls from PATH (Homebrew), enabled only when the binary exists.
+      -- zls from PATH (mise), enabled only when the binary exists.
       if vim.fn.executable("zls") == 1 then vim.lsp.enable("zls") end
     end,
   },
