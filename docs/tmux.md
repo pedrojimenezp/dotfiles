@@ -188,7 +188,7 @@ Saves hold sessions, windows, panes, their folders and the visible text of each 
 ## Troubleshooting
 
 - **Errors about unknown options on start**: your tmux is older than 3.5. See [Requirements](#requirements).
-- **`prefix Space` does nothing**: the `tmux-fingers` binary is missing. Run `mise install` and restart tmux (the binary comes from the mise config). The plugin never makes tmux print an error without it. Otherwise the first load shows an install menu: pick "Download standalone binary" (Linux x86_64 and macOS arm64) or build from source (needs Crystal).
+- **`prefix Space` does nothing**: the `tmux-fingers` binary is missing. Run `mise install` and restart tmux (the binary comes from the mise config). Upstream publishes the binary only for macOS arm64 and Linux x86_64, so on an Intel Mac or Linux arm64 the mise config skips it; tmux still starts without errors and `prefix Space` has no hints there. Otherwise the first load shows an install menu: pick "Download standalone binary" (Linux x86_64 and macOS arm64) or build from source (needs Crystal).
 - **A plugin is missing**: press `prefix I`.
 - **`Cmd+K` does nothing**: the pane runs vim or nvim, by design. Or you are not in Ghostty or iTerm.
 - **You need a layout**: `prefix Space` no longer cycles layouts. Use `prefix :` then `select-layout tiled` (or `even-horizontal`).

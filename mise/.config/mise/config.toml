@@ -8,7 +8,7 @@ go = "latest"   # global default; projects pin their own in mise.toml
 # --- Editor and terminal ---
 neovim = "latest"         # main editor (Lua config in nvim/)
 tmux = "latest"           # terminal multiplexer; tmux.conf needs 3.5+, newer than apt ships
-"github:Morantron/tmux-fingers" = "latest"  # binary for the tmux-fingers plugin: hint-based copy (prefix Space)
+"github:Morantron/tmux-fingers" = { version = "latest", os = ["macos-arm64", "linux-x64"] }  # binary for the tmux-fingers plugin: hint-based copy (prefix Space); upstream builds only these two
 starship = "latest"       # fast, customizable shell prompt
 
 # --- Shell productivity ---

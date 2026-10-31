@@ -138,7 +138,7 @@ mise installs the tools of this repo and switches versions of node, go and other
 - **Old mise (macOS)**: a standalone mise in `~/.local/bin` would shadow the Homebrew one, so `install.sh` renames it to `mise.backup-<stamp>`.
 - **PATH**: `.zshrc` activates mise early, so its tools come before any Homebrew copy of the same tool.
 - **Zig**: `zig` and `zls` must match, so both are pinned to one version in the config; change them together.
-- **tmux**: comes from mise too (build from `tmux/tmux-builds`), because apt's tmux is older than the 3.5 that `tmux.conf` needs. `tmux-fingers` is a GitHub release binary from the same config.
+- **tmux**: comes from mise too (build from `tmux/tmux-builds`), because apt's tmux is older than the 3.5 that `tmux.conf` needs. `tmux-fingers` is a GitHub release binary from the same config, only for macOS arm64 and Linux x86_64 (upstream builds no other); elsewhere it is skipped and `prefix Space` does nothing.
 - **Completions**: tools no longer bring Homebrew's zsh completions. Generate one when you want it, for example `gh completion -s zsh`.
 
 ## Usage report: dotfiles-usage
