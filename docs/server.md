@@ -7,9 +7,10 @@ Every command says where it runs: "On your laptop" or "On the server". Your lapt
 - [1. What you get](#1-what-you-get)
 - [2. On your laptop, once](#2-on-your-laptop-once)
 - [3. On the server, once](#3-on-the-server-once)
-- [4. Daily use](#4-daily-use)
-- [5. Updating the server later](#5-updating-the-server-later)
-- [6. Troubleshooting](#6-troubleshooting)
+- [4. Name this server](#4-name-this-server)
+- [5. Daily use](#5-daily-use)
+- [6. Updating the server later](#6-updating-the-server-later)
+- [7. Troubleshooting](#7-troubleshooting)
 
 ## 1. What you get
 
@@ -145,11 +146,7 @@ Then finish the setup:
    ```sh
    chmod 600 ~/.zshrc.local
    ```
-3. On the server, name this machine (optional). EC2 hostnames look like `ip-172-32-4-187`. Add one line to `~/.zshrc.local`:
-   ```sh
-   export HOST_LABEL=bravo.example.com
-   ```
-   Open a new shell: the prompt and the tmux SSH badge show this name instead of the hostname. It only affects your user, so it is safe on a shared box. tmux reads it when its server starts: for a running tmux, run `tmux kill-server` (this ends its sessions) or `tmux set -g @host_label "$HOST_LABEL"` and `tmux source-file ~/.config/tmux/tmux.conf`.
+3. On the server, name this machine (optional), as in [section 4](#4-name-this-server).
 4. On the server, run `claude` once and log in.
 5. On the server, inside a project that needs other tool versions, run:
    ```sh
@@ -157,7 +154,42 @@ Then finish the setup:
    ```
 6. On the server, type `exit` to go back to your laptop.
 
-## 4. Daily use
+## 4. Name this server
+
+Optional. EC2 hostnames look like `ip-172-32-4-187`. Give the server a name you recognize instead.
+
+On the server, add one line to `~/.zshrc.local`:
+
+```sh
+export HOST_LABEL=bravo.example.com
+```
+
+Where the name shows, over SSH only (without `HOST_LABEL`, both show the short hostname):
+
+- **The starship prompt**: after the OS icon, in bold purple, followed by `in`. See [tools.md](tools.md#prompt-starship).
+- **The tmux SSH badge**: the red **SSH** block at the left of the status bar. See [tmux.md](tmux.md#status-bar-and-pane-labels).
+
+It only affects your user, so it is safe on a shared box. Open a new shell and the prompt shows it.
+
+tmux reads `HOST_LABEL` when its server starts, so a tmux that is already running keeps the old name. Either:
+
+- **Update the running tmux**, on the server:
+  ```sh
+  tmux set-environment -g HOST_LABEL "$HOST_LABEL"   # a later reload reads the new name
+  tmux set -g @host_label "$HOST_LABEL"              # the badge changes within 5 seconds
+  ```
+  Then reload with `prefix r` (or `tmux source-file ~/.config/tmux/tmux.conf`).
+- **Or restart tmux**: `tmux kill-server`, then `tssh my-ec2`. This ends its sessions; continuum restores the last save.
+
+**A name for tmux only.** The untracked `~/.config/tmux/local.conf` (not part of the dotfiles; tmux loads it if present) overrides the badge:
+
+```tmux
+set -g @host_label "dev-box"
+```
+
+Reload with `prefix r`. `local.conf` loads after the status settings, so it wins over `HOST_LABEL`.
+
+## 5. Daily use
 
 1. On your laptop, open a new terminal tab. On macOS press `Cmd+T`. On Linux press `Ctrl+Shift+T` (the default in Ghostty and most Linux terminals; if it does not work, use your terminal's new-tab shortcut).
 2. On your laptop, run:
@@ -175,7 +207,7 @@ Rules:
 - To leave, press `Ctrl+Space`, then `d` (detach). Or close the tab. Everything keeps running on the server.
 - To come back, open a tab and run `tssh my-ec2` again.
 
-## 5. Updating the server later
+## 6. Updating the server later
 
 On the server:
 
@@ -185,7 +217,7 @@ cd ~/dotfiles && git pull && ./install.sh
 
 `install.sh` is safe to run again.
 
-## 6. Troubleshooting
+## 7. Troubleshooting
 
 - **`tssh` says tmux not found.** Your login shell is not zsh. On the server, run the `chsh` step from section 3, then log out and in.
 - **GitHub clone asks for a password, or "permission denied".** Follow "Share your GitHub key with the server" in section 2, then reconnect.

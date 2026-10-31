@@ -123,7 +123,7 @@ The left side is the session name in a blue block. The right side shows the git 
 | Session block turns **yellow** | You pressed the prefix and tmux waits for the next key |
 | 🔔 after a window name, label turns yellow | A program in that window rang the bell (Claude Code does this when it needs you). It clears when you open the window. |
 | 🔍 after a window name | The pane is zoomed (`prefix z`) |
-| Red **SSH** badge on the left | The tmux server runs on a remote machine |
+| Red **SSH** badge on the left | The tmux server runs on a remote machine. It shows the server's name, see [Name this server](server.md#4-name-this-server) |
 
 With 2 or more panes in a window, each pane gets a label row at its top border: `index: command`. The active label is a blue block.
 
@@ -149,18 +149,7 @@ In a pane running vim or nvim, nothing happens. See [terminals.md](terminals.md)
 
 ### Set a host label for the SSH badge
 
-On a remote machine the badge shows a label for the host. The label is `$HOST_LABEL`, or the short host name when that is not set.
-
-1. On the remote machine, add `export HOST_LABEL=dev-box` to `~/.zshrc.local`.
-2. Start a new tmux server, or run `tmux kill-server` if one is running (this ends its sessions; continuum restores them).
-
-To set the label for tmux only, create `~/.config/tmux/local.conf`:
-
-```tmux
-set -g @host_label "dev-box"
-```
-
-Then reload with `prefix r`. This file is not part of the dotfiles: tmux loads it if present.
+See [Name this server](server.md#4-name-this-server) in server.md.
 
 ### Add a plugin
 
@@ -246,7 +235,7 @@ No output means every binding has a note.
 
 **Status bar.** It refreshes every 5 seconds and uses the terminal's own colors, so it works in light and dark themes. Bells use `monitor-bell on` and `bell-action any`, with `visual-bell off`. `monitor-activity` stays off: it would flag every window that prints anything. Messages and the command prompt (`prefix :`) take over the status line as a blue block. `fill=blue` paints the rest of the line, because tmux otherwise draws the prompt only over its own text.
 
-**Remote SSH badge.** At load, `if-shell '[ -n "$SSH_CONNECTION" ]'` runs in the server's environment, so it sees the `SSH_CONNECTION` of the shell that started the server. If set, `status-left` starts with a red `SSH` badge holding `@host_label`, or the short host name when empty. The right side drops the host name. A server first started locally and used over SSH later keeps the local look. `@host_label` defaults to `$HOST_LABEL`, read when the server starts, and `local.conf` can override it. `local.conf` is sourced after the status settings and before the plugins, so it can override anything.
+**Remote SSH badge.** At load, `if-shell '[ -n "$SSH_CONNECTION" ]'` runs in the server's environment, so it sees the `SSH_CONNECTION` of the shell that started the server. If set, `status-left` starts with a red `SSH` badge holding `@host_label`, or the short host name when empty. The right side drops the host name. A server first started locally and used over SSH later keeps the local look. `@host_label` defaults to `$HOST_LABEL`, read when the server starts, and `local.conf` can override it ([Name this server](server.md#4-name-this-server)). `local.conf` is sourced after the status settings and before the plugins, so it can override anything.
 
 **Pane labels.** A `window-layout-changed` hook sets `pane-border-status top` when a window has 2 or more panes, and `off` otherwise. It runs on split, close, layout change and session restore.
 

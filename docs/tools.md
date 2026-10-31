@@ -113,7 +113,7 @@ First line, left to right:
 
 A dotted fill then pushes the rest to the right edge: `✔` after success, or `✘` and the exit code after an error, then `at` and the time. The second line is `❯`, green after success and red after an error. A blank line separates prompts.
 
-Over SSH only, the host shows after the OS icon in bold purple, followed by `in`. It is `HOST_LABEL` from `~/.zshrc.local`, else the short hostname. Locally nothing shows.
+Over SSH only, the host shows after the OS icon in bold purple, followed by `in`: the server's name ([Name this server](server.md#4-name-this-server)), else the short hostname. Locally nothing shows.
 
 To change the prompt:
 
