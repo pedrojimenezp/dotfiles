@@ -77,7 +77,7 @@ It prints `label<TAB>path` for every candidate. For paths only, add `| cut -f2`.
 - has a `.git`, or sits at `<x>/worktrees/<feature>`;
 - is not under a hidden folder or `node_modules`.
 
-**Old settings.** The config file `~/.config/sessionizer/config` and the variables `SESSIONIZER_EXCLUDE` and `SESSIONIZER_DEPTH` are gone. Delete the file: it is ignored.
+**Old settings.** The script reads no config file and ignores `SESSIONIZER_EXCLUDE` and `SESSIONIZER_DEPTH`. You can delete an old `~/.config/sessionizer/config`.
 
 ## How it works
 

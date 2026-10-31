@@ -40,7 +40,7 @@ A Neovim plugin that downloads language servers, formatters and linters for you.
 
 ## mise
 
-A tool version manager. It installs node, go and other runtimes, and switches versions per project from a `mise.toml` file. See [tools.md](tools.md).
+A tool version manager. Here it installs the command-line tools, node and go into your home folder, and switches versions per project from a `mise.toml` file. See [tools.md](tools.md#mise).
 
 ## nerd-font
 

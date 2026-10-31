@@ -5,8 +5,10 @@ The global git config: `git/.config/git/config` (settings) and `git/.config/git/
 You'll use it for: readable diffs, pulls that keep history clean, short aliases, and a per-machine identity.
 
 - [Quick start](#quick-start)
+- [What the config sets and why](#what-the-config-sets-and-why)
 - [Aliases](#aliases)
 - [Per-machine settings](#per-machine-settings-configgitlocal)
+- [Global ignore list](#global-ignore-list)
 - [Useful commands](#useful-commands-with-this-config)
 - [Troubleshooting](#troubleshooting)
 - [How it works](#how-it-works)

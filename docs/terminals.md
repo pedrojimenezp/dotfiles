@@ -74,7 +74,7 @@ Default Ghostty keys used in these docs (not in the config): macOS `Cmd+T` new t
 
 ### Change something
 
-Edit `ghostty/.config/ghostty/config` in the repo, then reload with `Cmd+Shift+R` (macOS). Do not edit `theme.conf`: `theme sync` generates it. Settings only for one machine: add a second include line `config-file = ?local.conf` to the config and keep `~/.config/ghostty/local.conf` untracked (the line is not there today).
+Edit `ghostty/.config/ghostty/config` in the repo, then reload with `Cmd+Shift+R` (macOS). Do not edit `theme.conf`: `theme sync` generates it. Settings only for one machine: add a second include line `config-file = ?local.conf` to the config and keep `~/.config/ghostty/local.conf` untracked (the tracked config has no such line).
 
 ## iTerm2 (macOS only)
 

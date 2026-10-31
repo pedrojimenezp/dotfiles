@@ -1,8 +1,8 @@
 # Move from Homebrew tools to mise
 
-The tools used to come from Homebrew. They now come from [mise](tools.md#mise), per user, and the zsh plugins are git clones. A machine that ran the old install still has the Homebrew copies. This page removes them after you have moved to the new install.
+Older versions of these dotfiles installed the tools and zsh plugins with Homebrew (on Linux, one shared Homebrew). The current setup installs the tools with [mise](tools.md#mise), per user, and clones the zsh plugins with git. This page removes the Homebrew copies from a machine that ran the older install.
 
-You'll use it once per machine: after you `git pull` this change and rerun `./install.sh`.
+You'll use it once per machine, after you `git pull` and rerun `./install.sh`.
 
 - [Before you remove anything](#before-you-remove-anything)
 - [macOS](#macos)
@@ -27,7 +27,7 @@ You'll use it once per machine: after you `git pull` this change and rerun `./in
 
 ## macOS
 
-The `Brewfile` shrank to `mise`, `stow`, `btop` and the casks. Uninstall the formulae that moved:
+The `Brewfile` holds only `mise`, `stow`, `btop` and the casks. Uninstall the formulae that moved:
 
 ```sh
 brew uninstall neovim tmux tmux-fingers starship fzf zoxide eza bat ripgrep fd jq yq tealdeer hyperfine atuin git-delta lazygit lazydocker dive gh git-lfs shellcheck shfmt tree-sitter-cli golangci-lint zig zls zsh-autosuggestions zsh-syntax-highlighting zsh-completions fzf-tab
@@ -59,7 +59,7 @@ The old install put everything in one shared Homebrew at `/home/linuxbrew/.linux
    grep -n "linuxbrew" ~/.zshrc.local ~/.zprofile ~/.zshenv ~/.bashrc ~/.profile 2>/dev/null
    ```
    The dotfiles' own `.zshrc` needs no change: it looks for `brew` and carries on without it.
-4. The old zsh plugins (autosuggestions, syntax highlighting, completions, fzf-tab) came from Homebrew. They now come from `~/.local/share/zsh-plugins`, which `install.sh` clones for each user. The `chmod go-w` on Homebrew's completion folders is gone with it.
+4. The old zsh plugins (autosuggestions, syntax highlighting, completions, fzf-tab) came from Homebrew. They now come from `~/.local/share/zsh-plugins`, which `install.sh` clones for each user, so nothing is left to do for them.
 5. Run `exec zsh` in every tab and pane that was open, or the prompt prints `zsh: no such file or directory: .../bin/starship` (the old shell keeps the old starship path).
 
 ## Existing server
