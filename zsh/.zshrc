@@ -16,18 +16,21 @@ typeset -U path                     # keep PATH entries unique
 path=("$HOME/.local/bin" $path)     # user scripts and the mise binary
 
 # Sources the cached output of `<tool> <args>`; forking each tool on every start costs ~30 ms.
+# The cache's first line records the tool's resolved path, which includes its version folder.
 _cache_init() {
-  local rc=${ZDOTDIR:-$HOME}/.zshrc bin=${commands[$1]:A}      # resolve symlinks so upgrades count
+  local rc=${ZDOTDIR:-$HOME}/.zshrc bin=${commands[$1]:A} first      # resolve symlinks so upgrades count
   local f=${XDG_CACHE_HOME:-$HOME/.cache}/zsh/$1${2:+.${(j:_:)${@[2,-1]//[^[:alnum:]]/_}}}.zsh  # args are in the name
-  if [[ ! -s $f || $bin -nt $f || ${rc:A} -nt $f ]]; then      # missing, tool upgraded or .zshrc edited
-    mkdir -p ${f:h} && "$@" >$f.$$ 2>/dev/null && mv -f $f.$$ $f || rm -f $f.$$  # tmp + mv: never half-written
+  [[ -r $f ]] && read -r first <$f                                 # builtin read: no fork on the fast path
+  if [[ ! -s $f || $first != "# bin=$bin" || $bin -nt $f || ${rc:A} -nt $f ]]; then  # missing, other version/path, tool newer or .zshrc edited
+    mkdir -p ${f:h} && { print -r "# bin=$bin"; "$@" } >$f.$$ 2>/dev/null && mv -f $f.$$ $f || rm -f $f.$$  # tmp + mv: never half-written
   fi
   [[ -s $f ]] && source $f
 }
 
 # mise puts its tools ahead of Homebrew's on PATH. Activate it here so the checks below find those tools.
+# Not cached: its output holds a PATH snapshot that would overwrite entries added since it was generated.
 if (( $+commands[mise] )); then
-  _cache_init mise activate zsh           # tool versions per project, global defaults from ~/.config/mise/config.toml
+  eval "$(mise activate zsh)"             # tool versions per project, global defaults from ~/.config/mise/config.toml
 fi
 
 # --- Environment ---

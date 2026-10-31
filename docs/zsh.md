@@ -218,7 +218,7 @@ Two more optional files:
 - **No icons in `ls`**: the terminal font is not a [Nerd Font](glossary.md#nerd-font), see [terminals.md](terminals.md).
 - **Command not found for a tool**: open a new shell, then run `mise ls` to see if it is installed and `mise install` if not.
 - **No autosuggestions or highlighting**: check that `~/.local/share/zsh-plugins/<name>` exists; `./install.sh` clones it.
-- **A tool's init looks stale** (after `mise upgrade`, or after a tool was added, removed or moved): run `rm -rf ~/.cache/zsh && exec zsh`.
+- **A tool's init looks stale** (after a tool was added, removed or moved): run `rm -rf ~/.cache/zsh && exec zsh`.
 - **Slow start**: run `time zsh -i -c exit`.
 
 ## How it works
@@ -233,7 +233,7 @@ Two more optional files:
 
 atuin loads after fzf so its `Ctrl+r` wins, and after the `Up` binding so its `Up` wins. `Down` stays with this config because atuin does not bind it.
 
-**Tool init cache.** Starting each tool on every shell would cost about 30 ms each. `.zshrc` saves the output of `fzf --zsh`, `atuin init zsh`, `zoxide init zsh`, `mise activate zsh` and `starship init zsh` in `~/.cache/zsh`. A file refreshes when the tool's binary is newer than the file or `.zshrc` changes. mise keeps the release's file times, so an upgrade does not always count: delete the folder after `mise upgrade` to force a refresh.
+**Tool init cache.** Starting each tool on every shell would cost about 30 ms each. `.zshrc` saves the output of `fzf --zsh`, `atuin init zsh`, `zoxide init zsh` and `starship init zsh` in `~/.cache/zsh`. The first line of each file records the tool's resolved path, which includes its mise version folder. A file refreshes when that path changes (an upgrade), the tool's binary is newer than the file, or `.zshrc` changes. `mise activate zsh` is not cached: its output holds a PATH snapshot that would overwrite entries added earlier in startup.
 
 **Completion cache.** `compinit -C` skips the security scan while the dump file is under 24 hours old. When it is older, a full `compinit` runs and the shell touches the dump, so the full scan happens once a day. If `compaudit` lists only paths owned by you or root, the scan runs `compinit -u` and does not prompt; a path owned by someone else still prompts (see [install.md](install.md#troubleshooting)). The config sets `menu no`, which fzf-tab requires.
 

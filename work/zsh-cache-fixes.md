@@ -9,13 +9,15 @@ Fix two bugs in the `_cache_init` shell cache in `zsh/.zshrc`: upgrades not inva
 3. Fix `docs/zsh.md` and `docs/install.md`.
 
 ## Done
-Nothing yet.
+- `_cache_init` writes `# bin=<resolved path>` as line 1 and regenerates on mismatch (read via builtin, no fork).
+- mise is no longer cached.
+- Docs updated; tested in a temp HOME.
 
 ## Where we stopped
-Note created.
+All implemented and tested; ready for review.
 
 ## Next step
-Implement in `zsh/.zshrc`.
+Review, then merge.
 
 ## How to test
 `zsh -n zsh/.zshrc`; start `zsh -i` with a temp HOME and XDG_CACHE_HOME and ZDOTDIR set to `zsh/`.

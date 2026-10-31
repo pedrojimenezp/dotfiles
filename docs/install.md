@@ -118,10 +118,7 @@ The installer is safe to run again. It refreshes links, installs what is missing
    ```sh
    mise self-update
    ```
-3. Clear the shell's tool cache, then open a new shell. The cache can keep the setup of the old version ([zsh.md](zsh.md#how-it-works)):
-   ```sh
-   rm -rf ~/.cache/zsh && exec zsh
-   ```
+3. Open a new shell. The tool cache refreshes by itself when a tool's version changes ([zsh.md](zsh.md#how-it-works)).
 
 Already ran the older Brew-based install? See [migrate-to-mise.md](migrate-to-mise.md) to remove the Homebrew copies of the tools that moved.
 
