@@ -12,17 +12,19 @@ Reuse as much as possible across macOS and Linux: cross-platform tools first, pl
 
 ## Done
 - Branch and note created.
+- Steps 1-3: mise config (all tools verified on macOS arm64 and Linux x64; btop is Linux-only in mise, so macOS keeps it in the Brewfile; tmux and tmux-fingers also come from mise), zsh plugin clones, install.sh and .zshrc changes, dotfiles-usage.
+- Docker (ubuntu:24.04, user without sudo) passes.
 
 ## Where we stopped
-Starting step 1.
+Docs (step 4 and 5) not written yet.
 
 ## Next step
-Add the tools to the mise config and verify them.
+Write docs: server.md, install.md, tools.md, zsh.md, tmux.md, nvim.md, README, new docs/migrate-to-mise.md.
 
 ## How to test
 `shellcheck install.sh`, `zsh -n zsh/.zshrc`, `./install.sh --dry-run`, then an ubuntu:24.04 Docker run as a non-sudo user.
 
 ## Open questions
-None yet.
+- tmux now comes from mise on both OSes (not in the Brewfile as planned), since apt's tmux is older than 3.5.
 
 Updated: 2026-10-31 by personal@Pedros-MacBook-Pro-M4
