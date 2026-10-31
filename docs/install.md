@@ -71,8 +71,8 @@ Flags can be combined (`--dry-run --with-claude <git-url>`). `--with-claude=<git
 5. **Backs up** every real file a package would link: `<file>.backup-YYYYmmdd-HHMMSS`. Files that are already links into this repo are left alone. `~/.gitconfig` is backed up too, because it beats `~/.config/git/config`.
 6. **Links** the packages with `stow --restow --no-folding`. `--no-folding` makes each file its own link, so folders like `~/.config/ghostty` stay real folders and generated files never land in the repo. Without `stow` it uses plain symlinks.
 7. `mise install` for the global runtimes.
-   Then, only when `~/.local/share/atuin/history.db` does not exist yet, `atuin import zsh` copies `~/.zsh_history` into atuin once. A failure only prints a warning.
-8. Clones **TPM** into `~/.config/tmux/plugins/tpm` and installs the tmux plugins.
+   Then, only when `~/.local/share/atuin/history.db` does not exist yet, `atuin import zsh` copies `~/.zsh_history` (or `$HISTFILE`) into atuin once, when that file has content. With no history yet it skips quietly. A failure only prints a warning.
+8. Clones **TPM** into `~/.config/tmux/plugins/tpm` and installs the tmux plugins (TPM needs a tmux server, so it runs inside a short-lived detached session).
 9. Linux desktop only: installs the Monaspace Nerd Font into `~/.local/share/fonts`.
 10. `theme sync`: writes the Ghostty and iTerm theme files. A failure here only prints a warning.
 11. `--with-claude <git-url>` step, if asked.
@@ -92,7 +92,7 @@ cd ~/projects/personal/dotfiles && git pull && ./install.sh
 ## After installing
 
 1. Start a new shell: `exec zsh`.
-2. tmux plugins are installed already. If one failed, open tmux and press `Ctrl+Space`, then `Shift+i`.
+2. tmux plugins are installed already (the installer says otherwise when the install failed). If one failed, open tmux and press `Ctrl+Space`, then `Shift+i`.
 3. Open `nvim` once and wait for lazy.nvim, Mason and treesitter to finish.
 4. Put secrets and machine settings in `~/.zshrc.local` ([zsh.md](zsh.md)).
 5. Put machine-specific git settings in `~/.config/git/local` ([git.md](git.md)).
