@@ -9,7 +9,7 @@ Window list shows the full account word (●personal / ●work) when the client 
 3. Test on a private tmux server.
 
 ## Done
-tmux.conf: labels use #{client_width} against @claude_label_min_width (default 120). docs/tmux.md updated. Tested with a control-mode client at 200/100/119/120 columns: full words at 120+, p/w below. Link check: 0 broken.
+tmux.conf: labels use #{client_width} against @claude_label_min_width (default 120). docs/tmux.md updated. Tested with a control-mode client at 200/100/119/120 columns: full words at 120+, p/w below. Current-window marks now start with `#[noreverse] ` so the gap between marks is a plain space, not part of the reverse block. Checked two panes (personal, work) in current and non-current windows at 200/100 columns. Link check: 0 broken.
 
 ## Where we stopped
 Change done and committed.
