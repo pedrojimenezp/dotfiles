@@ -138,10 +138,10 @@ Already ran the older Brew-based install? See [migrate-to-mise.md](migrate-to-mi
 You can combine flags: `--dry-run --with-claude <git-url>`. `--with-claude=<git-url>` and `--claude-accounts=<a,b>` work too. For example, to set up only the `personal` account:
 
 ```sh
-./install.sh --with-claude git@github.com:you/claude-config.git --claude-accounts personal
+./install.sh --with-claude <git-url> --claude-accounts personal
 ```
 
-What an account is, which names are valid and the steps for a new machine are in the [claude-config README](https://github.com/pedrojimenezp/claude-config#readme).
+What an account is, which names are valid and the steps for a new machine are in the README of your Claude config repo (the one you pass to `--with-claude`).
 
 ## Undo or uninstall
 

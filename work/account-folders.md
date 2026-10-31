@@ -1,7 +1,7 @@
 # account-folders
 
 ## Goal
-Follow the claude-config restructure: accounts are `~/.claude-<name>` folders, `zsh/claude.zsh` became `claude.sh`.
+Follow the restructure of the Claude config repo: accounts are `~/.claude-<name>` folders, `zsh/claude.zsh` became `claude.sh`.
 
 ## Plan
 1. `install.sh --claude-accounts <a,b>` passed to the Claude installer.
@@ -16,7 +16,7 @@ Follow the claude-config restructure: accounts are `~/.claude-<name>` folders, `
 - docs (install.md, zsh.md, server.md)
 
 ## Where we stopped
-All steps done; only review left.
+All steps done; no link to the private repo in the docs; only review left.
 
 ## Next step
 Review, then /merge.
