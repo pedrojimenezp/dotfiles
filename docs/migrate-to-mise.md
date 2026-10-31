@@ -68,10 +68,7 @@ A Linux server that ran the old Homebrew install, possibly with several users: a
 
 Connect with plain `ssh`, not `tssh`. `tssh` runs inside the remote tmux, and `tmux kill-server` would end the connection you are typing in.
 
-1. **Admin:** install the system packages ([server.md](server.md#7-several-users)):
-   ```sh
-   sudo apt-get update && sudo apt-get install -y zsh git curl unzip stow libatomic1
-   ```
+1. **Admin:** install the system packages ([server.md section 3](server.md#3-on-the-server-once)).
 2. **Admin:** update your own setup, then follow [Before you remove anything](#before-you-remove-anything):
    ```sh
    cd ~/dotfiles && git pull && ./install.sh

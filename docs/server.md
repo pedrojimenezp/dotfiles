@@ -122,6 +122,8 @@ On the server, install the system packages (the only step that needs sudo beside
 sudo apt-get update && sudo apt-get install -y zsh git curl unzip stow libatomic1
 ```
 
+`install.sh` checks these and prints the exact `apt-get` line for anything missing, so the script is the source of truth.
+
 No Homebrew is needed. `install.sh` installs [mise](tools.md#mise) into `~/.local/bin` and then every tool into your own home, so a user without sudo can do it too ([section 7](#7-several-users)).
 
 On the server, clone the dotfiles and install them:
@@ -252,11 +254,7 @@ If this server ran the older Brew-based install, see [migrate-to-mise.md](migrat
 
 Several people can share one server. Each user has their own home, their own tools and their own copy of the dotfiles. Only the system packages are shared, so only the admin needs sudo.
 
-**Admin, once** (a user with sudo):
-
-```sh
-sudo apt-get update && sudo apt-get install -y zsh git curl unzip stow libatomic1
-```
+**Admin, once** (a user with sudo): install the system packages from [section 3](#3-on-the-server-once).
 
 **Admin, for each new user:**
 

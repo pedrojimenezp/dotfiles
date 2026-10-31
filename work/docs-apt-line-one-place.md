@@ -9,13 +9,13 @@ Keep the apt install line in two places only: `docs/server.md` section 3 (server
 3. Add the "install.sh is the source of truth" sentence.
 
 ## Done
-Nothing yet.
+Both lines match `install.sh`. Copies in server.md section 7 and migrate-to-mise.md now link to server.md section 3. Added the source-of-truth sentence to server.md section 3 and install.md.
 
 ## Where we stopped
-Starting.
+Docs done, checks run.
 
 ## Next step
-Edit the docs.
+Review, then /merge.
 
 ## How to test
 `grep -rn "apt-get install" README.md docs/` shows only the two places; run the link checker (0 broken).

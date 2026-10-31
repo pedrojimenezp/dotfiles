@@ -45,7 +45,7 @@ Apps go into `~/Applications`, so you need no admin rights.
    ```sh
    sudo apt-get update && sudo apt-get install -y zsh git curl unzip stow libatomic1 xz-utils
    ```
-   `xz-utils` unpacks the [Nerd Font](glossary.md#nerd-font). If one is missing, the installer stops and prints this line with the missing names. It needs no Homebrew: it installs [mise](tools.md#mise) into `~/.local/bin` and then every tool into your home.
+   `xz-utils` unpacks the [Nerd Font](glossary.md#nerd-font). `install.sh` checks these and prints the exact `apt-get` line for anything missing, so the script is the source of truth. It needs no Homebrew: it installs [mise](tools.md#mise) into `~/.local/bin` and then every tool into your home.
 2. Clone the repo and run the installer:
    ```sh
    git clone https://github.com/pedrojimenezp/dotfiles ~/dotfiles
