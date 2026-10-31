@@ -445,6 +445,7 @@ suggest_login_shell() {
   else
     echo "  sudo chsh -s $zsh_path \"\$USER\""                                    # EC2-style users have no password
   fi
+  echo "With SSH connection sharing (ControlMaster), also run 'ssh -O exit <host>' on your laptop, or reconnecting keeps the old shell."
   local sys_ver                                                                 # /usr/bin/tmux version, e.g. 3.4 (empty if none)
   sys_ver="$(/usr/bin/tmux -V 2>/dev/null | sed -n 's/^tmux \([0-9]*\.[0-9]*\).*/\1/p')"
   if [[ -n "$sys_ver" ]] && (( ${sys_ver%%.*} < 3 || ( ${sys_ver%%.*} == 3 && ${sys_ver#*.} < 5 ) )); then # tmux.conf needs 3.5+

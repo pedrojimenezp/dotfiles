@@ -171,7 +171,7 @@ What it does, in order:
 5. **This clone**, last. If it has uncommitted changes or commits that are not on a remote branch, it is kept and the script says why.
 6. **Final sweep.** Once the clone is deleted, it removes any link that is now broken and pointed into the clone, in the same places it scanned at the start. Skipped when the clone is kept.
 
-It never uninstalls Homebrew packages (on macOS it prints the `brew uninstall` lines for the `Brewfile`), never changes your login shell (it prints the `chsh -s /bin/bash` line, and a `sudo chsh` variant, when the shell is zsh) and never starts or stops tmux.
+It never uninstalls Homebrew packages (on macOS it prints the `brew uninstall` lines for the `Brewfile`), never changes your login shell (it prints the `chsh -s /bin/bash` line, and a `sudo chsh` variant, when the shell is zsh, plus a reminder to run `ssh -O exit <host>` on your laptop if you use SSH connection sharing, or reconnecting keeps the old shell) and never starts or stops tmux.
 
 Shells that are already open keep the old settings. If the run removed something such a shell still uses (a zsh or bash startup link, mise or the tools it installed, like starship), the last lines of the summary say so: that terminal prints "no such file or directory" on every prompt until you run `exec bash` or log in again. Otherwise it just says to open a new terminal. If your login shell is zsh and `~/.zshrc` is gone, the summary also warns that the next zsh shows its new-user setup menu (press 0 to skip it).
 

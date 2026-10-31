@@ -274,6 +274,7 @@ check "notice tells to run exec bash" grep -qx "  exec bash" "$ROOT/notice.out"
 check "open-a-new-terminal line replaced by the notice" bash -c '! grep -q "Open a new terminal" "$1"' _ "$ROOT/notice.out"
 check "zsh setup menu mentioned once" test "$(grep -c "new-user setup menu" "$ROOT/notice.out")" = 1
 check "chsh printed once" test "$(grep -c "^  chsh -s /bin/bash" "$ROOT/notice.out")" = 1
+check "ssh -O exit note printed once" test "$(grep -c "ssh -O exit <host>" "$ROOT/notice.out")" = 1
 
 B="$ROOT/nonotice"
 make_machine "$B" plain

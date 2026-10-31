@@ -57,6 +57,8 @@ Host *
 
 For flaky networks, install `mosh` (`sudo apt-get install -y mosh` on the server, and on your Mac uncomment it in the `Brewfile`): `mosh myserver` survives sleep and IP changes. Run tmux inside it.
 
+A shared connection also keeps what the server read at login. A new login shell (after `chsh`) or a new group membership does not apply to new `ssh` sessions while the connection is open. Run `ssh -O exit <host>` on your laptop (it closes every session to that host), then connect again.
+
 ### Share your GitHub key with the server
 
 Why: on your laptop, `ssh` can read a key file directly, so GitHub works even if the key is not in the agent. But `ForwardAgent` only shares keys that are loaded in the agent. If the key is not loaded, the server gets "Permission denied (publickey)" even though GitHub works on your laptop. `gh auth login` does not help here: it sets up https tokens, and `ssh -T` only uses SSH keys.
@@ -297,7 +299,7 @@ If a package is missing, `install.sh` stops and prints the `apt-get` line for th
 ## 8. Troubleshooting
 
 - **A menu says "This is the Z Shell configuration function for new users".** zsh is your login shell but you have no `~/.zshrc` yet. Press `q`, then clone the dotfiles and run `./install.sh` (section 7). Any `~/.zshrc` the menu created is moved to `~/.zshrc.backup-<date>-<time>`.
-- **`tssh` says tmux not found.** Your login shell is not zsh. On the server, run the `chsh` step from section 3, then log out and in.
+- **`tssh` says tmux not found.** Your login shell is not zsh. On the server, run the `chsh` step from section 3, then log out and in. With SSH connection sharing, run `ssh -O exit <host>` on your laptop first, or the new `ssh` reuses the old shell (see "Optional: faster, steadier SSH").
 - **tmux shows errors about unknown options right after login, or the install ended with "logins start the system tmux".** Your login shell is still bash, which does not put mise's tools on `PATH`, so logins start Ubuntu's older `/usr/bin/tmux` (tmux.conf needs 3.5+). Run the `chsh` step from section 3, log out and in, then stop the old server with `tmux kill-server` (this ends its sessions).
 - **GitHub clone asks for a password, or "permission denied".** Follow "Share your GitHub key with the server" in section 2, then reconnect.
 - **`--with-claude <git-url>` says "no GitHub SSH access on this machine" and exits with an error.** The installer tested `ssh git@github.com` and GitHub did not accept a key. It skips the Claude step and finishes the rest. Fix the forwarding as in the item above, reconnect, then run `./install.sh --with-claude <git-url>` again.
