@@ -123,7 +123,7 @@ The left side is the user in a purple block, then the session name in a blue blo
 | Session block turns **yellow** | You pressed the prefix and tmux waits for the next key |
 | 🔔 after a window name, label turns yellow | A program in that window rang the bell (Claude Code does this when it needs you). It clears when you open the window. |
 | 🔍 after a window name | The pane is zoomed (`prefix z`) |
-| Red **SSH** badge on the left | The tmux server runs on a remote machine. It shows `user@host` (the server's name), see [Name this server](server.md#4-name-this-server)) and replaces the purple user block |
+| Red **SSH** badge on the left | The tmux server runs on a remote machine. It shows `user@host` (the server's name, see [Name this server](server.md#4-name-this-server)) and replaces the purple user block |
 
 With 2 or more panes in a window, each pane gets a label row at its top border: `index: command`. The active label is a blue block.
 
