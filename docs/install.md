@@ -127,13 +127,21 @@ Already ran the older Brew-based install? See [migrate-to-mise.md](migrate-to-mi
 ```sh
 ./install.sh --dry-run                # print what would happen, change nothing
 ./install.sh --with-claude <git-url>  # also clone and install your own Claude config repo
+./install.sh --with-claude <git-url> --claude-accounts personal,work  # only these Claude accounts
 ./install.sh --help                   # usage
 ```
 
 - **`--dry-run`** prints every action with a `[dry-run]` prefix. Use it first on a new machine.
 - **`--with-claude <git-url>`** is for people who keep their own Claude Code config in a git repo. It clones that repo to `~/.config/claude-shared` and runs its `install.sh`. Set `CLAUDE_SHARED_DIR` to use another folder. A private GitHub repo needs SSH access.
+- **`--claude-accounts <a,b>`** picks which Claude accounts that installer sets up on this machine. The names (comma-separated, no spaces) go to its `install.sh` as arguments. It needs `--with-claude`, and it also applies when the clone is already there. Without it, the Claude installer uses its own default.
 
-You can combine flags: `--dry-run --with-claude <git-url>`. `--with-claude=<git-url>` works too.
+You can combine flags: `--dry-run --with-claude <git-url>`. `--with-claude=<git-url>` and `--claude-accounts=<a,b>` work too. For example, to set up only the `personal` account:
+
+```sh
+./install.sh --with-claude git@github.com:you/claude-config.git --claude-accounts personal
+```
+
+What an account is, which names are valid and the steps for a new machine are in the [claude-config README](https://github.com/pedrojimenezp/claude-config#readme).
 
 ## Undo or uninstall
 
@@ -159,7 +167,7 @@ What it does, in order:
 1. **Links.** Removes only [links](glossary.md#link) that point into this repo (`stow --delete`, then a sweep for the plain-symlink fallback). A real file is never deleted.
 2. **Backups.** For each removed link, it puts back the newest `<file>.backup-<date>-<time>` if the path is free. It does the same for `~/.gitconfig` and `~/.local/bin/mise`. Older backups stay; the summary lists them.
 3. **Generated data.** Deletes what the installer and the tools created: `~/.local/bin/mise` and mise's data, state and cache; the zsh plugins and zsh cache; the tmux plugins; atuin's data (the imported history, not `~/.zsh_history`); Neovim's data, state and cache; zoxide, lazygit and starship data; `~/.config/git/local` (your git name and email); the files `theme sync` generated (including the Ghostty theme files and, on macOS, the iTerm profile); and on a Linux desktop the Nerd Font in `~/.local/share/fonts`. Every delete refuses a path outside `$HOME`.
-4. **Claude config** (only with `--with-claude`). Removes the links its own installer made in `~/.claude`, `~/.claude-personal` and `~/.pi/agent`, restores their `.bak-*` files, removes its line from `~/.zshrc.local`, then deletes `~/.config/claude-shared`. The `settings.json` copies in the two Claude folders stay (Claude Code writes them too).
+4. **Claude config** (only with `--with-claude`). Removes the links its own installer made (including `agents` and `rules`) in every `~/.claude-<name>` folder, a legacy `~/.claude` and `~/.pi/agent`, and restores their `.bak-*` files. It removes the `claude.sh` line (and an old `claude.zsh` line) from `~/.zshrc.local`, `~/.bashrc` and `~/.zshrc` (only when `~/.zshrc` is not a symlink), then deletes `~/.config/claude-shared`. The `settings.json` copies in the Claude folders stay (Claude Code writes them too), and the summary lists them.
 5. **This clone**, last. If it has uncommitted changes or commits that are not on a remote branch, it is kept and the script says why.
 6. **Final sweep.** Once the clone is deleted, it removes any link that is now broken and pointed into the clone, in the same places it scanned at the start. Skipped when the clone is kept.
 
@@ -263,7 +271,8 @@ By default, stow links a whole folder when it can. `--no-folding` links each fil
 - Before cloning, the installer tests GitHub SSH access. Without access, it skips this step, finishes the rest, and exits with an error at the end.
 - If the folder exists but is not a git repo, the step is skipped the same way.
 - In `--dry-run`, it only prints that it would check access and clone or pull.
-- `.zshrc` loads `~/.config/claude-shared/zsh/claude.zsh` only if that file exists, so the dotfiles work without it.
+- `--claude-accounts` is passed on as arguments to the clone's `install.sh`, both after a fresh clone and after a pull.
+- `.zshrc` loads `~/.config/claude-shared/claude.sh` only if that file exists, so the dotfiles work without it.
 
 ## Related pages
 

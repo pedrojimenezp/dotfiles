@@ -13,12 +13,13 @@ Follow the claude-config restructure: accounts are `~/.claude-<name>` folders, `
 - install.sh flag and tests/install_test.sh
 - .zshrc source line
 - uninstall.sh and its test
+- docs (install.md, zsh.md, server.md)
 
 ## Where we stopped
-Docs (docs/install.md, README, zsh.md) still to do.
+All steps done; only review left.
 
 ## Next step
-Update docs, run all tests.
+Review, then /merge.
 
 ## How to test
 `bash tests/install_test.sh && bash tests/uninstall_test.sh`

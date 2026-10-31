@@ -135,6 +135,8 @@ cd ~/dotfiles
 ./install.sh --with-claude <git-url>
 ```
 
+Add `--claude-accounts personal` (account names, comma-separated) to set up only some Claude accounts; see [install.md](install.md#flags).
+
 Use `./install.sh` without `--with-claude <git-url>` if the server has no GitHub access (no forwarded key). Everything else (mise, tools, plugins, `git pull`) uses https and needs no key; only a private `--with-claude` repo and `git push` need SSH.
 
 The installer skips the Nerd Font on a server: your laptop's terminal draws the icons. If zsh is missing or is not your login shell, `install.sh` prints the exact command to run. Flags and every step it takes are in [install.md](install.md#flags).

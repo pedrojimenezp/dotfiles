@@ -210,7 +210,7 @@ Open a new shell or run `exec zsh` to load it.
 
 Two more optional files:
 
-- `~/.config/claude-shared/zsh/claude.zsh` is read only if it exists (private Claude Code helpers). See [install.md](install.md).
+- `~/.config/claude-shared/claude.sh` is read only if it exists (private Claude Code helpers). See [install.md](install.md).
 - `~/.zshenv` is read before `.zshrc`. Use it for settings that must exist early, such as `ATUIN_NO_UP`.
 
 ## Troubleshooting
@@ -228,7 +228,7 @@ Two more optional files:
 1. Homebrew, `PATH`, mise, options and your key bindings.
 2. The extra completions on `fpath`, `compinit` (the completion system), then fzf, atuin, zoxide and starship.
 3. fzf-tab, after `compinit` and fzf, then autosuggestions. Both wrap widgets, so they come after the tools.
-4. `claude.zsh`, then `~/.zshrc.local`.
+4. `claude.sh`, then `~/.zshrc.local`.
 5. Syntax highlighting, last. It must load after everything that defines widgets.
 
 atuin loads after fzf so its `Ctrl+r` wins, and after the `Up` binding so its `Up` wins. `Down` stays with this config because atuin does not bind it.
