@@ -120,7 +120,7 @@ github_ssh_ok() {
 }
 
 # Packages to link.
-PACKAGES=(zsh nvim tmux vim git lazygit starship mise atuin bin theme)
+PACKAGES=(zsh nvim tmux vim git lazygit starship mise bin theme)
 
 # iTerm Dynamic Profile template (theme sync builds the real profile): macOS only.
 if [[ "$OSTYPE" == darwin* ]]; then
@@ -239,7 +239,7 @@ fi
 if command -v mise >/dev/null 2>&1; then
   echo "==> Installing tools with mise"
   run mise install || echo "Warning: some mise tools failed; run 'mise install' later" >&2 # reads ~/.config/mise/config.toml
-  # Later steps (tmux plugins, atuin) need the mise tools on PATH; a new shell gets them from `mise activate` in .zshrc.
+  # Later steps (tmux plugins) need the mise tools on PATH; a new shell gets them from `mise activate` in .zshrc.
   [[ $DRY -eq 1 ]] || eval "$(mise env -s bash)" || true
 else
   echo "==> Skipping mise install: mise not found"
@@ -262,16 +262,22 @@ clone_plugin zsh-syntax-highlighting zsh-users/zsh-syntax-highlighting # colors 
 clone_plugin zsh-completions zsh-users/zsh-completions             # extra tab-completion definitions
 clone_plugin fzf-tab Aloxaf/fzf-tab                                # Tab completion through fzf
 
-# Step 3b2: import the zsh history into atuin once.
-ATUIN_DB="${XDG_DATA_HOME:-$HOME/.local/share}/atuin/history.db" # atuin's default database
-ZSH_HIST="${HISTFILE:-$HOME/.zsh_history}"                       # same default as zsh/.zshrc, which atuin reads through $HISTFILE
-if { command -v atuin >/dev/null 2>&1 || [[ $DRY -eq 1 ]]; }; then # in dry-run atuin may not be installed yet
-  if [[ ! -e "$ATUIN_DB" && ( -s "$ZSH_HIST" || $DRY -eq 1 ) ]]; then # first run only; a fresh machine has no history to import
-    echo "==> Importing the zsh history into atuin"
-    run env HISTFILE="$ZSH_HIST" atuin import zsh || echo "warning: atuin import failed; run 'atuin import zsh' later" >&2 # non-fatal
-  elif [[ ! -e "$ATUIN_DB" ]]; then # no database is created, so a later run imports once history exists
-    echo "==> Skipping the atuin import: no zsh history yet"
+# Step 3b2: remove what atuin left on a machine that had it (the tool is no longer used).
+ATUIN_CFG="$HOME/.config/atuin/config.toml"
+if [[ -L "$ATUIN_CFG" ]]; then
+  atuin_target="$(readlink "$ATUIN_CFG")" # the link is dangling now, so realpath (is_repo_link) cannot resolve it
+  if [[ "$atuin_target" == "$REPO"/* || "$atuin_target" == "$REPO_REAL"/* ]]; then # only our own link
+    echo "==> Removing the old atuin config link"
+    run rm -f "$ATUIN_CFG"
+    run rmdir "$(dirname "$ATUIN_CFG")" 2>/dev/null || true # only if empty
   fi
+fi
+for f in "${XDG_CACHE_HOME:-$HOME/.cache}"/zsh/atuin*.zsh; do # cached `atuin init zsh` output, one file per argument set
+  [[ -e "$f" ]] && run rm -f "$f"
+done
+ATUIN_DATA="${XDG_DATA_HOME:-$HOME/.local/share}/atuin"
+if [[ -d "$ATUIN_DATA" ]]; then # user data: never deleted here
+  echo "atuin is no longer used; its history database stays in $ATUIN_DATA. Remove it with 'rm -rf $ATUIN_DATA' and the tool with 'mise prune'."
 fi
 
 # Step 4: tmux plugin manager.

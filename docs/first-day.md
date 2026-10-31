@@ -34,7 +34,7 @@ More in [tmux.md](tmux.md).
 
 | Key or command | What it does |
 | --- | --- |
-| `Up` or `Ctrl+R` | Search your command history ([atuin](glossary.md#atuin)) |
+| `Up` or `Ctrl+R` | Search your command history (`Up` by the letters you typed, `Ctrl+R` with [fzf](glossary.md#fzf)) |
 | `Ctrl+T` | Pick a file with [fzf](glossary.md#fzf) and paste its path |
 | `z name` | Jump to a folder you visit often ([zoxide](glossary.md#zoxide)) |
 | `Tab` | Completion list you can filter by typing |

@@ -94,7 +94,7 @@ bindkey '^L' clear-screen-and-scrollback  # clear the screen and the scrollback
 autoload -Uz up-line-or-beginning-search down-line-or-beginning-search  # built-in widgets: match history by typed prefix
 zle -N up-line-or-beginning-search        # register the widget
 zle -N down-line-or-beginning-search      # register the widget
-bindkey '^[[A' up-line-or-beginning-search    # without atuin: earlier command that starts with the typed text (normal cursor mode)
+bindkey '^[[A' up-line-or-beginning-search    # Up: earlier command that starts with the typed text (normal cursor mode)
 bindkey '^[OA' up-line-or-beginning-search    # Up, application mode (tmux, after smkx)
 bindkey '^[[B' down-line-or-beginning-search  # later command that starts with the typed text (normal cursor mode)
 bindkey '^[OB' down-line-or-beginning-search  # Down, application mode (tmux, after smkx)
@@ -212,12 +212,6 @@ fi
 # mise is activated earlier (PATH section); _cache_init is defined there too.
 if (( $+commands[fzf] )); then
   _cache_init fzf --zsh                   # Ctrl-R history, Ctrl-T files, Alt-C cd, ** completion
-fi
-# atuin comes after fzf (so its Ctrl-R wins) and after our Up/Down bindkeys (so its Up wins).
-# Down stays ours (atuin does not bind it). Without atuin, the prefix search above remains.
-if (( $+commands[atuin] )); then
-  # ATUIN_NO_UP=1 (set in ~/.zshenv, which loads before this file) keeps Up on prefix search
-  _cache_init atuin init zsh ${ATUIN_NO_UP:+--disable-up-arrow}  # history search on Ctrl-R and Up
 fi
 if (( $+commands[zoxide] )); then
   _cache_init zoxide init zsh             # adds `z` and `zi` jump commands

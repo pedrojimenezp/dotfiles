@@ -166,7 +166,7 @@ What it does, in order:
 
 1. **Links.** Removes only [links](glossary.md#link) that point into this repo (`stow --delete`, then a sweep for the plain-symlink fallback). A real file is never deleted.
 2. **Backups.** For each removed link, it puts back the newest `<file>.backup-<date>-<time>` if the path is free. It does the same for `~/.gitconfig` and `~/.local/bin/mise`. Older backups stay; the summary lists them.
-3. **Generated data.** Deletes what the installer and the tools created: `~/.local/bin/mise` and mise's data, state and cache; the zsh plugins and zsh cache; the tmux plugins; atuin's data (the imported history, not `~/.zsh_history`); Neovim's data, state and cache; zoxide, lazygit and starship data; `~/.config/git/local` (your git name and email); the files `theme sync` generated (including the Ghostty theme files and, on macOS, the iTerm profile); and on a Linux desktop the Nerd Font in `~/.local/share/fonts`. Every delete refuses a path outside `$HOME`.
+3. **Generated data.** Deletes what the installer and the tools created: `~/.local/bin/mise` and mise's data, state and cache; the zsh plugins and zsh cache; the tmux plugins; atuin's data, if an older install left it (not `~/.zsh_history`); Neovim's data, state and cache; zoxide, lazygit and starship data; `~/.config/git/local` (your git name and email); the files `theme sync` generated (including the Ghostty theme files and, on macOS, the iTerm profile); and on a Linux desktop the Nerd Font in `~/.local/share/fonts`. Every delete refuses a path outside `$HOME`.
 4. **Claude config** (only with `--with-claude`). Removes the links its own installer made (including `agents` and `rules`) in every `~/.claude-<name>` folder, a legacy `~/.claude` and `~/.pi/agent`, and restores their `.bak-*` files. It removes the `claude.sh` line (and an old `claude.zsh` line) from `~/.zshrc.local`, `~/.bashrc` and `~/.zshrc` (only when `~/.zshrc` is not a symlink), then deletes `~/.config/claude-shared`. The `settings.json` copies in the Claude folders stay (Claude Code writes them too), and the summary lists them.
 5. **This clone**, last. If it has uncommitted changes or commits that are not on a remote branch, it is kept and the script says why.
 6. **Final sweep.** Once the clone is deleted, it removes any link that is now broken and pointed into the clone, in the same places it scanned at the start. Skipped when the clone is kept.
@@ -229,14 +229,13 @@ Each top-level folder of the repo is a [package](glossary.md#package) whose cont
 
 | Package | Links to | What it holds |
 | --- | --- | --- |
-| `zsh` | `~/.zshrc` | zsh: history, completion, aliases, fzf, atuin, zoxide, mise, starship, autosuggestions, syntax highlighting (the plugins are git clones) |
+| `zsh` | `~/.zshrc` | zsh: history, completion, aliases, fzf, zoxide, mise, starship, autosuggestions, syntax highlighting (the plugins are git clones) |
 | `nvim` | `~/.config/nvim` | Neovim: lazy.nvim, LSP, treesitter, telescope, conform, blink.cmp |
 | `tmux` | `~/.config/tmux/tmux.conf` | tmux with prefix `Ctrl+Space`, vi copy mode, plugins, status bar |
 | `vim` | `~/.vimrc` | Small plugin-free vimrc for servers |
 | `git` | `~/.config/git/{config,ignore}` | Git defaults, delta pager, aliases, global ignores |
 | `lazygit` | `~/.config/lazygit/config.yml` | lazygit renders diffs with delta; `.zshrc` sets `LG_CONFIG_FILE` so macOS reads it too |
 | `starship` | `~/.config/starship.toml` | Two-line framed prompt |
-| `atuin` | `~/.config/atuin/config.toml` | Shell history search, local only (no sync) |
 | `mise` | `~/.config/mise/config.toml` | Global tools: node, go and the CLI tools of [tools.md](tools.md) |
 | `bin` | `~/.local/bin` | Scripts: `tmux-sessionizer`, `tmux-new-session`, `tmux-popup`, `theme`, `dotfiles-help`, `dotfiles-usage`, `dotfiles-log` |
 | `theme` | `~/.config/theme/config` | The light/dark theme pair |
@@ -247,13 +246,13 @@ Each top-level folder of the repo is a [package](glossary.md#package) whose cont
 
 1. Checks the system packages. `zsh` is always needed; Linux also needs `git`, `curl`, `unzip`, `stow` and `libatomic1` (and `xz` on a desktop). Anything missing stops the script, which prints the `apt-get` line for an admin.
 2. **macOS:** runs `brew bundle --no-upgrade` to install what is missing (`mise`, `stow`, `btop`, the apps), then `chmod go-w` on Homebrew's zsh completion folders. `brew` is found in the standard prefixes even when it is not on `PATH`. Without it, the script prints the install command and stops. Linux skips this step.
-3. Picks the packages: the first eleven above, plus `iterm` on macOS and `ghostty` when Ghostty is installed.
+3. Picks the packages: the first ten above, plus `iterm` on macOS and `ghostty` when Ghostty is installed.
 4. Backs up an old standalone `~/.local/bin/mise` that would hide the Homebrew one (macOS).
 5. Backs up every real file a package would replace, as `<file>.backup-YYYYmmdd-HHMMSS`. Links that already point into the repo stay. `~/.gitconfig` is backed up too, because git reads it before `~/.config/git/config`.
 6. Links the packages with `stow --restow --no-folding`. Without `stow`, it makes plain links.
 7. Installs mise into `~/.local/bin` if it is missing (the official installer from `https://mise.run`), runs `mise install` for every tool in the config, and puts those tools on `PATH` for the rest of the script. A failure only prints a warning.
 8. Clones the zsh plugins (autosuggestions, syntax-highlighting, completions, fzf-tab) into `~/.local/share/zsh-plugins`, or fast-forwards the ones already there.
-9. On the first run only (no atuin database yet), imports `~/.zsh_history` (or `$HISTFILE`) into atuin. With no zsh history yet it skips the import, so a later run imports once history exists. A failure only prints a warning.
+9. On a machine that had atuin: removes its config link (only if it points into this repo) and cached init file. It never deletes `~/.local/share/atuin`; if that folder exists, it prints how to remove it (`rm -rf ~/.local/share/atuin`, then `mise prune` for the tool).
 10. Clones [TPM](glossary.md#tpm) into `~/.config/tmux/plugins/tpm` and installs the tmux plugins. TPM needs a tmux server that has loaded the config, so this runs on a private, throwaway tmux server. It never touches a tmux you already have running, and works even when the installer runs inside tmux.
 11. **Linux desktop:** installs the Monaspace Nerd Font into `~/.local/share/fonts`.
 12. Runs `theme sync` to write the Ghostty and iTerm color files. A failure only prints a warning.

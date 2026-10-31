@@ -7,7 +7,7 @@ tmux plugin	prefix Ctrl+r	restore saved sessions (tmux-resurrect)	docs/tmux.md
 tmux plugin	prefix Space	copy with hints: press a letter to copy a URL, path or hash (tmux-fingers)	docs/tmux.md
 tmux plugin	prefix j	jump mode: press a letter to move the copy-mode cursor to a match (tmux-fingers)	docs/tmux.md
 tmux plugin	prefix I	install plugins (TPM); prefix U updates them	docs/tmux.md
-zsh tool	Up / Ctrl+R	history search in all shells (atuin; fzf Ctrl+R without atuin)	docs/zsh.md
+zsh tool	Up / Ctrl+R	Up: earlier commands that start with what you typed; Ctrl+R: fzf history search	docs/zsh.md
 zsh tool	Ctrl+T / Alt+C	fzf: paste a file path / cd into a folder	docs/zsh.md
 zsh tool	Tab	fuzzy completion list (fzf-tab; , and . switch group)	docs/zsh.md
 zsh tool	Right	accept the grey suggestion (zsh-autosuggestions)	docs/zsh.md

@@ -23,7 +23,6 @@ yq = "latest"             # jq-like processor for YAML/TOML/XML
 btop = { version = "latest", os = ["linux"] }  # resource monitor (CPU, memory, disks, network); no macOS build, the Brewfile has it
 tealdeer = "latest"       # fast tldr client: short command examples (`tldr tar`)
 hyperfine = "latest"      # command-line benchmarking
-atuin = "latest"          # searchable shell history (Up and Ctrl+R), local only
 
 # --- Git and containers ---
 delta = "latest"          # syntax-highlighting pager for git diff/log (git-delta)

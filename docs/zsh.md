@@ -10,7 +10,7 @@ You'll use it for: aliases, fuzzy history and Tab completion, jumping between fo
 - [Key bindings](#key-bindings)
 - [Tab completion with fzf-tab](#tab-completion-with-fzf-tab)
 - [Completions for mise tools](#completions-for-mise-tools)
-- [History search with atuin](#history-search-with-atuin)
+- [History search](#history-search)
 - [Jump to folders with zoxide](#jump-to-folders-with-zoxide)
 - [Bell after long commands](#bell-after-long-commands)
 - [Remote tmux: `tssh`](#remote-tmux-tssh)
@@ -41,13 +41,13 @@ Open a new terminal, then try:
   - No terminal beep: the shell stays silent on errors like a failed completion. The long-command bell below is separate and on purpose.
   - Emacs key style: `Ctrl+a` goes to the start of the line, `Ctrl+e` to the end, `Ctrl+w` deletes a word. This is the zsh default. The other style is vi mode.
 - **Completion**: case-insensitive matching, colored like `ls`, grouped with headers. With fzf-tab installed, Tab opens an fzf list.
-- **Tools**: [fzf](glossary.md#fzf), [atuin](glossary.md#atuin), [zoxide](glossary.md#zoxide), [mise](glossary.md#mise) and [starship](glossary.md#starship) start only when installed. A missing tool never gives an error.
+- **Tools**: [fzf](glossary.md#fzf), [zoxide](glossary.md#zoxide), [mise](glossary.md#mise) and [starship](glossary.md#starship) start only when installed. A missing tool never gives an error.
 - **Plugins** (git clones in `~/.local/share/zsh-plugins`, made by `install.sh`): fzf-tab, autosuggestions, syntax highlighting and extra completions.
 - **OS parts**: **macOS:** `o` is `open`, `ls -G`, and the Ghostty command is added to `PATH`. **Linux:** `o` is `xdg-open` and `ls --color=auto`.
 
 ## Aliases
 
-Some aliases exist only if the tool is installed. `dotfiles-help` lists every alias, key and shell function with its description, see [Find any key](first-day.md#find-any-key). Keys of tools that bind their own (fzf, atuin, fzf-tab, zoxide, autosuggestions) are in [cheatsheet.tsv](cheatsheet.tsv).
+Some aliases exist only if the tool is installed. `dotfiles-help` lists every alias, key and shell function with its description, see [Find any key](first-day.md#find-any-key). Keys of tools that bind their own (fzf, fzf-tab, zoxide, autosuggestions) are in [cheatsheet.tsv](cheatsheet.tsv).
 
 | Alias | Runs | Notes |
 | --- | --- | --- |
@@ -75,9 +75,9 @@ Run `alias` to list what is active on this machine.
 
 | Keys | What it does | Source |
 | --- | --- | --- |
-| `Up` | With atuin: open the history search (all shells). Without atuin: commands that start with what you typed. | atuin / this config |
+| `Up` | Commands that start with what you typed, going back | This config |
 | `Down` | Commands that start with what you typed, going forward | This config |
-| `Ctrl+r` | Fuzzy search the whole history | atuin (fzf if atuin is missing) |
+| `Ctrl+r` | Fuzzy search the whole history | fzf |
 | `Ctrl+t` | Fuzzy pick files and paste the path | fzf |
 | `Alt+c` | Fuzzy pick a folder and `cd` into it | fzf |
 | `Tab` | Fuzzy completion list (`Enter` accepts, `,` / `.` switch group) | fzf-tab |
@@ -119,43 +119,12 @@ Tools installed by mise bring no zsh completions. For the ones you want, load th
 
 Open a new shell, then try `gh <Tab>`. Each line runs the tool once per shell start, so add only the ones you use.
 
-## History search with atuin
+## History search
 
-[atuin](https://docs.atuin.sh/) stores every command, with folder, time and exit code, in a local SQLite database. It is local only: no account, no sync, no update checks.
+zsh keeps one shared history in `~/.zsh_history` (all shells and tabs).
 
-`Up` and `Ctrl+r` open the same atuin list under the prompt. Both search the history of **all** shells, tabs and folders.
-
-- Type letters: they match anywhere, in order.
-- `Up` / `Down` (or `Ctrl+p` / `Ctrl+n`) move in the list. `Esc` or `Ctrl+c` cancels.
-- `Enter` or `Tab` paste the command on the prompt. You press `Enter` again to run it, so nothing runs by surprise.
-- `Ctrl+r` inside the list cycles the filter: global, host, session, workspace (current git repo), directory. Try `directory` to see only what you ran in this folder.
-
-Without atuin installed, `Up` uses the prefix search and `Ctrl+r` uses fzf.
-
-### Import your old history
-
-`install.sh` runs `atuin import zsh` once, when the database does not exist yet and `~/.zsh_history` has content ([install.md](install.md#what-installsh-does-in-order)). To import again by hand, run it yourself. It may add duplicates.
-
-```sh
-atuin import zsh
-```
-
-### Keep `Up` as prefix search
-
-1. Add `export ATUIN_NO_UP=1` to `~/.zshenv`. `~/.zshrc.local` is read too late for this.
-2. Open a new shell.
-
-Check it worked: `Up` now shows the previous command that starts with what you typed. `Ctrl+r` still opens atuin.
-
-Undo: remove the line and open a new shell.
-
-### Turn on sync
-
-Sync is off by default. History is end-to-end encrypted.
-
-1. Run `atuin register` (or `atuin login`).
-2. Set `auto_sync = true` in `atuin/.config/atuin/config.toml`.
-3. Run `atuin sync`.
+- `Up` / `Down`: type the first letters of a command, then press `Up` to go back through earlier commands that start with them. `Down` goes forward.
+- `Ctrl+r`: fuzzy search the whole history with [fzf](glossary.md#fzf). `Enter` pastes the command on the prompt.
 
 ## Jump to folders with zoxide
 
@@ -211,7 +180,7 @@ Open a new shell or run `exec zsh` to load it.
 Two more optional files:
 
 - `~/.config/claude-shared/claude.sh` is read only if it exists (private Claude Code helpers). See [install.md](install.md).
-- `~/.zshenv` is read before `.zshrc`. Use it for settings that must exist early, such as `ATUIN_NO_UP`.
+- `~/.zshenv` is read before `.zshrc`. Use it for settings that must exist early, such as `PATH` entries or a `HISTFILE` override.
 
 ## Troubleshooting
 
@@ -226,14 +195,12 @@ Two more optional files:
 **Load order.** `.zshrc` runs top to bottom, and the order matters:
 
 1. Homebrew, `PATH`, mise, options and your key bindings.
-2. The extra completions on `fpath`, `compinit` (the completion system), then fzf, atuin, zoxide and starship.
+2. The extra completions on `fpath`, `compinit` (the completion system), then fzf, zoxide and starship.
 3. fzf-tab, after `compinit` and fzf, then autosuggestions. Both wrap widgets, so they come after the tools.
 4. `claude.sh`, then `~/.zshrc.local`.
 5. Syntax highlighting, last. It must load after everything that defines widgets.
 
-atuin loads after fzf so its `Ctrl+r` wins, and after the `Up` binding so its `Up` wins. `Down` stays with this config because atuin does not bind it.
-
-**Tool init cache.** Starting each tool on every shell would cost about 30 ms each. `.zshrc` saves the output of `fzf --zsh`, `atuin init zsh`, `zoxide init zsh` and `starship init zsh` in `~/.cache/zsh`. The first line of each file records the tool's resolved path, which includes its mise version folder. A file refreshes when that path changes (an upgrade), the tool's binary is newer than the file, or `.zshrc` changes. `mise activate zsh` is not cached: its output holds a PATH snapshot that would overwrite entries added earlier in startup.
+**Tool init cache.** Starting each tool on every shell would cost about 30 ms each. `.zshrc` saves the output of `fzf --zsh`, `zoxide init zsh` and `starship init zsh` in `~/.cache/zsh`. The first line of each file records the tool's resolved path, which includes its mise version folder. A file refreshes when that path changes (an upgrade), the tool's binary is newer than the file, or `.zshrc` changes. `mise activate zsh` is not cached: its output holds a PATH snapshot that would overwrite entries added earlier in startup.
 
 **Completion cache.** `compinit -C` skips the security scan while the dump file is under 24 hours old. When it is older, a full `compinit` runs and the shell touches the dump, so the full scan happens once a day. If `compaudit` lists only paths owned by you or root, the scan runs `compinit -u` and does not prompt; a path owned by someone else still prompts (see [install.md](install.md#troubleshooting)). The config sets `menu no`, which fzf-tab requires.
 

@@ -44,7 +44,6 @@ The four zsh plugins are git clones in `~/.local/share/zsh-plugins`; `install.sh
 | Tool | What it is for | Example |
 | --- | --- | --- |
 | `fzf` | Fuzzy finder | `Ctrl+r` history, `Ctrl+t` files, `Alt+c` folders; `git log --oneline \| fzf` |
-| `atuin` | Searchable shell history in a local database (`Up`, `Ctrl+r`); no sync | `Ctrl+r`, `atuin stats` |
 | `zoxide` | Smart `cd` | `z dotfiles`, `zi` |
 | `eza` | Better `ls` (aliases `ls`, `ll`, `la`, `lt`) | `ll`, `lt` |
 | `bat` | `cat` with colors (alias `cat`) | `bat README.md` |
@@ -171,7 +170,7 @@ It lists how often each tool of this repo was used in that period, most used fir
 **dotfiles-usage internals.**
 
 - **Tool list.** Nothing is kept by hand. It reads the `brew` lines of the `Brewfile`, the tools of the mise config, the scripts in `bin/.local/bin` and the `tssh` function. Plugins, libraries and helpers such as `zls`, `git-lfs` and `tmux-fingers` have no command to count, so they are skipped. Aliases in `zsh/.zshrc` count for their tool: `lg` is `lazygit`, `vim` is `nvim`, `tt` is `theme`, `ls` is `eza`, `z` is `zoxide`.
-- **History.** It uses atuin (`atuin search --filter-mode global --after "N days ago"`) when installed, else `~/.zsh_history`. The zsh fallback needs `EXTENDED_HISTORY` and undercounts repeated commands, because `HIST_IGNORE_ALL_DUPS` keeps only the latest copy of each line. atuin keeps every run. `DOTFILES_USAGE_HISTFILE=file` reads another zsh history file, and `ATUIN_DB_PATH` points atuin at another database.
+- **History.** It reads `~/.zsh_history`, which needs `EXTENDED_HISTORY`. It undercounts repeated commands, because `HIST_IGNORE_ALL_DUPS` keeps only the latest copy of each line. `DOTFILES_USAGE_HISTFILE=file` reads another zsh history file.
 - **Key-launched tools.** They do not reach shell history, so `tmux-popup`, `tmux-sessionizer`, `dotfiles-help` and `theme` call `dotfiles-log <tool>`. It appends `<epoch> <tool>` to `${XDG_STATE_HOME:-~/.local/state}/dotfiles/usage.log` and never fails. `dotfiles-log --path` prints the file, and deleting it resets the counts. A script that calls `dotfiles-log` is counted from that log only.
 - **What `theme` counts.** Only runs you start: `toggle`, `dark`, `light`, `auto`, `pick` and `set`, including nvim's `<leader>ut` and the `tt` alias. Automatic calls such as `theme apply` at shell start, `theme file`, `theme mode` and `sync` are not counted.
 - **Approximation.** The first word of each command counts, and so does each part of a pipe or chain (`a | b`, `a && b`), after `FOO=1` prefixes and `sudo`. Tools run from scripts, `xargs` or `$(...)` are not seen. Keys handled by a tool itself, such as fzf `Ctrl+r` and `Ctrl+t`, are not seen either.

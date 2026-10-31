@@ -20,7 +20,7 @@ STATE="${XDG_STATE_HOME:-$HOME/.local/state}"
 CACHE="${XDG_CACHE_HOME:-$HOME/.cache}"
 
 # Same packages as install.sh, plus the macOS and Ghostty ones: a package with no links does nothing.
-PACKAGES=(zsh nvim tmux vim git lazygit starship mise atuin bin theme iterm ghostty)
+PACKAGES=(zsh nvim tmux vim git lazygit starship mise bin theme iterm ghostty)
 
 # What happened, for the summary.
 REMOVED=()
@@ -177,6 +177,7 @@ sweep_broken_links() {
 }
 
 # Generated data and caches, one path per line. Paths that do not exist are skipped by the caller.
+# $DATA/atuin is legacy: atuin is no longer installed, but older machines may still have its data.
 data_paths() {
   cat <<EOF
 $DATA/zsh-plugins

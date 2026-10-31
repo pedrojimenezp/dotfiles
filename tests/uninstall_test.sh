@@ -4,7 +4,7 @@
 set -euo pipefail
 
 SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)" # the repo under test (working tree, committed or not)
-PKGS=(zsh nvim tmux vim git lazygit starship mise atuin bin theme)
+PKGS=(zsh nvim tmux vim git lazygit starship mise bin theme)
 PASS=0
 FAIL=0
 ROOT="$(mktemp -d)"

@@ -2,10 +2,10 @@
 # Count how often each tool of these dotfiles was used lately, to decide what to remove.
 # Usage: dotfiles-usage [week|2weeks|month]   (uses per tool and last use; default week)
 # Tools: Brewfile brew entries, tools of the mise config, aliases in zsh/.zshrc, scripts in bin/.local/bin, and tssh. Nothing is listed by hand.
-# Source: atuin history if installed, else ~/.zsh_history (needs EXTENDED_HISTORY). Scripts started by a key
+# Source: ~/.zsh_history (needs EXTENDED_HISTORY). Scripts started by a key
 # do not reach history: every script that calls dotfiles-log logs "<epoch> <tool>" to usage.log, and is counted from that log only.
 # Approximate: counts the first word of each command and of each part of a pipe or && chain, after env vars and sudo.
-# Env: DOTFILES_USAGE_HISTFILE reads that zsh history file instead; ATUIN_DB_PATH points atuin at another database.
+# Env: DOTFILES_USAGE_HISTFILE reads that zsh history file instead.
 set -euo pipefail # stop on errors, unset variables and failed pipes
 
 # Repo root: follow the stow symlink back into the repo (a loop, as old macOS readlink lacks -f).
@@ -38,17 +38,10 @@ for f in "$ROOT"/bin/.local/bin/*; do [[ ${f##*/} == dotfiles-log ]] || tools="$
 logged="$(grep -lE '^[^#]*dotfiles-log" +[a-z]' "$ROOT"/bin/.local/bin/* | sed 's|.*/||' | tr '\n' ' ' || true)" # scripts that call dotfiles-log (key-launched): counted from the log only
 aliases="z=zoxide zi=zoxide $(grep -oE "alias [^= ]+='[^ ']+" "$ROOT/zsh/.zshrc" | sed "s/alias \(.*\)='\(.*\)/\1=\2/" | tr '\n' ' ')" # name=first word
 
-# Data source: custom file, else atuin (global, all folders), else zsh's own history.
-hist="${DOTFILES_USAGE_HISTFILE:-}"
-if [[ -z "$hist" ]] && command -v atuin >/dev/null 2>&1; then
-  from="atuin"
-  export ATUIN_SESSION="${ATUIN_SESSION:-$(atuin uuid)}" # atuin search refuses to run without a session (unset outside atuin-hooked zsh)
-  read_history() { atuin search --filter-mode global --after "$days days ago" --format '{time} {command}' || true; } # "YYYY-MM-DD HH:MM:SS command"
-else
-  hist="${hist:-$HOME/.zsh_history}"
-  from="zsh history $hist"
-  read_history() { cat "$hist" 2>/dev/null || true; } # ": epoch:duration;command"; missing file: no data
-fi
+# Data source: a custom file, else zsh's own history.
+hist="${DOTFILES_USAGE_HISTFILE:-$HOME/.zsh_history}"
+from="zsh history $hist"
+read_history() { cat "$hist" 2>/dev/null || true; } # ": epoch:duration;command"; missing file: no data
 log="$("$ROOT/bin/.local/bin/dotfiles-log" --path)" # one "<epoch> <tool>" line per key-launched run
 zone="$(date +%z)" # local offset, so days change at local midnight
 offset=$(( ${zone:0:1}1 * (10#${zone:1:2} * 3600 + 10#${zone:3:2} * 60) ))
@@ -73,8 +66,7 @@ printf '%-20s %5s  %s\n' tool uses "last used"
   }
   $1 == "L" { day = int(($2 + off) / 86400); if (day > today - days) hit($3, day); next } # usage.log line
   /^: [0-9]+:[0-9]+;/ { split($2, e, ":"); day = int((e[1] + off) / 86400); cmd = $0; sub(/^[^;]*;/, "", cmd) } # zsh history line
-  /^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9] / { split($1, d, "-"); day = dn(d[1] + 0, d[2] + 0, d[3] + 0); cmd = $0; sub(/^[^ ]+ [^ ]+ /, "", cmd) } # atuin line
-  /^: [0-9]+:[0-9]+;|^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9] / && day > today - days {
+  /^: [0-9]+:[0-9]+;/ && day > today - days {
     n = split(cmd, seg, /[|;&]+/) # simple pipes and chains: each part counts
     for (i = 1; i <= n; i++) {
       s = seg[i]; sub(/^[ \t(]+/, "", s)

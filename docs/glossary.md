@@ -2,10 +2,6 @@
 
 Short definitions of the terms the other pages use. Each page links here the first time a term appears.
 
-## atuin
-
-A shell history tool. It keeps every command in a local database and opens a searchable list on `Up` or `Ctrl+R`. See [zsh.md](zsh.md).
-
 ## dotfiles
 
 Configuration files in your home folder, usually named with a leading dot (`.zshrc`). This repo keeps them in git so every machine gets the same setup.
