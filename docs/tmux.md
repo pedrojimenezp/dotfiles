@@ -121,12 +121,12 @@ The left side is the user in a purple block, then the session name in a blue blo
 | Session block turns **yellow** | You pressed the prefix and tmux waits for the next key |
 | 🔔 after a window name, label turns yellow | A program in that window rang the bell (Claude Code does this when it needs you). It clears when you open the window. |
 | 🔍 after a window name | The pane is zoomed (`prefix z`) |
-| Magenta **●personal** or cyan **●work** after a window name | A pane in that window runs Claude Code on the `personal` (magenta) or `work` (cyan) account. One mark per such pane. In a client narrower than 120 columns the mark shortens to **●p** or **●w**; change the limit with `set -g @claude_label_min_width <columns>`. |
+| Magenta **●personal** or cyan **●work** after a window name | Shown only on windows other than the current one. A pane in that window runs Claude Code on the `personal` (magenta) or `work` (cyan) account. One mark per such pane. In a client narrower than 120 columns the mark shortens to **●p** or **●w**; change the limit with `set -g @claude_label_min_width <columns>`. |
 | Red **SSH** badge on the left | The tmux server runs on a remote machine. It shows `user@host` (the server's name, see [Name this server](server.md#4-name-this-server)) and replaces the purple user block |
 
 With 2 or more panes in a window, each pane gets a label row at its top border: `index: command`. The active label is a blue block.
 
-A pane running Claude Code also shows its account at the end of its label, as a magenta `●personal` or a cyan `●work`.
+A pane running Claude Code also shows its account at the end of its label, as a magenta `●personal` or a cyan `●work`. The current window has no mark in the window list: it shows the account in the pane border (2+ panes) and inside Claude.
 
 The account marks need the `claude` shell function from your private Claude config. It sets the pane option `@claude_account` (`personal` or `work`) while Claude runs and clears it on exit. Without that function nothing shows, which is harmless. Check by hand: `tmux set -p @claude_account work` marks the current pane, `tmux set -pu @claude_account` clears it.
 

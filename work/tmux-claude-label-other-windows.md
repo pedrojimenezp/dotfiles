@@ -8,13 +8,15 @@ Show the Claude account marks in the tmux window list only on non-current window
 - Update the comment and `docs/tmux.md`.
 
 ## Done
-- Note created.
+- Removed `@claude_window_label_current`; current-window format is plain again.
+- Comment and `docs/tmux.md` updated.
+- Tested on a private server: marks only on the non-current window, both directions.
 
 ## Where we stopped
-Nothing changed yet.
+Change complete and tested; not merged.
 
 ## Next step
-Make the edits, test on a private tmux server.
+Review and merge.
 
 ## How to test
 Private server (`env -u TMUX tmux -S <temp socket> -f tmux.conf`), 200-column control-mode client, two windows with `@claude_account` panes; check the status line on each window.
