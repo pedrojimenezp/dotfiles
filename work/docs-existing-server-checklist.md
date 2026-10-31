@@ -10,13 +10,13 @@ Add an "Existing server" checklist to `docs/migrate-to-mise.md`, fix the shell-c
 4. Link from server.md.
 
 ## Done
-Nothing yet.
+Added the Existing server section, moved the cache clear before `exec zsh`, added `exec zsh` after removal (macOS and Linux), linked from server.md. Anchors checked.
 
 ## Where we stopped
-Note created.
+Docs done, ready for review.
 
 ## Next step
-Edit `docs/migrate-to-mise.md`.
+Review, then merge.
 
 ## How to test
 Grep the headings and check every anchor resolves; read the page top to bottom.

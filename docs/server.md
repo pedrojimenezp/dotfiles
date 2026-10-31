@@ -271,6 +271,8 @@ cd ~/dotfiles
 ./install.sh
 ```
 
+Moving a server that ran the old Homebrew install? Follow the [Existing server checklist](migrate-to-mise.md#existing-server).
+
 If a package is missing, `install.sh` stops and prints the `apt-get` line for the admin. It never uses sudo.
 
 **Upgrades.** Each user upgrades their own tools with `mise upgrade`, and the dotfiles with `cd ~/dotfiles && git pull && ./install.sh`. The admin upgrades the system packages with `sudo apt-get upgrade`.

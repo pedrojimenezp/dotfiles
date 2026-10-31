@@ -7,6 +7,7 @@ You'll use it once per machine: after you `git pull` this change and rerun `./in
 - [Before you remove anything](#before-you-remove-anything)
 - [macOS](#macos)
 - [Linux](#linux)
+- [Existing server](#existing-server)
 - [Check it worked](#check-it-worked)
 
 ## Before you remove anything
@@ -15,8 +16,10 @@ You'll use it once per machine: after you `git pull` this change and rerun `./in
    ```sh
    cd ~/dotfiles && git pull && ./install.sh
    ```
-2. Open a new shell (`exec zsh`) and check that each tool now comes from mise:
+2. Clear the shell cache, which holds the old `PATH`, then open a new shell and check that each tool now comes from mise:
    ```sh
+   rm -rf ~/.cache/zsh
+   exec zsh
    which nvim tmux fzf rg
    ```
    Every path should be under `~/.local/share/mise` (a `shims` or `installs` folder), not `/opt/homebrew` or `/home/linuxbrew`. If one is not, stop: run `mise install`, open a new shell and check again before removing it.
@@ -35,6 +38,7 @@ Notes:
 
 - `brew uninstall` refuses a formula that another formula needs. Leave that one in place (it does no harm: mise comes first on `PATH`) or uninstall the dependent one too.
 - `btop` stays in Homebrew because mise has no macOS build of it.
+- Run `exec zsh` in every tab and pane that was open. Otherwise the old shell prints `zsh: no such file or directory: .../bin/starship`, because it still has the old starship path.
 - To preview what the shorter `Brewfile` would remove, run `brew bundle cleanup --file=Brewfile`. Without `--force` it only lists. **Do not add `--force`:** it removes every formula that is not in the `Brewfile`, including ones you installed yourself outside these dotfiles.
 
 ## Linux
@@ -56,7 +60,24 @@ The old install put everything in one shared Homebrew at `/home/linuxbrew/.linux
    ```
    The dotfiles' own `.zshrc` needs no change: it looks for `brew` and carries on without it.
 4. The old zsh plugins (autosuggestions, syntax highlighting, completions, fzf-tab) came from Homebrew. They now come from `~/.local/share/zsh-plugins`, which `install.sh` clones for each user. The `chmod go-w` on Homebrew's completion folders is gone with it.
-5. **Each user** can delete the shell cache once so the new tools are picked up: `rm -rf ~/.cache/zsh`.
+5. Run `exec zsh` in every tab and pane that was open, or the prompt prints `zsh: no such file or directory: .../bin/starship` (the old shell keeps the old starship path).
+
+## Existing server
+
+A Linux server that ran the old Homebrew install, possibly with several users: an admin with sudo (for example `ubuntu`, who owns `/home/linuxbrew/.linuxbrew`) and other users without it. Do the steps in this order.
+
+Connect with plain `ssh`, not `tssh`. `tssh` runs inside the remote tmux, and `tmux kill-server` would end the connection you are typing in.
+
+1. **Admin:** install the system packages ([server.md](server.md#7-several-users)):
+   ```sh
+   sudo apt-get update && sudo apt-get install -y zsh git curl unzip stow libatomic1
+   ```
+2. **Admin:** update your own setup, then follow [Before you remove anything](#before-you-remove-anything):
+   ```sh
+   cd ~/dotfiles && git pull && ./install.sh
+   ```
+3. **Each other user:** the admin sets zsh as their shell if needed (`sudo chsh -s /usr/bin/zsh <name>`). The user then pulls (or clones, the first time) and runs `./install.sh`, then does the same checks.
+4. **Only after every user is done,** remove Homebrew as described in [Linux](#linux).
 
 ## Check it worked
 
