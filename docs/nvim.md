@@ -13,6 +13,7 @@ You'll use it for: editing code with search, git signs, completion, formatting a
 - [Add a plugin](#add-a-plugin)
 - [Add a language server](#add-a-language-server)
 - [Check that everything works](#check-that-everything-works)
+- [Troubleshooting](#troubleshooting)
 - [How it works](#how-it-works)
 
 ## Requirements
@@ -225,7 +226,7 @@ Run `:checkhealth`, or a narrower check: `:checkhealth vim.lsp`, `:checkhealth m
 
 ## Troubleshooting
 
-- **Plugins or parsers fail on the first start**: install `git`, `curl`, `ripgrep`, `fd` and `tree-sitter-cli`, then run `:checkhealth`.
+- **Plugins or parsers fail on the first start**: check that `git` and `curl` exist, run `mise install` (it provides `ripgrep`, `fd` and `tree-sitter`), then run `:checkhealth`.
 - **Telescope fuzzy matching is slow or missing**: install a C compiler and `make`, then run `:Lazy build telescope-fzf-native.nvim`.
 - **`Alt+j` / `Alt+k` do nothing**: set "Option as Alt" in the terminal, see [terminals.md](terminals.md).
 - **No language help in a file**: run `:checkhealth vim.lsp` and check `:Mason` for the server.

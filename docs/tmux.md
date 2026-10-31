@@ -14,7 +14,7 @@ You'll use it for splits, tabs, project sessions, popups, and work that survives
 
 ## Requirements
 
-tmux 3.5 or newer. The mise config installs a current version, on macOS and Linux (`install.sh` runs `mise install`).
+tmux 3.5 or newer. The mise config installs a current version, on macOS and Linux (`install.sh` runs `mise install`). Check with `tmux -V`.
 
 **Linux:** do not use the tmux from apt. It is older than 3.5 and prints errors for options it does not know.
 
@@ -191,14 +191,14 @@ Saves hold sessions, windows, panes, their folders and the visible text of each 
 - **`prefix Space` does nothing**: the `tmux-fingers` binary is missing. Run `mise install` and restart tmux (the binary comes from the mise config). Upstream publishes the binary only for macOS arm64 and Linux x86_64, so on an Intel Mac or Linux arm64 the mise config skips it; tmux still starts without errors and `prefix Space` has no hints there. Otherwise the first load shows an install menu: pick "Download standalone binary" (Linux x86_64 and macOS arm64) or build from source (needs Crystal).
 - **A plugin is missing**: press `prefix I`.
 - **`Cmd+K` does nothing**: the pane runs vim or nvim, by design. Or you are not in Ghostty or iTerm.
-- **You need a layout**: `prefix Space` no longer cycles layouts. Use `prefix :` then `select-layout tiled` (or `even-horizontal`).
+- **You need a layout**: `prefix Space` is tmux-fingers here, not `next-layout`. Use `prefix :` then `select-layout tiled` (or `even-horizontal`).
 - **Colors look wrong in the bar**: the bar uses your terminal's colors. Check your terminal theme ([theme.md](theme.md)).
 
 ## How it works
 
 **Prefix.** `unbind C-b`, `set -g prefix C-Space`, and a `send-prefix` binding on `Ctrl+Space`.
 
-**Why `prefix k` shows raw keys.** `prefix ?` is the help popup now. `Shift+?` is no separate key on a US keyboard, and `prefix /` stays tmux's "describe one key". `k` is free in the defaults.
+**Why `prefix k` shows raw keys.** `prefix ?` is the help popup. `Shift+?` is no separate key on a US keyboard, and `prefix /` stays tmux's "describe one key". `k` is free in the defaults.
 
 **Help popup.** `prefix ?` runs `dotfiles-help` (`bin/.local/bin/dotfiles-help`) in a popup of 80% of the window. It reads the repo at every open, so nothing is synced by hand. Where each row comes from (`bind -N` notes, `.zshrc` comments, script headers, [cheatsheet.tsv](cheatsheet.tsv)) is in [contributing.md](contributing.md#how-it-works).
 
@@ -222,7 +222,7 @@ Saves hold sessions, windows, panes, their folders and the visible text of each 
 
 **Pane labels.** A `window-layout-changed` hook sets `pane-border-status top` when a window has 2 or more panes, and `off` otherwise. It runs on split, close, layout change and session restore.
 
-**Plugins.** `install.sh` clones TPM into `~/.config/tmux/plugins/tpm` and installs the plugins. It never starts tmux-fingers' wizard. tmux-fingers is a wrapper around a `tmux-fingers` binary (Crystal), installed by the `tmux-fingers` formula before tmux first loads the plugin. For patterns and styles see its README (`@fingers-pattern-N`, `@fingers-hint-style`).
+**Plugins.** `install.sh` clones TPM into `~/.config/tmux/plugins/tpm` and installs the plugins. It never starts tmux-fingers' wizard. tmux-fingers is a wrapper around a `tmux-fingers` binary (Crystal), which mise installs from the upstream GitHub release (`github:Morantron/tmux-fingers` in the mise config) before tmux first loads the plugin. For patterns and styles see its README (`@fingers-pattern-N`, `@fingers-hint-style`).
 
 **Sessions survive restarts.** resurrect saves with `@resurrect-capture-pane-contents on` and `@resurrect-processes "ssh"`. continuum uses `@continuum-save-interval` 15 and `@continuum-restore on`. Files live in `~/.local/share/tmux/resurrect/` (or `~/.tmux/resurrect/` if that folder exists). The newest save is the file the `last` link points to.
 

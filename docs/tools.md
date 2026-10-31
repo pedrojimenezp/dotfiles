@@ -4,6 +4,7 @@ The command-line tools this repo installs and configures. Almost everything belo
 
 You'll use it for: finding what a tool is for and how to start it. Run `tldr <tool>` for more examples.
 
+- [Quick start](#quick-start)
 - [Editor, terminal, shell](#editor-terminal-shell)
 - [Shell productivity](#shell-productivity)
 - [Git and containers](#git-and-containers)
@@ -90,7 +91,7 @@ On Linux, install Ghostty with your distro's package if you want it; the font is
 ## Add or update a tool
 
 - Add a line `name = "latest"  # what it does` under `[tools]` in `mise/.config/mise/config.toml`, then run `mise install` (or `./install.sh`). Find the name with `mise registry | grep <tool>`. A tool with no mise build for an OS can be limited with `{ version = "latest", os = ["linux"] }` and added to the `Brewfile` for the other.
-- Upgrade tools yourself with `mise upgrade`. `install.sh` never upgrades them. On macOS the Homebrew packages (`mise`, `stow`, `btop`, casks) upgrade with `brew upgrade`.
+- Upgrade tools yourself with `mise upgrade`; `install.sh` never upgrades them. Upgrading mise itself and the Homebrew packages is in [Update](install.md#update).
 - Old Homebrew copies of tools that moved to mise: see [migrate-to-mise.md](migrate-to-mise.md).
 
 ## Prompt: starship
@@ -133,13 +134,13 @@ mise installs the tools of this repo and switches versions of node, go and other
 - **Per project**: inside the project, `mise use node@22 go@1.25` creates `mise.toml`; commit it. Versions switch when you `cd`. A project with `.nvmrc` works without `mise.toml`: run `mise install` there.
 - **Global change**: `mise use -g node@22` edits the repo file through the link, so commit the change.
 - **Secrets per project**: an untracked `mise.local.toml`. mise also supports `[env]` and `[tasks]` in `mise.toml`.
-- **See / update**: `mise ls` (installed and active), `mise outdated`, `mise upgrade`.
+- **See / update**: `mise ls` (installed and active), `mise outdated`, `mise upgrade`. mise itself: `brew upgrade mise` on macOS, `mise self-update` on Linux ([Update](install.md#update)).
 - **Go**: the `toolchain` line in `go.mod` still works. `go install` tools land in `~/go/bin` (on `PATH`).
 - **Old mise (macOS)**: a standalone mise in `~/.local/bin` would shadow the Homebrew one, so `install.sh` renames it to `mise.backup-<stamp>`.
 - **PATH**: `.zshrc` activates mise early, so its tools come before any Homebrew copy of the same tool.
 - **Zig**: `zig` and `zls` must match, so both are pinned to one version in the config; change them together.
 - **tmux**: comes from mise too (build from `tmux/tmux-builds`), because apt's tmux is older than the 3.5 that `tmux.conf` needs. `tmux-fingers` is a GitHub release binary from the same config, only for macOS arm64 and Linux x86_64 (upstream builds no other); elsewhere it is skipped and `prefix Space` does nothing.
-- **Completions**: tools no longer bring Homebrew's zsh completions. Generate one when you want it, for example `gh completion -s zsh`.
+- **Completions**: mise tools bring no zsh completions. Load the ones you want from `~/.zshrc.local`, for example `gh completion -s zsh` ([zsh.md](zsh.md#completions-for-mise-tools)).
 
 ## Usage report: dotfiles-usage
 
