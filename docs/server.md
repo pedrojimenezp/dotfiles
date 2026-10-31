@@ -185,8 +185,8 @@ export HOST_LABEL=bravo.example.com
 
 Where the name shows, over SSH only (without `HOST_LABEL`, both show the short hostname):
 
-- **The starship prompt**: after the OS icon, in bold purple, followed by `in`. See [tools.md](tools.md#prompt-starship).
-- **The tmux SSH badge**: the red **SSH** block at the left of the status bar. See [tmux.md](tmux.md#status-bar-and-pane-labels).
+- **The starship prompt**: `user@host` after the OS icon, in bold purple. See [tools.md](tools.md#prompt-starship).
+- **The tmux SSH badge**: the red **SSH** block `user@host` at the left of the status bar. See [tmux.md](tmux.md#status-bar-and-pane-labels).
 
 It only affects your user, so it is safe on a shared box. Open a new shell and the prompt shows it.
 

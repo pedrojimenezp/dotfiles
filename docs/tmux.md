@@ -116,14 +116,14 @@ The copy goes to the tmux buffer, the system clipboard and, through [OSC 52](glo
 
 ### Status bar and pane labels
 
-The left side is the session name in a blue block. The right side shows the git branch of the current pane (hidden outside a repo), the host name and the time. The active window is a reversed block.
+The left side is the user in a purple block, then the session name in a blue block. The right side shows the git branch of the current pane (hidden outside a repo), the host name and the time. The active window is a reversed block.
 
 | Indicator | Meaning |
 | --- | --- |
 | Session block turns **yellow** | You pressed the prefix and tmux waits for the next key |
 | 🔔 after a window name, label turns yellow | A program in that window rang the bell (Claude Code does this when it needs you). It clears when you open the window. |
 | 🔍 after a window name | The pane is zoomed (`prefix z`) |
-| Red **SSH** badge on the left | The tmux server runs on a remote machine. It shows the server's name, see [Name this server](server.md#4-name-this-server) |
+| Red **SSH** badge on the left | The tmux server runs on a remote machine. It shows `user@host` (the server's name), see [Name this server](server.md#4-name-this-server)) and replaces the purple user block |
 
 With 2 or more panes in a window, each pane gets a label row at its top border: `index: command`. The active label is a blue block.
 
@@ -220,7 +220,7 @@ Saves hold sessions, windows, panes, their folders and the visible text of each 
 
 **Status bar.** It refreshes every 5 seconds and uses the terminal's own colors, so it works in light and dark themes. Bells use `monitor-bell on` and `bell-action any`, with `visual-bell off`. `monitor-activity` stays off: it would flag every window that prints anything. Messages and the command prompt (`prefix :`) take over the status line as a blue block. `fill=blue` paints the rest of the line, because tmux otherwise draws the prompt only over its own text.
 
-**Remote SSH badge.** At load, `if-shell '[ -n "$SSH_CONNECTION" ]'` runs in the server's environment, so it sees the `SSH_CONNECTION` of the shell that started the server. If set, `status-left` starts with a red `SSH` badge holding `@host_label`, or the short host name when empty. The right side drops the host name. A server first started locally and used over SSH later keeps the local look. `@host_label` defaults to `$HOST_LABEL`, read when the server starts, and `local.conf` can override it ([Name this server](server.md#4-name-this-server)). `local.conf` is sourced after the status settings and before the plugins, so it can override anything.
+**Remote SSH badge.** At load, `if-shell '[ -n "$SSH_CONNECTION" ]'` runs in the server's environment, so it sees the `SSH_CONNECTION` of the shell that started the server. If set, `status-left` starts with a red `SSH` badge holding `user@host`: `@host_label`, or the short host name when empty. The user is `#{user}`, the account that runs the tmux server (a tmux format, no shell call). The right side drops the host name. A server first started locally and used over SSH later keeps the local look. `@host_label` defaults to `$HOST_LABEL`, read when the server starts, and `local.conf` can override it ([Name this server](server.md#4-name-this-server)). `local.conf` is sourced after the status settings and before the plugins, so it can override anything.
 
 **Pane labels.** A `window-layout-changed` hook sets `pane-border-status top` when a window has 2 or more panes, and `off` otherwise. It runs on split, close, layout change and session restore.
 

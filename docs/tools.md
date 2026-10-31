@@ -98,13 +98,14 @@ File: `starship/.config/starship.toml`, linked to `~/.config/starship.toml`. Doc
 Example of the two-line prompt (`<os>` and `<branch>` stand for icons):
 
 ```text
-╭─ <os> ~/dotfiles on <branch> main !1?2⇡ via <go> 1.25 3s ········ ✔ at 14:32:05
+╭─ <os> pedro in ~/dotfiles on <branch> main !1?2⇡ via <go> 1.25 3s ········ ✔ at 14:32:05
 ╰─❯
 ```
 
 First line, left to right:
 
 - the OS icon,
+- the user, then `@` and the host over SSH, then `in`,
 - the folder, at most 3 segments, relative to the git repo root,
 - `on` and the git branch,
 - git status as counts: `!` modified, `?` untracked, `+` staged, `⇡` ahead,
@@ -113,7 +114,7 @@ First line, left to right:
 
 A dotted fill then pushes the rest to the right edge: `✔` after success, or `✘` and the exit code after an error, then `at` and the time. The second line is `❯`, green after success and red after an error. A blank line separates prompts.
 
-Over SSH only, the host shows after the OS icon in bold purple, followed by `in`: the server's name ([Name this server](server.md#4-name-this-server)), else the short hostname. Locally nothing shows.
+The user shows after the OS icon in bold purple on every machine, and in bold red for root. Over SSH the host follows as `user@host`: the server's name ([Name this server](server.md#4-name-this-server)), else the short hostname. Locally it is `user in <folder>`.
 
 To change the prompt:
 
@@ -146,7 +147,7 @@ It lists how often each tool of this repo was used in that period, most used fir
 
 ## How it works
 
-**Prompt.** Icons are written as `\uXXXX` escapes in the toml, so tools cannot strip them. `zsh/.zshrc` exports `PROMPT_HOST` over SSH only, and starship shows it. Prompt modules time out at 500 ms. The first line uses plain connector words (`in`, `on`, `via`) like starship's classic style.
+**Prompt.** Icons are written as `\uXXXX` escapes in the toml, so tools cannot strip them. The `username` module shows the user; `zsh/.zshrc` exports `PROMPT_HOST` over SSH only, and starship adds it as `@host`. Prompt modules time out at 500 ms. The first line uses plain connector words (`in`, `on`, `via`) like starship's classic style.
 
 **Installs.** `install.sh` runs `brew bundle --no-upgrade`, so it never upgrades. See [install.md](install.md#what-installsh-does-in-order).
 
