@@ -34,20 +34,21 @@ Forgot a key? Press `prefix ?` in tmux (`Ctrl+Space`, then `?`) or run `dotfiles
 
 | Group | Page | What is in it |
 | --- | --- | --- |
-| Start here | [install.md](docs/install.md) | Install on each OS, flags, update, undo, troubleshooting |
+| Start here | [install.md](docs/install.md) | Install on each OS, flags, update and upgrade tools, undo, troubleshooting |
 | | [first-day.md](docs/first-day.md) | The keys you'll use most, help, recovery |
-| | [server.md](docs/server.md) | A remote Ubuntu server over SSH, `tssh`, GitHub key forwarding |
+| | [server.md](docs/server.md) | A remote Ubuntu server over SSH, `tssh`, GitHub key forwarding, several users |
 | Everyday tools | [tmux.md](docs/tmux.md) | Prefix, every key, status bar, popups, saved sessions |
 | | [tmux-sessionizer.md](docs/tmux-sessionizer.md) | The project session picker (`prefix f`) |
-| | [zsh.md](docs/zsh.md) | Aliases, keys, history, fzf, zoxide, `~/.zshrc.local` |
+| | [zsh.md](docs/zsh.md) | Aliases, keys, completion, history, zoxide, `tssh`, `~/.zshrc.local` |
 | | [nvim.md](docs/nvim.md) | Neovim keys, plugins, language servers |
 | | [git.md](docs/git.md) | Git settings, aliases, `~/.config/git/local` |
-| | [tools.md](docs/tools.md) | Every tool with an example, starship, mise |
-| | [migrate-to-mise.md](docs/migrate-to-mise.md) | Remove the old Homebrew copies after moving the tools to mise |
+| | [tools.md](docs/tools.md) | Every tool with an example, adding a tool, starship, mise |
+| | [migrate-to-mise.md](docs/migrate-to-mise.md) | Remove the Homebrew copies an older install left (macOS, Linux, existing servers) |
 | Reference | [terminals.md](docs/terminals.md) | Ghostty, iTerm2, font, terminal keys |
 | | [theme.md](docs/theme.md) | The `theme` command and light/dark mode |
 | | [vim.md](docs/vim.md) | The small plugin-free `.vimrc` for servers |
 | | [glossary.md](docs/glossary.md) | The terms these docs use |
+| | [cheatsheet.tsv](docs/cheatsheet.tsv) | Plugin, tool and terminal keys that `dotfiles-help` lists |
 | Contributing | [contributing.md](docs/contributing.md) | Add a key or tool so help and docs stay in sync |
 
 ## License
