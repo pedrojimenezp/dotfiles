@@ -41,5 +41,9 @@ shfmt = "latest"          # formatter for shell scripts
 tree-sitter = "latest"    # CLI that nvim-treesitter (main branch) needs to compile parsers
 golangci-lint = "latest"  # Go linter aggregator
 
+# --- Markdown ---
+glow = "latest"           # renders Markdown in the terminal (`glow file.md`, `glow docs/`)
+mermaid-ascii = "latest"  # renders Mermaid diagrams as ASCII text (`mermaid-ascii -f diagram.mmd`)
+
 [settings]
 idiomatic_version_file_enable_tools = ["node"]  # also read .nvmrc and .node-version
