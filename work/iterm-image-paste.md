@@ -16,14 +16,15 @@ In iTerm2 on macOS, `Cmd+V` in a tab whose foreground job is `ssh` (also `tssh`)
 - Work note.
 - Script `iterm/Library/Application Support/iTerm2/Scripts/AutoLaunch/dotfiles_image_paste.py` (stowed into AutoLaunch) and `tests/iterm_image_paste_test.py` (21 tests pass). `.gitignore` now ignores only the old DynamicProfiles path.
 - Template maps `Cmd+V` (`0x76-0x100000`) to action 60 `dotfiles_image_paste()`; `pngpaste` in the Brewfile.
+- Docs: terminals.md section (setup, use, files, limits, troubleshooting), server.md Daily use line, cheatsheet.tsv, README index. Link check clean.
 
 ## Where we stopped
 
-Script, key mapping and Brewfile done.
+Feature and docs done; not tried in a live iTerm yet.
 
 ## Next step
 
-Docs: terminals.md section, server.md link, cheatsheet.tsv, README.
+User tests in iTerm (one-time setup in docs/terminals.md), then /merge.
 
 ## How to test
 
@@ -31,6 +32,7 @@ Docs: terminals.md section, server.md link, cheatsheet.tsv, README.
 
 ## Open questions
 
+- The local iTerm Python runtime (`iterm2env/versions/manual`) links to a missing Homebrew Python 3.14: reinstall it from Scripts > Manage.
 - Live iTerm behavior (jobName for the `tssh` function, symlinked AutoLaunch script) is not verified by the agent.
 
 Updated: 2026-10-31 by personal@Pedros-MacBook-Pro-M4

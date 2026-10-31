@@ -8,6 +8,7 @@ You'll use this page to choose a terminal, change its settings, and fix font or 
 - [Requirements](#requirements)
 - [Ghostty](#ghostty)
 - [iTerm2 (macOS only)](#iterm2-macos-only)
+- [Paste an image to a server (iTerm2 only)](#paste-an-image-to-a-server-iterm2-only)
 - [How it works](#how-it-works)
 
 ## Which terminal should I use?
@@ -21,7 +22,7 @@ If you have neither, install one and run `./install.sh` again: it links the conf
 | Package | File | Platform |
 | --- | --- | --- |
 | `ghostty` | `~/.config/ghostty/config` | macOS and Linux. Linked only if Ghostty is installed. |
-| `iterm` | `~/.config/iterm/dotfiles-profile.plist` (template) | **macOS only** |
+| `iterm` | `~/.config/iterm/dotfiles-profile.plist` (template) and the AutoLaunch script `dotfiles_image_paste.py` | **macOS only** |
 
 ## Requirements
 
@@ -92,10 +93,71 @@ Profile settings from the template:
 | Scrollback | unlimited |
 | New session folder | home |
 | `Cmd+K` | sends `Ctrl+Space` + `Ctrl+L` (clear the tmux pane; never edits text in vim/nvim) |
+| `Cmd+V` | runs the script function `dotfiles_image_paste()`: normal Paste, or an image upload in an SSH tab ([below](#paste-an-image-to-a-server-iterm2-only)) |
 
 One manual step per machine: iTerm Settings > Profiles > select **Dotfiles** > Other Actions > Set as Default. The profile keeps the same Guid, so this survives every sync.
 
 Dynamic Profiles are **read-only** in the iTerm UI. To change something, edit the template in the repo, then run `theme sync`. iTerm reloads the profile by itself. If it misses a change, quit with `Cmd+Q` and open it again.
+
+## Paste an image to a server (iTerm2 only)
+
+Claude Code on a server cannot read your Mac's clipboard. In iTerm2, `Cmd+V` with an image on the clipboard, in a tab that runs `ssh` or `tssh`, copies the image to that server and types its path. Claude Code then reads the file when you send the prompt.
+
+**This works only in iTerm2 on macOS.** Ghostty cannot run a script from a key, so in Ghostty `Cmd+V` stays the normal paste.
+
+### What Cmd+V does
+
+| Tab and clipboard | What happens |
+| --- | --- |
+| Foreground job is `ssh` (also `tssh`), clipboard holds only an image | Asks **Upload image to `<host>`?** `Enter` = Upload, `Esc` = Cancel |
+| Upload | Copies the image to `/tmp/claude-img/<date>-<time>.png` on that host and types the path, with no `Enter`, so you can keep writing |
+| Cancel | Nothing. A terminal cannot paste an image anyway. |
+| Text on the clipboard (also text plus an image, or a file copied in Finder) | Normal Paste |
+| Image in a local tab (no `ssh`) | Normal Paste |
+
+The upload goes only to the host of the `ssh` running in that tab. It reuses that command's host, user, port, `-i` key, `-J` jump host and `~/.ssh/config` entry, with `BatchMode=yes`: it never asks for a password. It reuses an open `ControlMaster` connection if there is one.
+
+The path is typed, not pasted, so Claude Code shows it as text, not as `[Image #1]`. That is enough: Claude reads the file at that path.
+
+### One-time setup
+
+1. Run `./install.sh`. It installs `pngpaste` (Brewfile) and links the script into `~/Library/Application Support/iTerm2/Scripts/AutoLaunch/`.
+2. Run `theme sync` (install.sh does it). The **Dotfiles** profile now maps `Cmd+V` to the script.
+3. In iTerm: Settings > General > Magic > turn on **Enable Python API**.
+4. Quit iTerm with `Cmd+Q` and open it again. iTerm starts every script in the AutoLaunch folder.
+5. If iTerm asks to download the Python runtime, accept. If it asks whether the script may use the API, choose to allow it.
+6. Check it runs: Scripts > Manage > Console lists `dotfiles_image_paste.py` as running.
+
+If the script is not running, `Cmd+V` in the **Dotfiles** profile does nothing. Use Edit > Paste in the menu, then fix the setup (see [Troubleshooting](#troubleshooting)).
+
+### Use it
+
+1. Take a screenshot to the clipboard: `Cmd+Ctrl+Shift+4`, then drag over the area. Or copy an image in any app.
+2. Click the iTerm tab that runs `tssh my-server` (Claude Code open on the server).
+3. Press `Cmd+V`.
+4. Press `Enter` to upload. The path appears at the prompt.
+5. Write the rest of your prompt and send it.
+
+### Files on the server
+
+- Folder: `/tmp/claude-img`, created with mode 700 (only you can read it).
+- Name: the date and time, for example `/tmp/claude-img/20261031-142501-123.png`.
+- Cleanup: each upload first deletes files in that folder older than one day. `/tmp` is also emptied when the server reboots.
+
+### Limits
+
+- iTerm2 on macOS only, and only in the **Dotfiles** profile (it holds the `Cmd+V` mapping).
+- SSH must log in with a key (agent or `-i`), no password. The host must already be in `~/.ssh/known_hosts`: connect once by hand first.
+- Only for an `ssh` that iTerm sees as the tab's job. `mosh`, `ssh` inside a local tmux, and `ssh -N` or `-W` get the normal Paste.
+- On a server with several users, `/tmp/claude-img` belongs to the first user who uploads. Other users get "Permission denied" (see [server.md](server.md#7-several-users)).
+
+### Troubleshooting
+
+- **`Cmd+V` does nothing, or iTerm reports a script function error.** The script is not running. Check Scripts > Manage > Console. If it is missing, check **Enable Python API** is on, then run it once from Scripts > AutoLaunch > `dotfiles_image_paste.py`.
+- **The Console shows Python errors on start, or the runtime is missing.** Scripts > Manage > Install Python Runtime, then restart iTerm.
+- **Image in an `ssh` tab, but no question, only the normal Paste.** The tab does not use the **Dotfiles** profile, `theme sync` has not run since the update, or iTerm does not see `ssh` as the job (for example `ssh` inside a local tmux). The Console prints errors as `dotfiles_image_paste: ...`.
+- **"Upload to ... failed" with `Permission denied (publickey)` or `Host key verification failed`.** Set up key login, or connect once by hand with `ssh my-server` to save the host key.
+- **"pngpaste not found".** Run `brew install pngpaste` (or `./install.sh` again).
 
 ## How it works
 
@@ -117,6 +179,7 @@ mdls -name com_apple_ats_name_postscript <font file>
 ## Related pages
 
 - [theme.md](theme.md): colors for both terminals
+- [server.md](server.md#5-daily-use): Claude Code on the server, `tssh`
 - [tmux.md](tmux.md): `Cmd+K` and `prefix Ctrl+l`
 - [server.md](server.md#2-on-your-laptop-once): SSH settings on your laptop (`~/.ssh/config`, connection reuse, `mosh`)
 - [glossary.md](glossary.md#nerd-font)
