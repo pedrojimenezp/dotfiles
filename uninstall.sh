@@ -29,6 +29,8 @@ SKIPPED=()
 LEFT_BACKUPS=()
 LINKS=()      # links into this repo found by the scan
 LINK_SET=$'\n' # same paths, newline separated, for duplicate checks
+PKG_RELS=()   # path under $HOME of every file a package would link, read before the clone is deleted
+SWEPT=0       # broken links removed by the final sweep
 
 usage() { echo "Usage: $0 [--dry-run] [--yes] [--with-claude] [--keep-repo]"; } # one place for the usage text
 
@@ -105,6 +107,7 @@ scan_links() {
     [[ -d "$REPO/$pkg" ]] || continue
     while IFS= read -r -d '' file; do
       rel="${file#"$REPO/$pkg/"}"
+      PKG_RELS+=("$rel")
       if link_points_into "$HOME/$rel" "$REPO_REAL"; then add_link "$HOME/$rel"; fi
     done < <(find "$REPO/$pkg" -type f -print0)
   done
@@ -116,6 +119,59 @@ scan_links() {
     [[ -d "$root" ]] || continue
     while IFS= read -r -d '' file; do
       if link_points_into "$file" "$REPO_REAL"; then add_link "$file"; fi
+    done < <(find "$root" -maxdepth 4 \( -path "$CLAUDE_DIR" -o -path "$CONFIG/tmux/plugins" \) -prune -o -type l -print0)
+  done
+}
+
+# Print the absolute path the symlink $1 points at, from its text alone: "." and ".." parts are folded and
+# nothing is read from disk, so it works when the target is gone. A relative target is read from the link's folder.
+raw_link_target() {
+  local l="$1" t dir rest part out=""
+  t="$(readlink "$l")" || return 1
+  case "$t" in
+    /*) ;;
+    *) dir="$(cd "$(dirname "$l")" 2>/dev/null && pwd -P)" || dir="$(dirname "$l")"; t="$dir/$t" ;;
+  esac
+  rest="$t"
+  while [[ -n "$rest" ]]; do
+    part="${rest%%/*}"
+    if [[ "$rest" == */* ]]; then rest="${rest#*/}"; else rest=""; fi
+    case "$part" in
+      "" | .) ;;
+      ..) out="${out%/*}" ;;
+      *) out="$out/$part" ;;
+    esac
+  done
+  echo "${out:-/}"
+}
+
+# Remove the symlink $1 if it is broken and its target text is inside $REPO or $REPO_REAL.
+sweep_link() {
+  local target
+  [[ -L "$1" && ! -e "$1" ]] || return 0
+  target="$(raw_link_target "$1")" || return 0
+  case "$target" in
+    "$REPO"/* | "$REPO_REAL"/*) ;;
+    *) return 0 ;;
+  esac
+  rm -f "$1"
+  REMOVED+=("$1")
+  SWEPT=$((SWEPT + 1))
+  prune_up "$(dirname "$1")"
+}
+
+# After the clone is deleted, remove the links into it that are now broken: the places scan_links reads,
+# plus every path a package linked. Never touches a link that works, one pointing elsewhere, or a real file.
+sweep_broken_links() {
+  local rel root file
+  if [[ ${#PKG_RELS[@]} -gt 0 ]]; then
+    for rel in "${PKG_RELS[@]}"; do sweep_link "$HOME/$rel"; done
+  fi
+  while IFS= read -r -d '' file; do sweep_link "$file"; done < <(find "$HOME" -maxdepth 1 -type l -print0)
+  for root in "$CONFIG" "$HOME/.local/bin"; do
+    [[ -d "$root" ]] || continue
+    while IFS= read -r -d '' file; do
+      sweep_link "$file"
     done < <(find "$root" -maxdepth 4 \( -path "$CLAUDE_DIR" -o -path "$CONFIG/tmux/plugins" \) -prune -o -type l -print0)
   done
 }
@@ -416,6 +472,14 @@ main() {
     else
       safe_rm "$REPO"
       finish "Removed"
+      # Step 7: a link the scan missed is broken now; a preview cannot know which ones.
+      step "Sweeping for broken links into the deleted clone"
+      if [[ $DRY -eq 1 ]]; then
+        finish "The final sweep will run after the clone is deleted"
+      else
+        sweep_broken_links
+        finish "Removed $SWEPT broken links"
+      fi
     fi
   fi
 

@@ -161,6 +161,7 @@ What it does, in order:
 3. **Generated data.** Deletes what the installer and the tools created: `~/.local/bin/mise` and mise's data, state and cache; the zsh plugins and zsh cache; the tmux plugins; atuin's data (the imported history, not `~/.zsh_history`); Neovim's data, state and cache; zoxide, lazygit and starship data; `~/.config/git/local` (your git name and email); the files `theme sync` generated (including the Ghostty theme files and, on macOS, the iTerm profile); and on a Linux desktop the Nerd Font in `~/.local/share/fonts`. Every delete refuses a path outside `$HOME`.
 4. **Claude config** (only with `--with-claude`). Removes the links its own installer made in `~/.claude`, `~/.claude-personal` and `~/.pi/agent`, restores their `.bak-*` files, removes its line from `~/.zshrc.local`, then deletes `~/.config/claude-shared`. The `settings.json` copies in the two Claude folders stay (Claude Code writes them too).
 5. **This clone**, last. If it has uncommitted changes or commits that are not on a remote branch, it is kept and the script says why.
+6. **Final sweep.** Once the clone is deleted, it removes any link that is now broken and pointed into the clone, in the same places it scanned at the start. Skipped when the clone is kept.
 
 It never uninstalls Homebrew packages (on macOS it prints the `brew uninstall` lines for the `Brewfile`), never changes your login shell (it prints the `chsh -s /bin/bash` line, and a `sudo chsh` variant, when the shell is zsh) and never starts or stops tmux. Open a new terminal afterwards.
 

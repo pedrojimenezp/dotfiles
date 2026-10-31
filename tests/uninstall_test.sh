@@ -165,6 +165,53 @@ run_un "$B" --yes >"$ROOT/unpushed.out" 2>&1 || { cat "$ROOT/unpushed.out"; bad 
 check "unpushed clone kept" test -d "$B/home/dotfiles/.git"
 check "reason is reported" grep -q "not on any remote" "$ROOT/unpushed.out"
 
+# Plant links into the clone that the scan misses (its folder is gone, so they cannot be resolved), a broken link
+# elsewhere, and a working link. $1 = machine base.
+plant_sweep_links() {
+  local h="$1/home"
+  mkdir -p "$h/.config/x/y"
+  ln -s "$h/dotfiles/nope/abs" "$h/.stale-abs"
+  ln -s "dotfiles/nope/../nope/rel" "$h/.stale-rel"
+  ln -s "$h/dotfiles/nope/deep" "$h/.config/x/y/stale"
+  ln -s /nonexistent/elsewhere "$h/.other-broken"
+  echo real >"$h/real.txt"
+  ln -s "$h/real.txt" "$h/.config/good"
+}
+
+echo "== final sweep removes broken links into the deleted clone"
+B="$ROOT/sweep"
+make_machine "$B" plain
+plant_sweep_links "$B"
+run_un "$B" --yes >"$ROOT/sweep.out" 2>&1 || { cat "$ROOT/sweep.out"; bad "exit 0"; }
+h="$B/home"
+check "clone removed" gone "$h/dotfiles"
+check "absolute broken link swept" gone "$h/.stale-abs"
+check "relative broken link swept" gone "$h/.stale-rel"
+check "broken link in a config subfolder swept" gone "$h/.config/x/y/stale"
+check "emptied folders pruned" gone "$h/.config/x"
+check "unrelated broken link kept" is_link "$h/.other-broken"
+check "working link kept" is_link "$h/.config/good"
+check "swept links are in the summary" grep -q "$h/.stale-abs" "$ROOT/sweep.out"
+
+echo "== dry run only announces the sweep"
+B="$ROOT/sweepdry"
+make_machine "$B" plain
+plant_sweep_links "$B"
+run_un "$B" --dry-run >"$ROOT/sweepdry.out" 2>&1 || { cat "$ROOT/sweepdry.out"; bad "exit 0"; }
+check "dry run says the sweep will run" grep -q "final sweep will run" "$ROOT/sweepdry.out"
+check "dry run lists no swept link" test -z "$(grep -F "$B/home/.stale-abs" "$ROOT/sweepdry.out" || true)"
+check "dry run kept the planted link" is_link "$B/home/.stale-abs"
+
+echo "== no sweep when the clone is kept"
+B="$ROOT/sweepdirty"
+make_machine "$B" plain
+plant_sweep_links "$B"
+echo change >>"$B/home/dotfiles/README.md"
+run_un "$B" --yes >"$ROOT/sweepdirty.out" 2>&1 || { cat "$ROOT/sweepdirty.out"; bad "exit 0"; }
+check "dirty clone kept" test -d "$B/home/dotfiles/.git"
+check "sweep step did not run" test -z "$(grep -F "Sweeping for broken links" "$ROOT/sweepdirty.out" || true)"
+check "planted link untouched" is_link "$B/home/.stale-abs"
+
 echo "== --with-claude undoes the Claude links and removes a clean clone"
 B="$ROOT/claude"
 make_machine "$B" plain
