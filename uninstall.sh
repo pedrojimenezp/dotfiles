@@ -337,10 +337,28 @@ login_shell_hint() {
   fi
   current="${current:-${SHELL:-}}"
   [[ "$(basename "${current:-unknown}")" == zsh || "$(basename "${SHELL:-unknown}")" == zsh ]] || return 0
-  echo "Your login shell is zsh. To go back to bash, run (this script never changes it):"
+  if [[ ! -e "$HOME/.zshrc" && ! -L "$HOME/.zshrc" ]]; then
+    echo "Your login shell is zsh and ~/.zshrc is gone, so the next zsh shows its new-user setup menu (press 0 to skip it)."
+    echo "To go back to bash instead, run (this script never changes it):"
+  else
+    echo "Your login shell is zsh. To go back to bash, run (this script never changes it):"
+  fi
   echo "  chsh -s /bin/bash"
   echo "If chsh asks for a password you do not have:"
   echo "  sudo chsh -s /bin/bash \"\$USER\""
+}
+
+# Returns 0 when a removed file is one that an already-open shell may still load or run:
+# a zsh or bash startup link, the mise binary, or mise's data (the tools it installed, such as starship).
+open_shell_uses_removed() {
+  local l
+  [[ -e "$HOME/.local/bin/mise" || -e "$DATA/mise" ]] && return 0
+  if [[ ${#LINKS[@]} -gt 0 ]]; then
+    for l in "${LINKS[@]}"; do
+      case "$(basename "$l")" in .zsh* | .bash*) return 0 ;; esac
+    done
+  fi
+  return 1
 }
 
 # Print the numbered list of everything the run will do.
@@ -395,6 +413,8 @@ main() {
 
   scan_links
   print_plan
+  local shell_affected=0
+  ! open_shell_uses_removed || shell_affected=1
   if [[ $DRY -eq 0 && $ASSUME_YES -eq 0 ]]; then
     read -r -p "Continue? [y/N] " answer || answer=""
     case "$answer" in y | Y | yes | YES) ;; *) echo "Cancelled. Nothing was changed."; exit 0 ;; esac
@@ -510,11 +530,19 @@ main() {
   fi
   echo
   echo "Next:"
-  echo "  Open a new terminal: shells that are already open keep the old settings."
+  [[ $shell_affected -eq 1 && $DRY -eq 0 ]] || echo "  Open a new terminal: shells that are already open keep the old settings."
   echo "  A running tmux server keeps its old config until you stop it yourself (tmux kill-server)."
   [[ -z "$brew_text" ]] || echo "$brew_text"
   login_shell_hint
-  [[ $DRY -eq 0 ]] || echo "That was a dry run: nothing changed."
+  if [[ $DRY -eq 1 ]]; then
+    echo "That was a dry run: nothing changed."
+  elif [[ $shell_affected -eq 1 ]]; then
+    echo
+    echo "This terminal still runs the prompt and the mise hook that were just removed."
+    echo "It prints \"no such file or directory\" on every prompt until you run:"
+    echo "  exec bash"
+    echo "(or log out and back in)."
+  fi
 }
 
 main "$@"

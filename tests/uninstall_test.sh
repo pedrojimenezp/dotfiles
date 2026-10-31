@@ -264,6 +264,27 @@ ln -s "$h/dotfiles/zsh/.zshrc.extra" "$h/.zshrc"
 (cd "$h/dotfiles" && env HOME="$h" /bin/bash ./uninstall.sh --yes --keep-repo --with-claude >"$ROOT/claude2.out" 2>&1) || { cat "$ROOT/claude2.out"; bad "exit 0"; }
 check "file behind the symlink keeps its line" grep -q "claude.sh" "$h/dotfiles/zsh/.zshrc.extra"
 
+echo "== the exec bash notice and the zsh setup-menu note"
+B="$ROOT/notice"
+make_machine "$B" plain
+rm -f "$B/home/.zshrc.backup-"* # no backup: ~/.zshrc stays gone
+SHELL=/bin/zsh run_un "$B" --yes --keep-repo >"$ROOT/notice.out" 2>&1 || { cat "$ROOT/notice.out"; bad "exit 0"; }
+check "notice is the last output" test "$(tail -n 1 "$ROOT/notice.out")" = "(or log out and back in)."
+check "notice tells to run exec bash" grep -qx "  exec bash" "$ROOT/notice.out"
+check "open-a-new-terminal line replaced by the notice" bash -c '! grep -q "Open a new terminal" "$1"' _ "$ROOT/notice.out"
+check "zsh setup menu mentioned once" test "$(grep -c "new-user setup menu" "$ROOT/notice.out")" = 1
+check "chsh printed once" test "$(grep -c "^  chsh -s /bin/bash" "$ROOT/notice.out")" = 1
+
+B="$ROOT/nonotice"
+make_machine "$B" plain
+h="$B/home"
+# nothing a running shell uses: no zsh/bash links, no mise binary or data
+find "$h" -path "$h/dotfiles" -prune -o -type l -name '.z*' -print -o -type l -name '.bash*' -print | while read -r l; do rm -f "$l"; done
+rm -rf "$h/.local/bin/mise" "$h/.local/share/mise" "$h/.local/bin/mise.backup-"*
+run_un "$B" --yes --keep-repo >"$ROOT/nonotice.out" 2>&1 || { cat "$ROOT/nonotice.out"; bad "exit 0"; }
+check "no notice when nothing shell-related was removed" bash -c '! grep -q "exec bash" "$1"' _ "$ROOT/nonotice.out"
+check "keeps the open-a-new-terminal line" grep -q "Open a new terminal" "$ROOT/nonotice.out"
+
 echo
 echo "passed: $PASS, failed: $FAIL"
 [[ $FAIL -eq 0 ]]
