@@ -11,12 +11,18 @@ organized (accurate index, one source per topic, working links and anchors).
 
 ## Done
 - Work note created.
+- install.md: Update section covers `mise upgrade`, mise itself (brew / self-update), zsh cache; xz-utils on desktops; installer claims accurate.
+- zsh.md: completions for mise tools, tssh detach and plain ssh, cache refresh note, TOC.
+- server.md: daily use (detach ends SSH, plain ssh), updates link to install.md#update.
+- tools, tmux, nvim, git, glossary, migrate, terminals, sessionizer: stale or narrated lines fixed, TOCs complete.
+- README index descriptions updated, cheatsheet.tsv listed.
+- Link check: 0 broken links, every TOC matches its H2 headings.
 
 ## Where we stopped
-Starting the audit.
+Audit done; ready for review.
 
 ## Next step
-Read the code and the docs; fix page by page.
+Review the branch, then merge (or drop this note before merging).
 
 ## How to test
 - Link check: every relative link target exists and every `#anchor` matches a heading.
