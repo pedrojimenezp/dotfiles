@@ -14,14 +14,15 @@ In iTerm2 on macOS, `Cmd+V` in a tab whose foreground job is `ssh` (also `tssh`)
 ## Done
 
 - Work note.
+- Script `iterm/Library/Application Support/iTerm2/Scripts/AutoLaunch/dotfiles_image_paste.py` (stowed into AutoLaunch) and `tests/iterm_image_paste_test.py` (21 tests pass). `.gitignore` now ignores only the old DynamicProfiles path.
 
 ## Where we stopped
 
-Starting the script.
+Script and tests done.
 
 ## Next step
 
-Write the script and its tests.
+Cmd+V mapping in the profile template, Brewfile, docs.
 
 ## How to test
 

@@ -4,7 +4,7 @@ ghostty/.config/ghostty/theme.conf
 # downloaded themes copied for Ghostty
 ghostty/.config/ghostty/themes/
 # the generated iTerm profile (old layout linked it from here)
-iterm/Library/
+iterm/Library/Application Support/iTerm2/DynamicProfiles/
 # Claude Code worktrees and personal settings of this repo (the global ignore may not be installed)
 /.claude/worktrees/
 /.claude/settings.local.json
