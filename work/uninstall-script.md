@@ -9,13 +9,14 @@ Add `uninstall.sh` that undoes `install.sh` on macOS (bash 3.2), Linux desktop a
 3. Rewrite "Undo or uninstall" in docs/install.md; link from docs/server.md and README.
 
 ## Done
-- Worktree and branch created; install.sh and claude-shared/install.sh read.
+- uninstall.sh (bash 3.2 safe, shellcheck clean) and tests/uninstall_test.sh (89 checks pass).
+- docs/install.md rewritten; linked from docs/server.md, README.md, docs/contributing.md.
 
 ## Where we stopped
-About to write uninstall.sh.
+All steps done; review pending.
 
 ## Next step
-Write uninstall.sh.
+Review, then /merge.
 
 ## How to test
 `/bin/bash tests/uninstall_test.sh`
