@@ -238,3 +238,4 @@ The program name is the first word of the line, after skipping:
 - [terminals.md](terminals.md): fonts and the `Option` key.
 - [tools.md](tools.md): the tools this config starts.
 - [git.md](git.md): the git aliases.
+- [server.md](server.md): `tssh` and working on a remote server.

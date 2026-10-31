@@ -45,3 +45,4 @@ The file does not load a local override file, so machine-only settings are not s
 
 - [nvim.md](nvim.md): the full editor config.
 - [tmux.md](tmux.md): how `Ctrl+h/j/k/l` crosses panes.
+- [server.md](server.md): setting up a server.

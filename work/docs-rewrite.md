@@ -33,14 +33,18 @@ Topic → owner:
 ## Done
 
 - Merged master (conflicts resolved by keeping the rewritten pages and adding master's facts).
+- server.md: new "4. Name this server" (HOST_LABEL); tmux.md and tools.md link to it.
+- README links to install.md / server.md instead of install steps; install.md's Ubuntu section is a link; laptop SSH tips moved from terminals.md to server.md; old-system-tmux fix added to server troubleshooting.
+- Restore one file and the no-log-file note moved from first-day.md to install.md; help-list sources and the bind -N check live in contributing.md; glossary trimmed to definitions.
+- Link check: 319 links, 0 broken. Related pages added to server.md, zsh.md, vim.md.
 
 ## Where we stopped
 
-Merge committed; starting the dedup.
+All steps done; branch not pushed or merged.
 
 ## Next step
 
-server.md "Name this server", then dedup per area, then the link check.
+Review the diff against master, then /merge.
 
 ## How to test
 
@@ -49,6 +53,6 @@ server.md "Name this server", then dedup per area, then the link check.
 
 ## Open questions
 
-None yet.
+- Running tmux: server.md says `tmux set-environment -g HOST_LABEL` plus `tmux set -g @host_label`, then reload. Based on tmux expanding `$HOST_LABEL` in tmux.conf from the server's global environment (so `set -g` alone would be undone by a reload). Not tested here (no tmux runs allowed).
 
 Updated: 2026-10-30 by personal@Pedros-MacBook-Pro-M4

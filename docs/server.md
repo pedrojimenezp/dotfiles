@@ -252,3 +252,6 @@ cd ~/dotfiles && git pull && ./install.sh
 - [install.md](install.md): what `install.sh` does, flags, and how to undo it.
 - [first-day.md](first-day.md): the keys you'll use most.
 - [tmux.md](tmux.md): every tmux key and the status bar.
+- [zsh.md](zsh.md#remote-tmux-tssh): the `tssh` function.
+- [terminals.md](terminals.md): your laptop's terminal and its Nerd Font.
+- [vim.md](vim.md): the plugin-free Vim for servers without Neovim.
