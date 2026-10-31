@@ -9,13 +9,13 @@ Document the zsh-newuser-install wizard a new user meets when their login shell 
 - server.md Troubleshooting: entry for the wizard text.
 
 ## Done
-Nothing yet.
+Added the note in server.md section 7, a Troubleshooting entry, and a line in migrate-to-mise.md step 3.
 
 ## Where we stopped
-Note created.
+Docs done, ready to review.
 
 ## Next step
-Edit the docs.
+Review, then /merge.
 
 ## How to test
 Grep the anchors; read the edited sections.

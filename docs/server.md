@@ -263,7 +263,11 @@ sudo adduser <name>
 sudo chsh -s /usr/bin/zsh <name>
 ```
 
-**Each user** (no sudo needed), logged in as themselves:
+**Each user** (no sudo needed), logged in as themselves.
+
+On the first login, zsh may show a menu that starts with "This is the Z Shell configuration function for new users". Press `q`. It creates nothing and shows again at the next login until `install.sh` has run. If you pressed `0`, `1` or `2`, no harm: `install.sh` moves that `~/.zshrc` to `~/.zshrc.backup-<date>-<time>` (same folder), links the dotfiles' `.zshrc`, and the menu does not return.
+
+Then:
 
 ```sh
 git clone https://github.com/pedrojimenezp/dotfiles ~/dotfiles
@@ -285,6 +289,7 @@ If a package is missing, `install.sh` stops and prints the `apt-get` line for th
 
 ## 8. Troubleshooting
 
+- **A menu says "This is the Z Shell configuration function for new users".** zsh is your login shell but you have no `~/.zshrc` yet. Press `q`, then clone the dotfiles and run `./install.sh` (section 7). Any `~/.zshrc` the menu created is moved to `~/.zshrc.backup-<date>-<time>`.
 - **`tssh` says tmux not found.** Your login shell is not zsh. On the server, run the `chsh` step from section 3, then log out and in.
 - **tmux shows errors about unknown options right after login, or the install ended with "logins start the system tmux".** Your login shell is still bash, which does not put mise's tools on `PATH`, so logins start Ubuntu's older `/usr/bin/tmux` (tmux.conf needs 3.5+). Run the `chsh` step from section 3, log out and in, then stop the old server with `tmux kill-server` (this ends its sessions).
 - **GitHub clone asks for a password, or "permission denied".** Follow "Share your GitHub key with the server" in section 2, then reconnect.

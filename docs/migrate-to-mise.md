@@ -76,7 +76,7 @@ Connect with plain `ssh`, not `tssh`. `tssh` runs inside the remote tmux, and `t
    ```sh
    cd ~/dotfiles && git pull && ./install.sh
    ```
-3. **Each other user:** the admin sets zsh as their shell if needed (`sudo chsh -s /usr/bin/zsh <name>`). The user then pulls (or clones, the first time) and runs `./install.sh`, then does the same checks.
+3. **Each other user:** the admin sets zsh as their shell if needed (`sudo chsh -s /usr/bin/zsh <name>`). The user then pulls (or clones, the first time) and runs `./install.sh`, then does the same checks. On the first login zsh may show a setup menu: the user presses `q` ([details](server.md#7-several-users)).
 4. **Only after every user is done,** remove Homebrew as described in [Linux](#linux).
 
 ## Check it worked
