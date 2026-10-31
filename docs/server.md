@@ -231,7 +231,8 @@ Rules:
 - Use one tab per server.
 - Never run `tssh` inside a local tmux. No tmux inside tmux.
 - Switch between tabs. On macOS use `Cmd+1`, `Cmd+2`, and so on. On Linux use `Alt+1`, `Alt+2`, and so on, or `Ctrl+PageUp` and `Ctrl+PageDown` (Ghostty defaults; other terminals may differ).
-- To leave, press `Ctrl+Space`, then `d` (detach). Or close the tab. Everything keeps running on the server.
+- To leave, press `Ctrl+Space`, then `d` (detach). Or close the tab. Everything keeps running on the server, and the SSH connection ends with it.
+- For a shell on the server without tmux (for example to run `tmux kill-server`), use plain `ssh my-ec2`.
 - To come back, open a tab and run `tssh my-ec2` again.
 
 ## 6. Updating the server later
@@ -242,7 +243,7 @@ On the server:
 cd ~/dotfiles && git pull && ./install.sh
 ```
 
-`install.sh` is safe to run again. See [Update](install.md#update) for what a rerun does. It never upgrades tools; to upgrade them, run `mise upgrade`.
+`install.sh` is safe to run again, but it never upgrades tools. To upgrade them and mise itself (`mise upgrade`, then `mise self-update`), follow [Update](install.md#update).
 
 If this server ran the older Brew-based install, see [migrate-to-mise.md](migrate-to-mise.md#linux) to remove Homebrew.
 
@@ -279,7 +280,7 @@ Moving a server that ran the old Homebrew install? Follow the [Existing server c
 
 If a package is missing, `install.sh` stops and prints the `apt-get` line for the admin. It never uses sudo.
 
-**Upgrades.** Each user upgrades their own tools with `mise upgrade`, and the dotfiles with `cd ~/dotfiles && git pull && ./install.sh`. The admin upgrades the system packages with `sudo apt-get upgrade`.
+**Upgrades.** Each user upgrades their own dotfiles, tools and mise as in [section 6](#6-updating-the-server-later). The admin upgrades the system packages with `sudo apt-get upgrade`.
 
 **Good to know:**
 

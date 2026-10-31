@@ -5,9 +5,11 @@ The [shell](glossary.md#shell) config: `zsh/.zshrc`, linked to `~/.zshrc`. It is
 You'll use it for: aliases, fuzzy history and Tab completion, jumping between folders, and a bell when a long command ends.
 
 - [Quick start](#quick-start)
+- [What it sets up](#what-it-sets-up)
 - [Aliases](#aliases)
 - [Key bindings](#key-bindings)
 - [Tab completion with fzf-tab](#tab-completion-with-fzf-tab)
+- [Completions for mise tools](#completions-for-mise-tools)
 - [History search with atuin](#history-search-with-atuin)
 - [Jump to folders with zoxide](#jump-to-folders-with-zoxide)
 - [Bell after long commands](#bell-after-long-commands)
@@ -30,8 +32,7 @@ Open a new terminal, then try:
 ## What it sets up
 
 - **Homebrew** (macOS): finds `brew` and adds it to `PATH`. Skipped where brew is absent.
-- **PATH**: `~/.local/bin` first (the mise binary and the `theme` and `tmux-sessionizer` scripts), then `~/go/bin`. mise is activated right after, so its tools come before any Homebrew copy.
-
+- **PATH**: `~/.local/bin` first (the scripts of `bin/`, and the mise binary on Linux), then `~/go/bin`. mise is activated right after, so its tools come before any Homebrew copy.
 - **Editor**: `EDITOR` and `VISUAL` are `nvim` if installed, else `vim`. `PAGER` is `less`.
 - **History**: 100000 entries in `~/.zsh_history`, shared between open shells, no duplicates. A command that starts with a space is not saved, which helps with secrets.
 - **Options**:
@@ -107,6 +108,17 @@ To open the list as a tmux [popup](glossary.md#popup) (needs tmux 3.2+), add thi
 zstyle ':fzf-tab:*' fzf-command ftb-tmux-popup
 ```
 
+## Completions for mise tools
+
+Tools installed by mise bring no zsh completions. For the ones you want, load the tool's own completion script in `~/.zshrc.local`, which runs after `compinit`:
+
+```sh
+# ~/.zshrc.local
+(( $+commands[gh] )) && source <(gh completion -s zsh)   # Tab completion for gh
+```
+
+Open a new shell, then try `gh <Tab>`. Each line runs the tool once per shell start, so add only the ones you use.
+
 ## History search with atuin
 
 [atuin](https://docs.atuin.sh/) stores every command, with folder, time and exit code, in a local SQLite database. It is local only: no account, no sync, no update checks.
@@ -175,7 +187,9 @@ The default ignore list is `nvim vim vi less man lazygit lg lzd tmux ssh tssh cl
 tssh my-server          # any ssh arguments work: host alias, user@host, -i key, -p port
 ```
 
-It runs `ssh -t` and starts (or attaches to) the tmux session named `main` on the server. Tab completion works like `ssh`. Rules and setup are in [server.md](server.md).
+It runs `ssh -t` and starts (or attaches to) the tmux session named `main` on the server. Tab completion works like `ssh`. Rules and setup are in [server.md](server.md#5-daily-use).
+
+tmux is the only command of the connection, so detaching (`prefix d`) or quitting tmux also ends the SSH connection. For a shell on the server without tmux, for example to run `tmux kill-server`, use plain `ssh my-server`.
 
 ## Per-machine settings: `~/.zshrc.local`
 
@@ -204,7 +218,7 @@ Two more optional files:
 - **No icons in `ls`**: the terminal font is not a [Nerd Font](glossary.md#nerd-font), see [terminals.md](terminals.md).
 - **Command not found for a tool**: open a new shell, then run `mise ls` to see if it is installed and `mise install` if not.
 - **No autosuggestions or highlighting**: check that `~/.local/share/zsh-plugins/<name>` exists; `./install.sh` clones it.
-- **A tool's init looks stale**: delete `~/.cache/zsh` and open a new shell.
+- **A tool's init looks stale** (after `mise upgrade`, or after a tool was added, removed or moved): run `rm -rf ~/.cache/zsh && exec zsh`.
 - **Slow start**: run `time zsh -i -c exit`.
 
 ## How it works
@@ -219,7 +233,7 @@ Two more optional files:
 
 atuin loads after fzf so its `Ctrl+r` wins, and after the `Up` binding so its `Up` wins. `Down` stays with this config because atuin does not bind it.
 
-**Tool init cache.** Starting each tool on every shell would cost about 30 ms each. `.zshrc` saves the output of `fzf --zsh`, `atuin init zsh`, `zoxide init zsh`, `mise activate zsh` and `starship init zsh` in `~/.cache/zsh`. A file refreshes when the tool is upgraded or `.zshrc` changes. Delete the folder to force a refresh.
+**Tool init cache.** Starting each tool on every shell would cost about 30 ms each. `.zshrc` saves the output of `fzf --zsh`, `atuin init zsh`, `zoxide init zsh`, `mise activate zsh` and `starship init zsh` in `~/.cache/zsh`. A file refreshes when the tool's binary is newer than the file or `.zshrc` changes. mise keeps the release's file times, so an upgrade does not always count: delete the folder after `mise upgrade` to force a refresh.
 
 **Completion cache.** `compinit -C` skips the security scan while the dump file is under 24 hours old. When it is older, a full `compinit` runs and the shell touches the dump, so the full scan happens once a day. If `compaudit` lists only paths owned by you or root, the scan runs `compinit -u` and does not prompt; a path owned by someone else still prompts (see [install.md](install.md#troubleshooting)). The config sets `menu no`, which fzf-tab requires.
 
