@@ -72,7 +72,7 @@ Flags can be combined (`--dry-run --with-claude <git-url>`). `--with-claude=<git
 6. **Links** the packages with `stow --restow --no-folding`. `--no-folding` makes each file its own link, so folders like `~/.config/ghostty` stay real folders and generated files never land in the repo. Without `stow` it uses plain symlinks.
 7. `mise install` for the global runtimes.
    Then, only when `~/.local/share/atuin/history.db` does not exist yet, `atuin import zsh` copies `~/.zsh_history` (or `$HISTFILE`) into atuin once, when that file has content. With no history yet it skips quietly. A failure only prints a warning.
-8. Clones **TPM** into `~/.config/tmux/plugins/tpm` and installs the tmux plugins (TPM needs a tmux server, so it runs inside a short-lived detached session).
+8. Clones **TPM** into `~/.config/tmux/plugins/tpm` and installs the tmux plugins (TPM needs a tmux server that has loaded the config, so it runs on a private throwaway server that never touches any tmux you already have running).
 9. Linux desktop only: installs the Monaspace Nerd Font into `~/.local/share/fonts`.
 10. `theme sync`: writes the Ghostty and iTerm theme files. A failure here only prints a warning.
 11. `--with-claude <git-url>` step, if asked.

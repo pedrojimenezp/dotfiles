@@ -201,13 +201,17 @@ if [[ ! -d "$TPM" ]] && command -v git >/dev/null 2>&1; then
   echo "==> Cloning TPM"
   run git clone --depth 1 https://github.com/tmux-plugins/tpm "$TPM" # public repo over https, no key needed
 fi
-# TPM reads TMUX_PLUGIN_MANAGER_PATH from a running tmux server (set-environment in tmux.conf), so
-# install_plugins needs one. Start a throwaway detached session to load the config, then kill only that session.
+# TPM reads TMUX_PLUGIN_MANAGER_PATH from a tmux server (set-environment in tmux.conf). A server that is already
+# running (or the one we are inside) started before the config was linked, so it lacks the variable. Run the
+# whole install on a private server instead: its own TMUX_TMPDIR socket, TMUX unset, killed at the end.
 install_tmux_plugins() {
-  local sess="dotfiles-tpm-$$" rc=0 # unique name: never touches the user's own sessions
-  run tmux new-session -d -s "$sess" || return 1 # starts a server (and sources tmux.conf) if none runs
-  run "$TPM/bin/install_plugins" || rc=1 # public repos: https, no SSH key
-  run tmux kill-session -t "$sess" || true # the server exits with it when it was ours
+  local tmp rc=0 # tmp: socket directory of the private server
+  if [[ $DRY -eq 1 ]]; then tmp="<temp dir>"; else tmp="$(mktemp -d)" || return 1; fi
+  local -a priv=(env -u TMUX TMUX_TMPDIR="$tmp") # every tmux call, TPM's included, inherits this and hits the private server
+  run "${priv[@]}" tmux new-session -d -s dotfiles-tpm || rc=1 # starts the server and sources tmux.conf
+  [[ $rc -eq 0 ]] && { run "${priv[@]}" "$TPM/bin/install_plugins" || rc=1; } # public repos: https, no SSH key
+  run "${priv[@]}" tmux -S "$tmp/tmux-$(id -u)/default" kill-server || true # by socket path: only the private server dies
+  [[ $DRY -eq 1 ]] || rm -rf "$tmp"
   return "$rc"
 }
 TMUX_PLUGINS_OK=0 # 1 = plugins were installed, so the final message can say so
@@ -361,6 +365,12 @@ suggest_login_shell() {
     echo "  chsh -s $zsh_path"                                                  # changes the current user
   else
     echo "  sudo chsh -s $zsh_path \"\$USER\""                                    # EC2-style users have no password
+  fi
+  local sys_ver                                                                 # /usr/bin/tmux version, e.g. 3.4 (empty if none)
+  sys_ver="$(/usr/bin/tmux -V 2>/dev/null | sed -n 's/^tmux \([0-9]*\.[0-9]*\).*/\1/p')"
+  if [[ -n "$sys_ver" ]] && (( ${sys_ver%%.*} < 3 || ( ${sys_ver%%.*} == 3 && ${sys_ver#*.} < 5 ) )); then # tmux.conf needs 3.5+
+    echo "Until then, bash does not put Homebrew on PATH, so logins start the system tmux $sys_ver and tmux.conf shows errors."
+    echo "After switching, stop the old server with: tmux kill-server"
   fi
 }
 suggest_login_shell
