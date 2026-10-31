@@ -107,7 +107,7 @@ Inside the tree (`?` lists them all):
 
 | Keys | What it does |
 | --- | --- |
-| `Enter` | Open the file, or expand or collapse the folder |
+| `Enter` | Open a file, or expand or collapse a folder |
 | `a` | Add a file (end the name with `/` for a folder) |
 | `d` | Delete |
 | `r` | Rename |

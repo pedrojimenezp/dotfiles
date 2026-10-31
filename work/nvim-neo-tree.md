@@ -10,7 +10,8 @@ Add a neo-tree sidebar (`Space f e`) to the nvim config. Oil and Telescope stay 
 
 ## Done
 - Worktree and branch created.
-- Neo-tree spec, `<leader>fe`, Files which-key group, docs, lazy-lock.json.
+- Neo-tree spec, `<leader>fe`, Files which-key group, docs, lazy-lock.json (later removed: the live lockfile is not in the repo).
+- Unmapped `<space>` in the tree window so Space stays the leader.
 - Headless checks, checkhealth and repo tests pass.
 
 ## Where we stopped

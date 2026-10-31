@@ -54,6 +54,7 @@ return {
     },
     keys = { { "<leader>fe", "<cmd>Neotree toggle reveal left<CR>", desc = "File explorer (neo-tree)" } },
     opts = {
+      window = { mappings = { ["<space>"] = "none" } }, -- keep Space as the leader inside the tree
       filesystem = {
         follow_current_file = { enabled = true }, -- highlight the file being edited
         hijack_netrw_behavior = "disabled", -- leave directory buffers to oil
