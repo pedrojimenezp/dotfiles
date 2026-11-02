@@ -22,7 +22,7 @@ _cache_init() {
   local f=${XDG_CACHE_HOME:-$HOME/.cache}/zsh/$1${2:+.${(j:_:)${@[2,-1]//[^[:alnum:]]/_}}}.zsh  # args are in the name
   [[ -r $f ]] && read -r first <$f                                 # builtin read: no fork on the fast path
   if [[ ! -s $f || $first != "# bin=$bin" || $bin -nt $f || ${rc:A} -nt $f ]]; then  # missing, other version/path, tool newer or .zshrc edited
-    mkdir -p ${f:h} && { print -r "# bin=$bin"; "$@" } >$f.$$ 2>/dev/null && mv -f $f.$$ $f || rm -f $f.$$  # tmp + mv: never half-written
+    mkdir -p ${f:h} && rm -f $f.<->(N) && { print -r "# bin=$bin"; "$@" } >$f.$$ 2>/dev/null && mv -f $f.$$ $f || rm -f $f.$$  # tmp + mv: never half-written; rm clears temp files left by an interrupted start
   fi
   [[ -s $f ]] && source $f
 }
@@ -77,6 +77,7 @@ setopt HIST_FIND_NO_DUPS                  # skip duplicate entries while searchi
 setopt HIST_IGNORE_SPACE                  # commands starting with a space are not saved
 setopt HIST_REDUCE_BLANKS                 # trim extra whitespace
 setopt EXTENDED_HISTORY                   # store timestamps
+setopt HIST_FCNTL_LOCK                    # lock with fcntl, not the .LOCK file: no multi-second waits or stale locks
 
 # --- Shell options ---
 setopt AUTO_CD                            # typing a directory name cd's into it

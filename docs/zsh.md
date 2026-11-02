@@ -34,7 +34,7 @@ Open a new terminal, then try:
 - **Homebrew** (macOS): finds `brew` and adds it to `PATH`. Skipped where brew is absent.
 - **PATH**: `~/.local/bin` first (the scripts of `bin/`, and the mise binary on Linux), then `~/go/bin`. mise is activated right after, so its tools come before any Homebrew copy.
 - **Editor**: `EDITOR` and `VISUAL` are `nvim` if installed, else `vim`. `PAGER` is `less`.
-- **History**: 100000 entries in `~/.zsh_history`, shared between open shells, no duplicates. A command that starts with a space is not saved, which helps with secrets.
+- **History**: 100000 entries in `~/.zsh_history`, shared between open shells, no duplicates. A command that starts with a space is not saved, which helps with secrets. History is locked with `fcntl` (`HIST_FCNTL_LOCK`), so a new shell never waits on a stale `.zsh_history.LOCK` file.
 - **Options**:
   - `AUTO_CD`: type a folder name on its own, such as `projects`, and the shell enters it. No `cd` needed.
   - Comments are allowed at the prompt.
