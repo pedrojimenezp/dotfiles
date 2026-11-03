@@ -48,3 +48,10 @@ map("n", "<leader>ut", function()
   end
   vim.o.background = vim.o.background == "dark" and "light" or "dark" -- fallback: flip only nvim
 end, { desc = "Toggle light/dark theme" })
+
+-- Toggle soft wrap in the current window.
+map("n", "<leader>uw", "<cmd>set wrap!<CR>", { desc = "Toggle line wrap" })
+
+-- j/k move by screen line on wrapped text; with a count (5j) they move by real line.
+map({ "n", "x" }, "j", "v:count == 0 ? 'gj' : 'j'", { expr = true, desc = "Down (screen line)" })
+map({ "n", "x" }, "k", "v:count == 0 ? 'gk' : 'k'", { expr = true, desc = "Up (screen line)" })
