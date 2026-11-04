@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# Opens lazygit for a folder; a folder that only holds repos gets a repo choice first.
+# Usage: tmux-lazygit <dir>
+# A folder with no .git of its own whose immediate subfolders have one lists those repos:
+# one repo opens directly, several are picked with fzf (Esc quits), no fzf prints them and waits.
+# Any other folder opens lazygit as is (git finds the repo above it).
+set -euo pipefail # stop on errors, unset variables and failed pipes
+
+[[ $# -eq 1 ]] || { echo "usage: tmux-lazygit <dir>" >&2; exit 2; }
+dir="$1"
+[[ -d "$dir" ]] || { echo "tmux-lazygit: not a folder: $dir" >&2; exit 2; }
+
+repos=() # names of the subfolders that have their own .git (a file for worktrees, a folder otherwise)
+if [[ ! -e "$dir/.git" ]]; then
+  for sub in "$dir"/*/; do
+    [[ -e "${sub}.git" ]] && repos+=("$(basename "$sub")")
+  done
+fi
+
+case ${#repos[@]} in
+  0) exec lazygit -p "$dir" ;;
+  1) exec lazygit -p "$dir/${repos[0]}" ;;
+esac
+
+if command -v fzf >/dev/null 2>&1; then
+  pick="$(printf "%s\n" "${repos[@]}" | fzf --prompt "repo> " || true)" # Esc gives no pick
+  [[ -n "$pick" ]] || exit 0
+  exec lazygit -p "$dir/$pick"
+fi
+
+printf "%s\n" "${repos[@]}"
+echo "fzf is not installed: cd into one of these repos and run lazygit."
+read -r -n 1 -s -p "Press any key to close. " || true

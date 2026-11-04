@@ -54,7 +54,7 @@ Keys from this config. The mouse is on: click a pane or window name, drag a bord
 | `prefix [` | Copy mode. Then `v` selects, `Ctrl+v` toggles a rectangle, `y` copies and leaves. |
 | `prefix f` | Project session picker |
 | `prefix t` | Toggle light/dark theme ([theme.md](theme.md)) |
-| `prefix G` | lazygit in a popup, in the pane's folder |
+| `prefix G` | lazygit in a popup, in the pane's folder (pick a repo first in a folder that only holds repos) |
 | `` prefix ` `` | Scratch shell popup that keeps running |
 | `prefix A` | Claude Code popup that keeps running |
 | `prefix Space` | Copy with hints (tmux-fingers). Replaces the default `next-layout`. |
@@ -93,6 +93,8 @@ A [popup](glossary.md#popup) floats over the current window.
 | `prefix G` | lazygit, in the pane's folder | No: `q` closes it. Without lazygit you see "lazygit is not installed". |
 | `` prefix ` `` | Scratch shell | Yes |
 | `prefix A` | Claude Code | Yes |
+
+In a folder that has no `.git` of its own but holds repos (a feature folder of worktrees), `prefix G` opens the only repo, or asks which one with fzf (`Esc` closes the popup). Everywhere else, lazygit opens in the folder as before. The script is `bin/.local/bin/tmux-lazygit`.
 
 Press the same key again to hide a persistent popup (either key works inside any of them), or use `prefix d`. The program keeps running. If the program exits, the popup closes and the next press starts a fresh one.
 
