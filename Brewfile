@@ -7,6 +7,7 @@ brew "mise"                    # installs the CLI tools of this setup, per user
 brew "stow"                    # symlink manager that links this repo into $HOME
 brew "btop"                    # resource monitor (CPU, memory, disks, network); mise has no macOS build
 brew "pngpaste"                # saves the clipboard image as a PNG file
+brew "chafa"                   # shows images in the terminal; mise has no build of it
 # brew "mosh"                  # optional: SSH-like shell that survives roaming and sleep
 
 tap "jackielii/tap"            # skhd.zig is published here

@@ -201,7 +201,7 @@ Saves hold sessions, windows, panes, their folders and the visible text of each 
 
 **Fast reloads.** TPM runs with `run -b`, so the plugins load in the background and `prefix r` returns at once. Plugin keys and the autosave in the status line appear a few seconds after a reload.
 
-**Escape sequences.** `set-clipboard on` uses [OSC 52](glossary.md#osc-52). `allow-passthrough on` lets programs, and the `theme` script, send escape sequences through tmux. Extended keys are on (CSI u format), and `xterm*` terminals are marked as supporting them. This lets `Shift+Enter` and `Ctrl+Enter` reach programs such as Claude Code. Colors are `tmux-256color` plus true color.
+**Escape sequences.** `set-clipboard on` uses [OSC 52](glossary.md#osc-52). `allow-passthrough on` lets programs send escape sequences through tmux: the `theme` script recolors the outer terminal, and image viewers such as chafa draw images. Extended keys are on (CSI u format), and `xterm*` terminals are marked as supporting them. This lets `Shift+Enter` and `Ctrl+Enter` reach programs such as Claude Code. Colors are `tmux-256color` plus true color.
 
 **`detach-on-destroy off`.** Killing a session moves you to another one. tmux exits only when no session is left.
 

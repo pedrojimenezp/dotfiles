@@ -1,6 +1,6 @@
 # Tools
 
-The command-line tools this repo installs and configures. Almost everything below comes from [mise](#mise) (`mise/.config/mise/config.toml`), the same on macOS and Linux and installed per user with no sudo. `stow` and `btop` on macOS, and the apps, come from the `Brewfile` (macOS only). The zsh plugins are git clones. `install.sh` sets all of it up. A missing tool never breaks the shell config.
+The command-line tools this repo installs and configures. Almost everything below comes from [mise](#mise) (`mise/.config/mise/config.toml`), the same on macOS and Linux and installed per user with no sudo. `stow`, `btop` and `chafa` on macOS, and the apps, come from the `Brewfile` (macOS only). The zsh plugins are git clones. `install.sh` sets all of it up. A missing tool never breaks the shell config.
 
 You'll use it for: finding what a tool is for and how to start it. Run `tldr <tool>` for more examples.
 
@@ -10,6 +10,7 @@ You'll use it for: finding what a tool is for and how to start it. Run `tldr <to
 - [Git and containers](#git-and-containers)
 - [Languages and dev tools](#languages-and-dev-tools)
 - [Reading Markdown](#reading-markdown)
+- [Viewing images](#viewing-images)
 - [macOS-only (casks)](#macos-only-casks)
 - [Add or update a tool](#add-or-update-a-tool)
 - [Prompt: starship](#prompt-starship)
@@ -79,6 +80,7 @@ Optional, commented in the `Brewfile` (macOS: remove the `#` and run `brew bundl
 | `golangci-lint` | Go linters | `golangci-lint run` |
 | `tree-sitter` (CLI) | Builds treesitter parsers for nvim | Used by nvim; no manual command |
 | `mermaid-ascii` | Draws Mermaid diagrams as text | `mermaid-ascii -f diagram.mmd` |
+| `chafa` | Shows images in the terminal (Kitty graphics in Ghostty, iTerm2's protocol in iTerm2, text blocks elsewhere); Homebrew on macOS, apt on Linux | `chafa photo.png` |
 
 ## Reading Markdown
 
@@ -87,6 +89,14 @@ These work on a server over SSH and inside tmux:
 - In nvim, [render-markdown.nvim](nvim.md#plugins) renders `.md` files (headings, code blocks, tables, lists) in the buffer; `<leader>um` toggles it.
 - `bat file.md` gives a quick look with syntax colors.
 - `mermaid-ascii -f diagram.mmd` draws a Mermaid diagram as text. It supports only flowcharts (`graph` or `flowchart`, with `TD`, `TB`, `BT`, `LR` or `RL`) and sequence diagrams (`sequenceDiagram`). Other types (class, state, gantt, pie) fail with an "unsupported graph type" error. To draw a `mermaid` code block, copy it into a `.mmd` file.
+
+## Viewing images
+
+`chafa photo.png` draws an image in the terminal. It comes from Homebrew on macOS (the `Brewfile`). On Linux, mise has no build of it, so `install.sh` does not install it; an admin installs it once with `sudo apt-get install -y chafa`.
+
+- Over SSH it works when chafa is installed on the server.
+- Inside tmux it needs `allow-passthrough on` (already set). Images can disappear when you scroll or the screen redraws; run `chafa` again.
+- Never `cat` a binary file such as an image: it scrambles the terminal. Run `reset` to fix it.
 
 ## macOS-only (casks)
 
