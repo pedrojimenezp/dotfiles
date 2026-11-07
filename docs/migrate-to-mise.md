@@ -30,7 +30,7 @@ You'll use it once per machine, after you `git pull` and rerun `./install.sh`.
 The `Brewfile` holds only `mise`, `stow`, `btop`, `pngpaste`, `chafa` and the casks. Uninstall the formulae that moved:
 
 ```sh
-brew uninstall neovim tmux tmux-fingers starship fzf zoxide eza bat ripgrep fd jq yq tealdeer hyperfine atuin git-delta lazygit lazydocker dive gh git-lfs shellcheck shfmt tree-sitter-cli golangci-lint zig zls zsh-autosuggestions zsh-syntax-highlighting zsh-completions fzf-tab
+brew uninstall neovim tmux starship fzf zoxide eza bat ripgrep fd jq yq tealdeer hyperfine git-delta lazygit lazydocker gh git-lfs shellcheck shfmt tree-sitter-cli golangci-lint zig zls zsh-autosuggestions zsh-syntax-highlighting zsh-completions fzf-tab
 brew autoremove
 ```
 

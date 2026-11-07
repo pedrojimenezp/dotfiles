@@ -262,42 +262,6 @@ clone_plugin zsh-syntax-highlighting zsh-users/zsh-syntax-highlighting # colors 
 clone_plugin zsh-completions zsh-users/zsh-completions             # extra tab-completion definitions
 clone_plugin fzf-tab Aloxaf/fzf-tab                                # Tab completion through fzf
 
-# Step 3b2: remove what atuin left on a machine that had it (the tool is no longer used).
-ATUIN_CFG="$HOME/.config/atuin/config.toml"
-# Prints where the link $1 points as an absolute path with "." and ".." removed from the text. Needs no existing
-# target: stow makes relative links, and this one is dangling now that the package is gone.
-link_target_lexical() {
-  local t part
-  local -a parts out=()
-  t="$(readlink "$1")"
-  [[ "$t" == /* ]] || t="$(cd "$(dirname "$1")" && pwd -P)/$t" # relative targets start at the link's folder
-  IFS=/ read -ra parts <<<"$t"
-  for part in "${parts[@]}"; do
-    case "$part" in
-      "" | .) ;;
-      ..) [[ ${#out[@]} -gt 0 ]] && unset 'out[${#out[@]}-1]' ;;
-      *) out+=("$part") ;;
-    esac
-  done
-  printf '/%s' "${out[@]}"
-}
-if [[ -L "$ATUIN_CFG" ]]; then
-  atuin_target="$(link_target_lexical "$ATUIN_CFG")" # realpath (is_repo_link) cannot resolve a dangling link
-  # Exactly the file the removed package linked: any other link is the user's own.
-  if [[ "$atuin_target" == "$REPO/atuin/.config/atuin/config.toml" || "$atuin_target" == "$REPO_REAL/atuin/.config/atuin/config.toml" ]]; then
-    echo "==> Removing the old atuin config link"
-    run rm -f "$ATUIN_CFG"
-    run rmdir "$(dirname "$ATUIN_CFG")" 2>/dev/null || true # only if empty
-  fi
-fi
-for f in "${XDG_CACHE_HOME:-$HOME/.cache}"/zsh/atuin*.zsh; do # cached `atuin init zsh` output, one file per argument set
-  [[ -e "$f" ]] && run rm -f "$f"
-done
-ATUIN_DATA="${XDG_DATA_HOME:-$HOME/.local/share}/atuin"
-if [[ -d "$ATUIN_DATA" ]]; then # user data: never deleted here
-  echo "atuin is no longer used; its history database stays in $ATUIN_DATA. Remove it with 'rm -rf $ATUIN_DATA' and the tool with 'mise prune'."
-fi
-
 # Step 4: tmux plugin manager.
 TPM="$HOME/.config/tmux/plugins/tpm"
 if [[ ! -d "$TPM" ]] && command -v git >/dev/null 2>&1; then

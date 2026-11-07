@@ -166,7 +166,7 @@ What it does, in order:
 
 1. **Links.** Removes only [links](glossary.md#link) that point into this repo (`stow --delete`, then a sweep for the plain-symlink fallback). A real file is never deleted.
 2. **Backups.** For each removed link, it puts back the newest `<file>.backup-<date>-<time>` if the path is free. It does the same for `~/.gitconfig` and `~/.local/bin/mise`. Older backups stay; the summary lists them.
-3. **Generated data.** Deletes what the installer and the tools created: `~/.local/bin/mise` and mise's data, state and cache; the zsh plugins and zsh cache; the tmux plugins; atuin's data, if an older install left it (not `~/.zsh_history`); Neovim's data, state and cache; zoxide, lazygit and starship data; `~/.config/git/local` (your git name and email); the files `theme sync` generated (including the Ghostty theme files and, on macOS, the iTerm profile); and on a Linux desktop the Nerd Font in `~/.local/share/fonts`. Every delete refuses a path outside `$HOME`.
+3. **Generated data.** Deletes what the installer and the tools created: `~/.local/bin/mise` and mise's data, state and cache; the zsh plugins and zsh cache; the tmux plugins; Neovim's data, state and cache; zoxide, lazygit and starship data; `~/.config/git/local` (your git name and email); the files `theme sync` generated (including the Ghostty theme files and, on macOS, the iTerm profile); and on a Linux desktop the Nerd Font in `~/.local/share/fonts`. Every delete refuses a path outside `$HOME`.
 4. **Claude config** (only with `--with-claude`). Removes the links its own installer made (including `agents` and `rules`) in every `~/.claude-<name>` folder, a legacy `~/.claude` and `~/.pi/agent`, and restores their `.bak-*` files. It removes the `claude.sh` line (and an old `claude.zsh` line) from `~/.zshrc.local`, `~/.bashrc` and `~/.zshrc` (only when `~/.zshrc` is not a symlink), then deletes `~/.config/claude-shared`. The `settings.json` copies in the Claude folders stay (Claude Code writes them too), and the summary lists them.
 5. **This clone**, last. If it has uncommitted changes or commits that are not on a remote branch, it is kept and the script says why.
 6. **Final sweep.** Once the clone is deleted, it removes any link that is now broken and pointed into the clone, in the same places it scanned at the start. Skipped when the clone is kept.
@@ -253,13 +253,12 @@ Each top-level folder of the repo is a [package](glossary.md#package) whose cont
 6. Links the packages with `stow --restow --no-folding`. Without `stow`, it makes plain links.
 7. Installs mise into `~/.local/bin` if it is missing (the official installer from `https://mise.run`), runs `mise install` for every tool in the config, and puts those tools on `PATH` for the rest of the script. A failure only prints a warning.
 8. Clones the zsh plugins (autosuggestions, syntax-highlighting, completions, fzf-tab) into `~/.local/share/zsh-plugins`, or fast-forwards the ones already there.
-9. On a machine that had atuin: removes its config link (only if it points into this repo) and cached init file. It never deletes `~/.local/share/atuin`; if that folder exists, it prints how to remove it (`rm -rf ~/.local/share/atuin`, then `mise prune` for the tool).
-10. Clones [TPM](glossary.md#tpm) into `~/.config/tmux/plugins/tpm` and installs the tmux plugins. TPM needs a tmux server that has loaded the config, so this runs on a private, throwaway tmux server. It never touches a tmux you already have running, and works even when the installer runs inside tmux.
-11. **Linux desktop:** installs the Monaspace Nerd Font into `~/.local/share/fonts`.
-12. Runs `theme sync` to write the Ghostty and iTerm color files. A failure only prints a warning.
-13. Runs the `--with-claude` step, if you asked for it.
-14. Asks for your git name and email if none is set. A piped or `--dry-run` run prints the two commands instead.
-15. Prints the next steps (it says so when the tmux plugin install failed) and, if zsh is not your login shell, the `chsh` command. When `/usr/bin/tmux` is also older than 3.5, it warns that logins start that system tmux until you switch (bash does not put mise's tools on `PATH`), and tells you to run `tmux kill-server` after switching.
+9. Clones [TPM](glossary.md#tpm) into `~/.config/tmux/plugins/tpm` and installs the tmux plugins. TPM needs a tmux server that has loaded the config, so this runs on a private, throwaway tmux server. It never touches a tmux you already have running, and works even when the installer runs inside tmux.
+10. **Linux desktop:** installs the Monaspace Nerd Font into `~/.local/share/fonts`. A failure prints a warning, removes the partial folder and lets the install finish; rerun `./install.sh` to retry.
+11. Runs `theme sync` to write the Ghostty and iTerm color files. A failure only prints a warning.
+12. Runs the `--with-claude` step, if you asked for it.
+13. Asks for your git name and email if none is set. A piped or `--dry-run` run prints the two commands instead.
+14. Prints the next steps (it says so when the tmux plugin install failed) and, if zsh is not your login shell, the `chsh` command. When `/usr/bin/tmux` is also older than 3.5, it warns that logins start that system tmux until you switch (bash does not put mise's tools on `PATH`), and tells you to run `tmux kill-server` after switching.
 
 With `--dry-run`, a failed step 1 or 2 continues instead of stopping, so you see the whole plan.
 

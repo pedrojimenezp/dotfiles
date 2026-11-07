@@ -68,10 +68,9 @@ make_machine() {
   echo secret >"$h/.zshrc.local"
   # generated data
   mkdir -p "$h/.local/share/zsh-plugins/fzf-tab" "$h/.cache/zsh" "$h/.config/tmux/plugins/tpm" \
-    "$h/.local/share/atuin" "$h/.local/share/nvim/lazy" "$h/.local/state/nvim" "$h/.cache/nvim" \
+    "$h/.local/share/nvim/lazy" "$h/.local/state/nvim" "$h/.cache/nvim" \
     "$h/.local/share/mise/installs" "$h/.local/state/mise" "$h/.cache/mise" "$h/.local/share/theme/themes" \
     "$h/.cache/theme" "$h/.local/share/fonts/MonaspaceNerdFont" "$h/.vim/undo" "$h/.config/ghostty/themes"
-  echo db >"$h/.local/share/atuin/history.db"
   echo x >"$h/.local/share/zsh-plugins/fzf-tab/a.zsh"
   echo dark >"$h/.local/state/theme"
   echo id >"$h/.config/git/local"
@@ -101,7 +100,7 @@ assert_uninstalled() {
   check "real file at a package path is kept" has_text "$h/.config/starship.toml" mine
   check "its backup is kept" test -e "$h/.config/starship.toml.backup-20260301-000000"
   check "unrelated ~/.zshrc.local is kept" has_text "$h/.zshrc.local" secret
-  for p in .local/share/zsh-plugins .cache/zsh .config/tmux/plugins .local/share/atuin .local/share/nvim \
+  for p in .local/share/zsh-plugins .cache/zsh .config/tmux/plugins .local/share/nvim \
     .local/state/nvim .cache/nvim .local/share/mise .local/state/mise .cache/mise .local/state/theme \
     .config/git/local .config/ghostty/theme.conf .local/share/fonts/MonaspaceNerdFont .zcompdump .vim/undo; do
     check "data removed: $p" gone "$h/$p"

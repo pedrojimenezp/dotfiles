@@ -177,13 +177,11 @@ sweep_broken_links() {
 }
 
 # Generated data and caches, one path per line. Paths that do not exist are skipped by the caller.
-# $DATA/atuin is legacy: atuin is no longer installed, but older machines may still have its data.
 data_paths() {
   cat <<EOF
 $DATA/zsh-plugins
 $CACHE/zsh
 $CONFIG/tmux/plugins
-$DATA/atuin
 $DATA/nvim
 $STATE/nvim
 $CACHE/nvim
