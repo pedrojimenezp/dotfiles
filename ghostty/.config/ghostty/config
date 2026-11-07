@@ -34,11 +34,11 @@ macos-option-as-alt = true
 macos-titlebar-style = tabs
 
 # Shell integration: cwd tracking, prompt jumping, and SSH helpers.
-# Features: cursor shape at prompt, sudo keeps terminfo, title updates; ssh-terminfo copies
-# Ghostty terminfo to SSH hosts, ssh-env falls back to TERM=xterm-256color when that fails.
+# Features: cursor shape at prompt, sudo keeps terminfo, title updates. The ssh features are
+# off: Ghostty's ssh wrapper left ssh ControlMaster processes attached to tabs; install terminfo on servers instead.
 # force zsh integration
 shell-integration = zsh
-shell-integration-features = cursor,sudo,title,ssh-terminfo,ssh-env
+shell-integration-features = cursor,sudo,title,no-ssh-env,no-ssh-terminfo
 
 # Keybinds (cmd on macOS).
 # Cmd-D: split right

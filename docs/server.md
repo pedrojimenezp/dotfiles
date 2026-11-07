@@ -36,7 +36,7 @@ Host my-ec2
 
 Security trade-off: while you are connected, anyone with root on the server can use your forwarded keys. Only enable it for servers you trust.
 
-You do not need `SetEnv TERM=...` or `RequestTTY` in the entry. Ghostty's ssh-terminfo ([terminals.md](terminals.md#how-it-works)) and `tssh -t` already cover them.
+You do not need `SetEnv TERM=...` or `RequestTTY` in the entry. `tssh -t` already covers `RequestTTY`, and the Ghostty terminfo step in section 3 covers `TERM`.
 
 ### Optional: faster, steadier SSH
 
@@ -164,17 +164,26 @@ exit
 Then finish the setup:
 
 1. On your laptop, log in again: `ssh my-ec2`. You are now in zsh.
-2. On the server, put your secrets in `~/.zshrc.local` (it loads near the end, after all other settings, and is not tracked by git), then lock it:
+2. **Ghostty terminal name (once per server).** Skip this if you only use iTerm2. On your laptop, in a Ghostty tab (not iTerm2, because `infocmp` finds `xterm-ghostty` through Ghostty's `TERMINFO`), run:
+   ```sh
+   infocmp -x xterm-ghostty | ssh my-ec2 -- tic -x -
+   ```
+   This copies Ghostty's terminfo into `~/.terminfo` on the server. It needs no sudo and applies to that user only. It is needed because Ghostty sends `TERM=xterm-ghostty`; without the entry, tmux, nvim, less and the backspace key misbehave, or programs say "unknown terminal type". Check it:
+   ```sh
+   ssh my-ec2 'infocmp xterm-ghostty >/dev/null && echo ok'
+   ```
+   It prints `ok`.
+3. On the server, put your secrets in `~/.zshrc.local` (it loads near the end, after all other settings, and is not tracked by git), then lock it:
    ```sh
    chmod 600 ~/.zshrc.local
    ```
-3. On the server, name this machine and set its time zone (both optional), as in [section 4](#4-name-this-server).
-4. On the server, run `claude` once and log in.
-5. On the server, inside a project that pins other tool versions, run:
+4. On the server, name this machine and set its time zone (both optional), as in [section 4](#4-name-this-server).
+5. On the server, run `claude` once and log in.
+6. On the server, inside a project that pins other tool versions, run:
    ```sh
    mise install
    ```
-6. On the server, type `exit` to go back to your laptop.
+7. On the server, type `exit` to go back to your laptop.
 
 ## 4. Name this server
 
@@ -306,6 +315,7 @@ If a package is missing, `install.sh` stops and prints the `apt-get` line for th
 - **`git pull` says "Permission denied (publickey)".** An older copy of the git config sends all GitHub traffic over SSH. Run `git pull` in the dotfiles clone, or run `./install.sh` again, to get the current config, which sends only pushes over SSH.
 - **`git push` or a private `--with-claude` repo says "Permission denied (publickey)", and `echo $SSH_AUTH_SOCK` on the server prints a path.** Forwarding works, but the key is not in your laptop's agent. Do steps 2-4 of "Share your GitHub key with the server" in section 2.
 - **Same error, and `echo $SSH_AUTH_SOCK` on the server prints nothing.** Forwarding is off. Add `ForwardAgent yes` to the host entry (section 2), then reconnect.
+- **In Ghostty, prompts alternate between the Mac and the server, or keys go nowhere after a dropped session.** A leftover ssh master is still attached to the tab. Close the tab, then run `ssh -O exit <host>` (this drops your other sessions to that host).
 - **Colors or icons look wrong.** This is your laptop's terminal font or profile, not the server. The server sends text only; your laptop's terminal draws the icons. On macOS, check the terminal profile (for example iTerm) uses the Nerd Font. On Linux, the Nerd Font must be installed on the laptop (`install.sh` does this on Linux desktops; run `fc-cache -f` and restart the terminal) and selected in your terminal.
 
 ## Related pages

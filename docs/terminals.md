@@ -58,7 +58,7 @@ Docs: <https://ghostty.org/docs/config>. Handy commands: `ghostty +show-config`,
 | `macos-option-as-alt` | true | **macOS only.** `Option` works as `Alt` (`Alt+j` and `Alt+k` in nvim, tmux Alt keys). |
 | `macos-titlebar-style` | tabs | **macOS only.** Native tabs in the title bar |
 | `shell-integration` | zsh | Force zsh integration |
-| `shell-integration-features` | cursor, sudo, title, ssh-terminfo, ssh-env | See [How it works](#how-it-works) |
+| `shell-integration-features` | cursor, sudo, title, no-ssh-env, no-ssh-terminfo | Plain `ssh`; see [How it works](#how-it-works) |
 
 ### Keybinds in the config
 
@@ -241,7 +241,8 @@ mdls -name com_apple_ats_name_postscript <font file>
 **Ghostty shell integration.**
 
 - `cursor` sets the cursor shape at the prompt. `title` updates the window title. `sudo` keeps the terminfo under `sudo`.
-- `ssh-terminfo`: when you `ssh` to a server, Ghostty installs its terminfo there (`xterm-ghostty`). If that fails, `ssh-env` falls back to `TERM=xterm-256color`. So you need no `SetEnv TERM` in `~/.ssh/config`.
+- `no-ssh-env` and `no-ssh-terminfo` turn off Ghostty's ssh wrapper, so `ssh` runs plain, as in iTerm2. The wrapper left ssh ControlMaster processes attached to tabs, which stole keystrokes and dropped sessions.
+- Ghostty sends `TERM=xterm-ghostty`, so each server needs Ghostty's terminfo once. See "Ghostty terminal name" in [server.md](server.md#3-on-the-server-once).
 
 **Generated files.** `theme sync` writes `~/.config/ghostty/theme.conf` and the iTerm profile `~/Library/Application Support/iTerm2/DynamicProfiles/dotfiles.plist`. Never edit them.
 
