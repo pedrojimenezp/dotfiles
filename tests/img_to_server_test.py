@@ -1,0 +1,419 @@
+"""Tests for img-to-server with every system command stubbed.
+
+Run: python3 -I tests/img_to_server_test.py
+"""
+
+import contextlib
+import datetime
+import importlib.machinery
+import importlib.util
+import io
+import os
+import shutil
+import stat
+import subprocess
+import sys
+import tempfile
+import unittest
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+SCRIPT = os.path.join(ROOT, "bin", ".local", "bin", "img-to-server")
+sys.dont_write_bytecode = True
+loader = importlib.machinery.SourceFileLoader("img_to_server", SCRIPT)
+spec = importlib.util.spec_from_loader("img_to_server", loader)
+mod = importlib.util.module_from_spec(spec)
+loader.exec_module(mod)
+
+IMAGE_INFO = "«class PNGf», 1234, TIFF picture, 5678"
+TEXT_INFO = "«class utf8», 12, string, 12"
+TSSH_COMMAND = 'exec $SHELL -lic "tmux new-session -A -s main"'
+
+
+class ParseSshArgv(unittest.TestCase):
+    def check(self, argv, expected):
+        self.assertEqual(mod.parse_ssh_argv(argv), expected)
+
+    def test_plain_host(self):
+        self.check(["ssh", "dev"], ([], "dev"))
+
+    def test_full_path_and_user(self):
+        self.check(["/usr/bin/ssh", "me@dev.example.com"], ([], "me@dev.example.com"))
+
+    def test_other_programs_are_not_ssh(self):
+        for argv in (["scp", "f", "dev:/x"], ["sftp", "dev"], ["mosh", "dev"], ["git", "ssh"],
+                     ["ssh: /tmp/ctl [mux]"], []):
+            self.check(argv, None)
+
+    def test_flags_and_value_options(self):
+        self.check(["ssh", "-tt", "-4Cp2222", "-oUser=me", "-A", "-L", "8080:localhost:80", "dev"],
+                   (["-4", "-C", "-p", "2222", "-o", "User=me"], "dev"))
+
+    def test_port_identity_jump_config(self):
+        self.check(["ssh", "-p", "2200", "-i", "/k/my key", "-J", "bastion", "-F", "/c", "dev"],
+                   (["-p", "2200", "-i", "/k/my key", "-J", "bastion", "-F", "/c"], "dev"))
+
+    def test_options_after_destination(self):
+        self.check(["ssh", "dev", "-p", "2222"], (["-p", "2222"], "dev"))
+
+    def test_remote_command_is_not_interactive(self):
+        self.check(["ssh", "dev", "uptime"], None)
+        self.check(["ssh", "-p", "22", "dev", "ls", "-l"], None)
+
+    def test_remote_command_with_tty_is_interactive(self):
+        self.check(["ssh", "-t", "dev", TSSH_COMMAND], ([], "dev"))
+        self.check(["ssh", "-t", "dev", "-p", "2222", TSSH_COMMAND], (["-p", "2222"], "dev"))
+
+    def test_skipped_options(self):
+        for argv in (["ssh", "-N", "dev"], ["ssh", "-W", "h:22", "jump"], ["ssh", "-O", "check", "dev"],
+                     ["ssh", "-f", "dev"], ["ssh", "-G", "dev"], ["ssh", "-p"], ["ssh", "-Z", "dev"],
+                     ["ssh"], ["ssh", "-p", "22"]):
+            self.check(argv, None)
+
+    def test_double_dash(self):
+        self.check(["ssh", "-p", "22", "--", "dev"], (["-p", "22"], "dev"))
+
+
+class ScpOptions(unittest.TestCase):
+    def test_same_and_translated(self):
+        opts = ["-4", "-C", "-p", "2222", "-i", "/k", "-J", "b", "-F", "/c", "-l", "me",
+                "-S", "/ctl", "-o", "User=x", "-b", "1.2.3.4"]
+        self.assertEqual(mod.to_scp_options(opts),
+                         ["-4", "-C", "-o", "Port=2222", "-i", "/k", "-J", "b", "-F", "/c",
+                          "-o", "User=me", "-o", "ControlPath=/ctl", "-o", "User=x",
+                          "-o", "BindAddress=1.2.3.4"])
+
+    def test_commands(self):
+        target = mod.Target("/usr/bin/ssh", ["-p", "2222", "-i", "/k"], "me@dev")
+        copy = mod.copy_command("scp", target, "/t/a.png", "/tmp/claude-img/x.png")
+        self.assertEqual(copy[-3:], ["--", "/t/a.png", "me@dev:/tmp/claude-img/x.png"])
+        self.assertIn("BatchMode=yes", copy)
+        self.assertIn("Port=2222", copy)
+        prep = mod.prepare_command("/usr/bin/ssh", target)
+        self.assertEqual(prep[-3:-1], ["--", "me@dev"])
+        self.assertIn("mkdir -p -m 700 /tmp/claude-img", prep[-1])
+        self.assertIn("-mtime +0 -delete", prep[-1])
+        self.assertIn("ConnectTimeout=10", prep)
+
+    def test_remote_path(self):
+        now = datetime.datetime(2026, 11, 7, 14, 25, 1, 123456)
+        self.assertEqual(mod.remote_image_path(now), "/tmp/claude-img/20261107-142501-123.png")
+
+
+class Clipboard(unittest.TestCase):
+    def test_image_only(self):
+        self.assertTrue(mod.clipboard_is_image_only(IMAGE_INFO))
+
+    def test_text_or_file_blocks_upload(self):
+        self.assertFalse(mod.clipboard_is_image_only(TEXT_INFO))
+        self.assertFalse(mod.clipboard_is_image_only(IMAGE_INFO + ", «class utf8», 3"))
+        self.assertFalse(mod.clipboard_is_image_only(IMAGE_INFO + ", «class furl», 3"))
+        self.assertFalse(mod.clipboard_is_image_only(""))
+
+
+class FakeSystem:
+    """Replaces run() and the lookups; records every command, runs nothing."""
+
+    def __init__(self):
+        self.clip = IMAGE_INFO
+        self.front = "Ghostty"
+        self.iterm_tty = "/dev/ttys003"
+        self.ps_tty = ""
+        self.ps_all = ""
+        self.hosts = {}          # dest -> (user, hostname, port)
+        self.pick = None         # label chosen in the picker; None = cancel
+        self.fail = {}           # program name -> (code, stderr)
+        self.argvs = {}          # pid -> argv for process_argv
+        self.calls = []
+        self.pasted = 0
+        self.notes = []
+        self.clipboard_text = None
+        self.local_files = []
+
+    def run(self, argv, timeout=10, data=None):
+        self.calls.append(argv)
+        name = os.path.basename(argv[0])
+        if name in self.fail:
+            code, err = self.fail[name]
+            return code, "", err
+        if name == "osascript":
+            return self.osascript(argv[2])
+        if name == "ps":
+            return 0, (self.ps_tty if argv[1] == "-t" else self.ps_all), ""
+        if name == "ssh" and argv[1] == "-G":
+            dest = argv[-1]
+            if dest not in self.hosts:
+                return 255, "", "bad"
+            user, host, port = self.hosts[dest]
+            return 0, f"user {user}\nhostname {host}\nport {port}\n", ""
+        if name == "pngpaste":
+            self.local_files.append(argv[1])
+            with open(argv[1], "wb") as f:
+                f.write(b"png")
+            return 0, "", ""
+        if name == "pbcopy":
+            self.clipboard_text = data.decode()
+            return 0, "", ""
+        return 0, "", ""
+
+    def osascript(self, script):
+        if script == "clipboard info":
+            return 0, self.clip, ""
+        if "frontmost" in script and "get name" in script:
+            return 0, self.front + "\n", ""
+        if "tty of current session" in script:
+            return (0, self.iterm_tty + "\n", "") if self.iterm_tty else (1, "", "no window")
+        if script.startswith("choose from list"):
+            return 0, (self.pick or "false") + "\n", ""
+        if "keystroke" in script:
+            self.pasted += 1
+            return 0, "", ""
+        if "display notification" in script:
+            self.notes.append(script)
+            return 0, "", ""
+        raise AssertionError(script)
+
+    def names(self):
+        return [os.path.basename(c[0]) for c in self.calls]
+
+
+class MainFlow(unittest.TestCase):
+    def setUp(self):
+        self.sys = FakeSystem()
+        self.saved = {n: getattr(mod, n) for n in ("run", "find_tool", "process_argv")}
+        mod.run = self.sys.run
+        mod.find_tool = lambda name: "/stub/" + name
+        mod.process_argv = lambda pid: self.sys.argvs.get(pid)
+        self.out, self.err = io.StringIO(), io.StringIO()
+
+    def tearDown(self):
+        for name, fn in self.saved.items():
+            setattr(mod, name, fn)
+
+    def main(self, *args):
+        with contextlib.redirect_stdout(self.out), contextlib.redirect_stderr(self.err):
+            return mod.main(list(args))
+
+    def two_hosts(self):
+        self.sys.hosts = {"dev": ("me", "dev.example.com", "22"), "prod": ("me", "prod.example.com", "2222")}
+        self.sys.ps_all = ("101 ttys001 ssh dev\n102 ttys002 ssh -p 22 prod\n"
+                           "103 ?? ssh -N dev\n104 ttys004 scp a b\n")
+
+    def test_no_image_sends_cmd_v_only(self):
+        self.sys.clip = TEXT_INFO
+        self.assertEqual(self.main(), 0)
+        self.assertEqual(self.sys.pasted, 1)
+        self.assertEqual(self.sys.names(), ["osascript", "osascript"])
+        self.assertEqual(self.sys.notes, [])
+
+    def test_no_image_dry_run_pastes_nothing(self):
+        self.sys.clip = TEXT_INFO
+        self.assertEqual(self.main("--dry-run"), 0)
+        self.assertEqual(self.sys.pasted, 0)
+        self.assertIn("would send Cmd-V", self.out.getvalue())
+
+    def test_one_host_uploads_and_pastes(self):
+        self.sys.hosts = {"dev": ("me", "dev.example.com", "22")}
+        self.sys.ps_all = "101 ttys001 ssh -p 2200 -i /k dev\n102 ttys002 ssh dev\n"
+        self.assertEqual(self.main(), 0)
+        names = self.sys.names()
+        self.assertEqual(names.count("scp"), 1)
+        self.assertEqual(names[-3:], ["scp", "pbcopy", "osascript"])
+        self.assertEqual(self.sys.pasted, 1)
+        self.assertRegex(self.sys.clipboard_text, r"^/tmp/claude-img/\d{8}-\d{6}-\d{3}\.png$")
+        scp = next(c for c in self.sys.calls if os.path.basename(c[0]) == "scp")
+        self.assertEqual(scp[-1], "dev:" + self.sys.clipboard_text)
+        self.assertIn("Port=2200", scp)
+        self.assertFalse(any(os.path.exists(p) for p in self.sys.local_files))
+
+    def test_several_hosts_use_the_picker(self):
+        self.two_hosts()
+        self.sys.pick = "prod (me@prod.example.com:2222)"
+        self.assertEqual(self.main(), 0)
+        scp = next(c for c in self.sys.calls if os.path.basename(c[0]) == "scp")
+        self.assertTrue(scp[-1].startswith("prod:/tmp/claude-img/"))
+        picker = [c for c in self.sys.calls if "choose from list" in c[-1]]
+        self.assertEqual(len(picker), 1)
+        self.assertIn("me@dev.example.com", picker[0][-1])
+        self.assertIn("prod (me@prod.example.com:2222)", picker[0][-1])
+
+    def test_picker_cancel_does_nothing(self):
+        self.two_hosts()
+        self.assertEqual(self.main(), 0)
+        self.assertNotIn("scp", self.sys.names())
+        self.assertEqual(self.sys.pasted, 0)
+        self.assertEqual(self.sys.notes, [])
+
+    def test_same_host_under_two_aliases_is_one_group(self):
+        self.sys.hosts = {"dev": ("me", "dev.example.com", "22"), "me@dev.example.com": ("me", "dev.example.com", "22")}
+        self.sys.ps_all = "101 ttys001 ssh dev\n102 ttys002 ssh me@dev.example.com\n"
+        self.assertEqual(self.main(), 0)
+        self.assertEqual([c for c in self.sys.calls if "choose from list" in c[-1]], [])
+        self.assertEqual(self.sys.names().count("scp"), 1)
+
+    def test_no_session_notifies(self):
+        self.sys.ps_all = "101 ?? ssh -N dev\n102 ttys001 ssh dev uptime\n103 ttys002 zsh\n"
+        self.assertEqual(self.main(), 0)
+        self.assertEqual(len(self.sys.notes), 1)
+        self.assertIn("No ssh session found", self.sys.notes[0])
+        self.assertNotIn("scp", self.sys.names())
+        self.assertEqual(self.sys.pasted, 0)
+
+    def test_iterm_uses_the_tty_of_the_current_session(self):
+        self.sys.front = "iTerm2"
+        self.sys.hosts = {"dev": ("me", "dev.example.com", "22")}
+        self.sys.ps_tty = "201 Ss zsh\n202 S+ ssh dev\n"
+        self.sys.ps_all = "301 ttys009 ssh prod\n"          # must be ignored
+        self.assertEqual(self.main(), 0)
+        ps_calls = [c for c in self.sys.calls if os.path.basename(c[0]) == "ps"]
+        self.assertEqual(ps_calls, [["/stub/ps", "-t", "ttys003", "-o", "pid=,stat=,args="]])
+        self.assertTrue(next(c for c in self.sys.calls if os.path.basename(c[0]) == "scp")[-1].startswith("dev:"))
+
+    def test_iterm_background_ssh_is_not_the_target(self):
+        self.sys.front = "iTerm2"
+        self.sys.hosts = {"prod": ("me", "prod.example.com", "22")}
+        self.sys.ps_tty = "201 S+ zsh\n202 S ssh dev\n"      # not in the foreground
+        self.sys.ps_all = "301 ttys009 ssh prod\n"
+        self.assertEqual(self.main(), 0)
+        self.assertTrue(next(c for c in self.sys.calls if os.path.basename(c[0]) == "scp")[-1].startswith("prod:"))
+
+    def test_iterm_without_ssh_falls_back_to_process_list(self):
+        self.sys.front = "iTerm2"
+        self.sys.hosts = {"dev": ("me", "dev.example.com", "22")}
+        self.sys.ps_tty = "201 S+ tmux\n"
+        self.sys.ps_all = "301 ttys009 ssh dev\n"
+        self.assertEqual(self.main(), 0)
+        self.assertEqual(self.sys.names().count("scp"), 1)
+
+    def test_exact_argv_from_the_kernel_wins_over_ps_text(self):
+        self.sys.hosts = {"dev": ("me", "dev.example.com", "22")}
+        self.sys.ps_all = "101 ttys001 ssh -i /k/my key dev\n"
+        self.sys.argvs = {101: ("/usr/bin/ssh", ["ssh", "-i", "/k/my key", "dev"])}
+        self.assertEqual(self.main(), 0)
+        scp = next(c for c in self.sys.calls if os.path.basename(c[0]) == "scp")
+        self.assertIn("/k/my key", scp)
+
+    def test_dry_run_uploads_nothing(self):
+        self.sys.hosts = {"dev": ("me", "dev.example.com", "22")}
+        self.sys.ps_all = "101 ttys001 ssh dev\n"
+        self.assertEqual(self.main("--dry-run"), 0)
+        self.assertNotIn("scp", self.sys.names())
+        self.assertNotIn("pngpaste", self.sys.names())
+        self.assertNotIn("pbcopy", self.sys.names())
+        self.assertEqual(self.sys.pasted, 0)
+        text = self.out.getvalue()
+        self.assertIn("target: dev (me@dev.example.com)", text)
+        self.assertIn("would run:", text)
+        self.assertIn("scp", text)
+
+    def test_scp_failure_notifies_cleans_up_and_does_not_paste(self):
+        self.sys.hosts = {"dev": ("me", "dev.example.com", "22")}
+        self.sys.ps_all = "101 ttys001 ssh dev\n"
+        self.sys.fail["scp"] = (1, "Permission denied (publickey).")
+        self.assertEqual(self.main(), 1)
+        self.assertEqual(self.sys.pasted, 0)
+        self.assertEqual(len(self.sys.notes), 1)
+        self.assertIn("Permission denied", self.sys.notes[0])
+        self.assertIn("Permission denied", self.err.getvalue())
+        self.assertFalse(any(os.path.exists(p) for p in self.sys.local_files))
+
+    def test_pngpaste_failure_cleans_up(self):
+        self.sys.hosts = {"dev": ("me", "dev.example.com", "22")}
+        self.sys.ps_all = "101 ttys001 ssh dev\n"
+        self.sys.fail["pngpaste"] = (1, "No image data")
+        self.assertEqual(self.main(), 1)
+        self.assertNotIn("scp", self.sys.names())
+
+    def test_missing_pngpaste_falls_back_to_cmd_v(self):
+        mod.find_tool = lambda name: None if name == "pngpaste" else "/stub/" + name
+        self.assertEqual(self.main(), 1)
+        self.assertEqual(self.sys.pasted, 1)
+        self.assertIn("pngpaste not found", self.sys.notes[0])
+
+    def test_bad_arguments(self):
+        self.assertEqual(self.main("--nope"), 2)
+        self.assertEqual(self.sys.calls, [])
+
+
+class RunHelper(unittest.TestCase):
+    def test_timeout_kills_and_reports_124(self):
+        code, _, err = mod.run(["/bin/sleep", "30"], timeout=0.3)
+        self.assertEqual(code, 124)
+        self.assertIn("timed out", err)
+
+    def test_missing_program(self):
+        self.assertEqual(mod.run(["/nonexistent/x"])[0], 127)
+
+    def test_stdin_data(self):
+        self.assertEqual(mod.run(["/bin/cat"], data=b"hi")[1], "hi")
+
+
+class StubbedPath(unittest.TestCase):
+    """Runs the real script with shell stubs first on PATH; nothing leaves the temp folder."""
+
+    STUBS = {
+        "osascript": '''#!/bin/sh
+echo "osascript $2" >> "$LOG"
+case "$2" in
+  "clipboard info") echo "$CLIP_INFO" ;;
+  *frontmost*) echo Ghostty ;;
+esac
+''',
+        "ps": '#!/bin/sh\necho "ps $*" >> "$LOG"\necho "999999 ttys001 ssh -p 2200 dev"\necho "999998 ?? ssh -N dev"\n',
+        "ssh": '#!/bin/sh\necho "ssh $*" >> "$LOG"\n[ "$1" = "-G" ] && printf "user me\\nhostname dev.example.com\\nport 2200\\n"\nexit 0\n',
+        "scp": '#!/bin/sh\necho "scp $*" >> "$LOG"\nexit 0\n',
+        "pngpaste": '#!/bin/sh\necho "pngpaste $*" >> "$LOG"\necho png > "$1"\necho "$1" > "$TMPFILE_LOG"\n',
+        "pbcopy": '#!/bin/sh\necho "pbcopy $(cat)" >> "$LOG"\n',
+    }
+
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.tmp, ignore_errors=True)
+        for name, body in self.STUBS.items():
+            path = os.path.join(self.tmp, name)
+            with open(path, "w") as f:
+                f.write(body)
+            os.chmod(path, os.stat(path).st_mode | stat.S_IXUSR)
+        self.log = os.path.join(self.tmp, "log")
+        self.tmpfile_log = os.path.join(self.tmp, "tmpfile")
+
+    @staticmethod
+    def read(path):
+        if not os.path.exists(path):
+            return ""
+        with open(path) as f:
+            return f.read()
+
+    def run_script(self, clip, *args):
+        env = {"PATH": self.tmp + ":/usr/bin:/bin", "LOG": self.log, "CLIP_INFO": clip,
+               "TMPFILE_LOG": self.tmpfile_log, "HOME": self.tmp}
+        proc = subprocess.run([sys.executable, "-I", SCRIPT, *args], env=env, capture_output=True,
+                              text=True, timeout=60)
+        log = self.read(self.log)
+        return proc, log
+
+    def test_full_run(self):
+        proc, log = self.run_script(IMAGE_INFO)
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        self.assertIn("scp -q -o BatchMode=yes", log)
+        self.assertIn("-o Port=2200 -- ", log)
+        self.assertRegex(log, r"pbcopy /tmp/claude-img/\d{8}-\d{6}-\d{3}\.png")
+        self.assertIn('keystroke "v" using command down', log)
+        self.assertFalse(os.path.exists(self.read(self.tmpfile_log).strip()))
+
+    def test_no_image(self):
+        proc, log = self.run_script("«class utf8», 5, string, 5")
+        self.assertEqual(proc.returncode, 0)
+        self.assertNotIn("scp", log)
+        self.assertEqual(log.count('keystroke "v"'), 1)
+
+    def test_dry_run(self):
+        proc, log = self.run_script(IMAGE_INFO, "--dry-run")
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        self.assertIn("target: dev (me@dev.example.com:2200)", proc.stdout)
+        self.assertNotIn("keystroke", log)
+        self.assertNotIn("scp ", log)
+        self.assertNotIn("pngpaste", log)
+
+
+if __name__ == "__main__":
+    unittest.main()

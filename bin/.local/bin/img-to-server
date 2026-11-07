@@ -1,0 +1,450 @@
+#!/usr/bin/env python3
+"""Uploads the clipboard image to an ssh server and pastes the remote path.
+
+With an image on the clipboard it finds the ssh session of the front terminal, copies the
+image with scp to /tmp/claude-img/<timestamp>.png on that server (files there older than a
+day are deleted), puts the remote path on the clipboard and sends Cmd-V. Without an image it
+only sends Cmd-V, so it is harmless to run anywhere. Works with any terminal.
+
+Finding the server, in order:
+  1. Front app is iTerm2: the foreground ssh on the current session's tty.
+  2. Otherwise: every interactive ssh client with a tty, grouped by resolved host.
+     One host is used; several show a native picker; none shows a notification.
+
+Needs pngpaste (brew install pngpaste). Failures show a macOS notification and print to stderr.
+
+Usage: img-to-server [--dry-run]
+  --dry-run  print the target and the commands; upload and paste nothing
+"""
+
+import ctypes
+import datetime
+import os
+import shlex
+import shutil
+import signal
+import subprocess
+import sys
+import tempfile
+import time
+from collections import namedtuple
+
+REMOTE_DIR = "/tmp/claude-img"  # upload folder on the server
+UPLOAD_TIMEOUT = 60             # seconds for the whole upload
+TITLE = "Image to server"
+
+# ssh options without a value, and options that take one (OpenSSH `man ssh`).
+SSH_FLAGS = set("46AaCfGgKkMNnqsTtVvXxYy")
+SSH_VALUE_OPTIONS = set("BbcDEeFIiJLlmOoPpQRSWw")
+# Options that mean no interactive shell: never upload through these.
+SSH_NON_INTERACTIVE = set("fGNOQsVW")
+# Options that choose the host, user, port, keys and config: reused for the upload.
+SSH_KEEP_FLAGS = set("46Cq")
+SSH_KEEP_VALUE_OPTIONS = set("BbcFIiJlmoPpS")
+
+# ssh options reused by scp. Options scp spells differently become -o settings.
+SCP_SAME = {"-4", "-6", "-C", "-q", "-c", "-F", "-i", "-J", "-o"}
+SCP_AS_SETTING = {"-p": "Port", "-l": "User", "-b": "BindAddress", "-B": "BindInterface",
+                  "-m": "MACs", "-S": "ControlPath"}
+
+# Placed before the session's own options: for -o settings, ssh uses the first value it gets.
+UPLOAD_SETTINGS = [
+    "-o", "BatchMode=yes",                  # never ask for a password or a host key
+    "-o", "ConnectTimeout=10",              # fail fast on a dead host
+    "-o", "RequestTTY=no",
+    "-o", "RemoteCommand=none",             # a RemoteCommand in ~/.ssh/config would clash with ours
+    "-o", "ClearAllForwardings=yes",        # no port forwards that could clash with the open session
+    "-o", "ForwardAgent=no",
+    "-o", "ForwardX11=no",
+    "-o", "PermitLocalCommand=no",
+    "-o", "ControlMaster=no",               # reuse an open master connection, never become one
+    "-o", "LogLevel=ERROR",                 # no banners in the error text
+]
+
+TEXT_TYPES = {"«class utf8»", "«class ut16»", "string", "Unicode text", "«class furl»"}
+IMAGE_TYPES = {"«class PNGf»", "TIFF picture", "JPEG picture", "GIF picture", "«class jp2 »", "«class heic»"}
+
+Target = namedtuple("Target", "ssh_path options dest")
+
+
+def _parse_ssh_options(args, i, keep, state):
+    """Reads ssh options from args[i:], appending the reusable ones to keep.
+
+    Sets state["tty"] when -t is seen. Returns the index of the first non-option
+    argument, or None for an unknown or non-interactive option. A "--" ends the
+    options and is skipped.
+    """
+    while i < len(args):
+        arg = args[i]
+        if arg == "--":
+            return i + 1
+        if not arg.startswith("-") or arg == "-":
+            return i
+        j = 1
+        while j < len(arg):
+            opt = arg[j]
+            if opt in SSH_NON_INTERACTIVE:
+                return None
+            if opt in SSH_VALUE_OPTIONS:
+                value = arg[j + 1:]
+                if not value:                       # value is the next argument
+                    i += 1
+                    if i >= len(args):
+                        return None
+                    value = args[i]
+                if opt in SSH_KEEP_VALUE_OPTIONS:
+                    keep += ["-" + opt, value]
+                break
+            if opt not in SSH_FLAGS:
+                return None
+            if opt == "t":
+                state["tty"] = True
+            if opt in SSH_KEEP_FLAGS:
+                keep.append("-" + opt)
+            j += 1
+        i += 1
+    return i
+
+
+def parse_ssh_argv(argv):
+    """Splits an interactive ssh command line into (connection options, destination).
+
+    Options after the destination are read too, as ssh does. Returns None when argv is
+    not an interactive login: no destination, -N, -W, -O, ..., or a remote command
+    without -t. With -t the command still opens a terminal, so it counts.
+    """
+    if not argv or os.path.basename(argv[0]) != "ssh":
+        return None
+    args, keep, state = argv[1:], [], {}
+    i = _parse_ssh_options(args, 0, keep, state)
+    if i is None or i >= len(args):
+        return None
+    dest = args[i]
+    rest = i + 1
+    if rest < len(args) and args[i - 1] != "--" and args[rest].startswith("-"):
+        rest = _parse_ssh_options(args, rest, keep, state)
+        if rest is None:
+            return None
+    if rest < len(args) and not state.get("tty"):
+        return None
+    return keep, dest
+
+
+def to_scp_options(options):
+    """Converts kept ssh options (flat list) to scp options for the same connection."""
+    out, i = [], 0
+    while i < len(options):
+        opt = options[i]
+        if opt in ("-4", "-6", "-C", "-q"):
+            out.append(opt)
+            i += 1
+            continue
+        value = options[i + 1]
+        if opt in SCP_SAME:
+            out += [opt, value]
+        elif opt in SCP_AS_SETTING:
+            out += ["-o", f"{SCP_AS_SETTING[opt]}={value}"]
+        i += 2
+    return out
+
+
+def remote_image_path(now):
+    """Returns the upload path for a datetime, e.g. /tmp/claude-img/20261031-142501-123.png."""
+    return f"{REMOTE_DIR}/{now:%Y%m%d-%H%M%S}-{now.microsecond // 1000:03d}.png"
+
+
+def prepare_command(ssh_path, target):
+    """Returns the ssh argv that creates REMOTE_DIR (mode 700) and deletes files older than a day."""
+    folder = shlex.quote(REMOTE_DIR)
+    script = f"mkdir -p -m 700 {folder} && find {folder} -type f -mtime +0 -delete"
+    return [ssh_path, "-T", *UPLOAD_SETTINGS, *target.options, "--", target.dest, script]
+
+
+def copy_command(scp_path, target, local, remote_path):
+    """Returns the scp argv that copies local to remote_path on the target."""
+    return [scp_path, "-q", *UPLOAD_SETTINGS, *to_scp_options(target.options), "--",
+            local, f"{target.dest}:{remote_path}"]
+
+
+def clipboard_types(info):
+    """Returns the type names in the output of AppleScript `clipboard info`."""
+    parts = [p.strip() for p in info.strip().split(", ")]
+    return set(parts[0::2]) if len(parts) > 1 else set()
+
+
+def clipboard_is_image_only(info):
+    """True when `clipboard info` lists an image type and no text or file type."""
+    types = clipboard_types(info)
+    return bool(types & IMAGE_TYPES) and not types & TEXT_TYPES
+
+
+def process_argv(pid):
+    """Returns (executable path, argv) of a process, exact even when arguments hold spaces.
+
+    Reads sysctl KERN_PROCARGS2 (macOS). Returns None if the process is gone or not ours.
+    """
+    libc = ctypes.CDLL(None, use_errno=True)
+    argmax = ctypes.c_int(0)
+    size = ctypes.c_size_t(ctypes.sizeof(argmax))
+    mib = (ctypes.c_int * 2)(1, 8)                        # CTL_KERN, KERN_ARGMAX
+    if libc.sysctl(mib, 2, ctypes.byref(argmax), ctypes.byref(size), None, 0) != 0:
+        return None
+    buf = ctypes.create_string_buffer(argmax.value)
+    size = ctypes.c_size_t(argmax.value)
+    mib = (ctypes.c_int * 3)(1, 49, pid)                  # CTL_KERN, KERN_PROCARGS2, pid
+    if libc.sysctl(mib, 3, buf, ctypes.byref(size), None, 0) != 0:
+        return None
+    return parse_procargs2(buf.raw[:size.value])
+
+
+def parse_procargs2(data):
+    """Parses a KERN_PROCARGS2 buffer: argc, executable path, padding, then argv."""
+    if len(data) < 4:
+        return None
+    argc = int.from_bytes(data[:4], "little")
+    exe, _, rest = data[4:].partition(b"\0")
+    argv = rest.lstrip(b"\0").split(b"\0")[:argc]
+    if len(argv) < argc:
+        return None
+    return exe.decode(errors="replace"), [a.decode(errors="replace") for a in argv]
+
+
+def find_tool(name):
+    """Finds a command on PATH, then in the Homebrew and system folders (a short PATH is common)."""
+    path = os.pathsep.join([os.environ.get("PATH", ""), "/opt/homebrew/bin", "/usr/local/bin",
+                            "/usr/bin", "/bin"])
+    return shutil.which(name, path=path)
+
+
+def run(argv, timeout=10, data=None):
+    """Runs argv in its own process group; returns (exit code, stdout, stderr) as text.
+
+    Exit code 124 on timeout (the whole group is killed), 127 when it cannot start.
+    """
+    try:
+        proc = subprocess.Popen(argv, stdin=subprocess.PIPE if data is not None else subprocess.DEVNULL,
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE, start_new_session=True)
+    except OSError as error:
+        return 127, "", str(error)
+    try:
+        out, err = proc.communicate(data, timeout=max(timeout, 0.1))
+    except subprocess.TimeoutExpired:
+        try:
+            os.killpg(proc.pid, signal.SIGKILL)
+        except OSError:
+            pass
+        proc.communicate()
+        return 124, "", f"timed out after {timeout:.0f} seconds"
+    return proc.returncode, out.decode(errors="replace"), err.decode(errors="replace")
+
+
+def osa_quote(text):
+    """Quotes text as an AppleScript string literal."""
+    return '"' + text.replace("\\", "\\\\").replace('"', '\\"') + '"'
+
+
+def osascript(script, timeout=10):
+    return run([find_tool("osascript") or "/usr/bin/osascript", "-e", script], timeout=timeout)
+
+
+def notify(text):
+    """Shows a macOS notification."""
+    osascript(f"display notification {osa_quote(text)} with title {osa_quote(TITLE)}")
+
+
+def fail(text):
+    """Reports an error on stderr and as a notification; returns the exit code 1."""
+    print(f"img-to-server: {text}", file=sys.stderr)
+    notify(text)
+    return 1
+
+
+def send_paste():
+    """Sends Cmd-V to the front app."""
+    return osascript('tell application "System Events" to keystroke "v" using command down')
+
+
+def argv_of(pid, args_text):
+    """Returns (executable or None, argv) of a process: exact from the kernel, else split from ps."""
+    found = process_argv(int(pid))
+    return found if found else (None, args_text.split())
+
+
+def target_from(pid, args_text):
+    """Returns the Target for a process if it is an interactive ssh login, else None."""
+    exe, argv = argv_of(pid, args_text)
+    parsed = parse_ssh_argv(argv)
+    if not parsed:
+        return None
+    ssh_path = exe if exe and os.path.isabs(exe) else (find_tool("ssh") or "/usr/bin/ssh")
+    return Target(ssh_path, parsed[0], parsed[1])
+
+
+def frontmost_app():
+    """Returns the name of the front app, or "" if it cannot be read."""
+    code, out, _ = osascript('tell application "System Events" to get name of '
+                             'first application process whose frontmost is true')
+    return out.strip() if code == 0 else ""
+
+
+def iterm_foreground_ssh():
+    """Returns the Target of the foreground ssh in iTerm2's current session, or None."""
+    code, out, _ = osascript('tell application "iTerm2" to tty of current session of current window')
+    tty = out.strip().replace("/dev/", "")
+    if code != 0 or not tty:
+        return None
+    code, out, _ = run([find_tool("ps") or "/bin/ps", "-t", tty, "-o", "pid=,stat=,args="])
+    if code != 0:
+        return None
+    for line in out.splitlines():
+        fields = line.split(None, 2)
+        if len(fields) == 3 and "+" in fields[1]:
+            target = target_from(fields[0], fields[2])
+            if target:
+                return target
+    return None
+
+
+def list_ssh_targets():
+    """Returns the Targets of every interactive ssh client that has a terminal."""
+    code, out, _ = run([find_tool("ps") or "/bin/ps", "-axo", "pid=,tty=,args="])
+    targets = []
+    for line in out.splitlines() if code == 0 else []:
+        fields = line.split(None, 2)
+        if len(fields) == 3 and not fields[1].startswith("?"):
+            target = target_from(fields[0], fields[2])
+            if target:
+                targets.append(target)
+    return targets
+
+
+def describe_host(target):
+    """Returns (user, hostname, port) as ssh resolves them from its config, or None."""
+    code, out, _ = run([target.ssh_path, "-G", *target.options, "--", target.dest], timeout=5)
+    if code != 0:
+        return None
+    conf = dict(line.split(" ", 1) for line in out.splitlines() if " " in line)
+    if "hostname" not in conf:
+        return None
+    return conf.get("user", "?"), conf["hostname"], conf.get("port", "22")
+
+
+def host_label(target, resolved):
+    """Returns "user@hostname[:port]", prefixed with the alias when it differs."""
+    if not resolved:
+        return target.dest
+    user, host, port = resolved
+    label = f"{user}@{host}" + ("" if port == "22" else f":{port}")
+    return label if target.dest in (host, label) else f"{target.dest} ({label})"
+
+
+def group_targets(targets):
+    """Groups Targets by resolved (user, hostname, port); returns [(label, Target)], first seen first."""
+    groups = {}
+    for target in targets:
+        resolved = describe_host(target)
+        key = resolved or (None, target.dest, None)
+        if key not in groups:
+            groups[key] = (host_label(target, resolved), target)
+    return list(groups.values())
+
+
+def pick_host(labels):
+    """Shows a native list and returns the chosen label, or None when cancelled."""
+    items = ", ".join(osa_quote(label) for label in labels)
+    code, out, _ = osascript(f"choose from list {{{items}}} with prompt "
+                             f"{osa_quote('Upload image to which server?')} with title {osa_quote(TITLE)}",
+                             timeout=120)
+    choice = out.strip()
+    return choice if code == 0 and choice and choice != "false" else None
+
+
+def detect_candidates():
+    """Returns [(label, Target)]: the iTerm2 foreground ssh when it exists, else every ssh session."""
+    if frontmost_app() == "iTerm2":
+        target = iterm_foreground_ssh()
+        if target:
+            return group_targets([target])
+    return group_targets(list_ssh_targets())
+
+
+def upload(target, dry_run):
+    """Copies the clipboard image to the target; returns (remote path, error text or None)."""
+    ssh_path = target.ssh_path
+    scp_path = find_tool("scp") or "/usr/bin/scp"
+    pngpaste = find_tool("pngpaste") or "pngpaste"
+    remote = remote_image_path(datetime.datetime.now())
+    tmp = tempfile.mkdtemp(prefix="img-to-server-") if not dry_run else "/tmp/img-to-server-XXXX"
+    local = os.path.join(tmp, "clipboard.png")
+    commands = [[pngpaste, local], prepare_command(ssh_path, target),
+                copy_command(scp_path, target, local, remote)]
+    if dry_run:
+        for command in commands:
+            print("would run:", shlex.join(command))
+        return remote, None
+    try:
+        deadline = time.monotonic() + UPLOAD_TIMEOUT
+        for command in commands:
+            code, _, err = run(command, timeout=deadline - time.monotonic())
+            if code != 0:
+                what = os.path.basename(command[0])
+                return remote, f"{what} failed: {err.strip()[-300:] or f'exit code {code}'}"
+        return remote, None
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+def main(argv):
+    if argv not in ([], ["--dry-run"]):
+        print(__doc__, file=sys.stderr)
+        return 2
+    dry_run = bool(argv)
+
+    code, info, _ = osascript("clipboard info")
+    if code != 0 or not clipboard_is_image_only(info):
+        if dry_run:
+            print("clipboard: no image only; would send Cmd-V")
+            return 0
+        send_paste()
+        return 0
+    if dry_run:
+        print("clipboard: image")
+
+    if not find_tool("pngpaste") and not dry_run:
+        send_paste()
+        return fail("pngpaste not found. Install it with: brew install pngpaste")
+
+    candidates = detect_candidates()
+    if not candidates:
+        if dry_run:
+            print("target: none; would show the notification 'No ssh session found'")
+            return 0
+        notify("No ssh session found")
+        return 0
+    if len(candidates) == 1:
+        label, target = candidates[0]
+    elif dry_run:
+        print("targets:", ", ".join(label for label, _ in candidates), "(would show a picker)")
+        label, target = candidates[0]
+    else:
+        choice = pick_host([label for label, _ in candidates])
+        if choice is None:
+            return 0
+        label, target = next(c for c in candidates if c[0] == choice)
+    print(f"target: {label}")
+
+    remote, error = upload(target, dry_run)
+    if error:
+        return fail(f"Upload to {label} failed. {error}")
+    if dry_run:
+        print(f"would paste: {remote}")
+        return 0
+    code, _, err = run([find_tool("pbcopy") or "/usr/bin/pbcopy"], data=remote.encode())
+    if code != 0:
+        return fail(f"pbcopy failed: {err.strip()}")
+    code, _, err = send_paste()
+    return 0 if code == 0 else fail(f"Could not paste: {err.strip()[-300:]}")
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

@@ -8,6 +8,7 @@ You'll use this page to choose a terminal, change its settings, and fix font or 
 - [Requirements](#requirements)
 - [Ghostty](#ghostty)
 - [iTerm2 (macOS only)](#iterm2-macos-only)
+- [Paste an image to a server (any terminal)](#paste-an-image-to-a-server-any-terminal)
 - [Paste an image to a server (iTerm2 only)](#paste-an-image-to-a-server-iterm2-only)
 - [How it works](#how-it-works)
 
@@ -93,21 +94,72 @@ Profile settings from the template:
 | Scrollback | unlimited |
 | New session folder | home |
 | `Cmd+K` | sends `Ctrl+Space` + `Ctrl+L` (clear the tmux pane; never edits text in vim/nvim) |
-| `Cmd+Ctrl+V` | runs the script function `dotfiles_image_paste()`: normal Paste, or an image upload in an SSH tab ([below](#paste-an-image-to-a-server-iterm2-only)). `Cmd+V` stays iTerm's normal Paste |
+| `Ctrl+Opt+Cmd+V` | runs the script function `dotfiles_image_paste()`: normal Paste, or an image upload in an SSH tab ([below](#paste-an-image-to-a-server-iterm2-only)). `Cmd+V` stays iTerm's normal Paste |
 
 One manual step per machine: iTerm Settings > Profiles > select **Dotfiles** > Other Actions > Set as Default. The profile keeps the same Guid, so this survives every sync.
 
 Dynamic Profiles are **read-only** in the iTerm UI. To change something, edit the template in the repo, then run `theme sync`. iTerm reloads the profile by itself. If it misses a change, quit with `Cmd+Q` and open it again.
 
+## Paste an image to a server (any terminal)
+
+Claude Code on a server cannot read your Mac's clipboard. `img-to-server` fixes that in any terminal (Ghostty, iTerm2, anything): copy an image, switch to a tab that runs `ssh`, press `Ctrl+Cmd+V`. The image is copied with `scp` to `/tmp/claude-img/<date>-<time>.png` on that server and the path is pasted at the prompt, with no `Enter`. Claude Code reads the file at that path when you send the prompt.
+
+macOS only. It needs `pngpaste` (the Brewfile installs it; or run `brew install pngpaste`). Files in that folder older than one day are deleted on each upload.
+
+### One-time setup
+
+1. Run `./install.sh`. It installs `pngpaste` and links `~/.local/bin/img-to-server`.
+2. Open the **Shortcuts** app > **New Shortcut** (`Cmd+N`).
+3. Search for **Run Shell Script** in the action list and add it.
+4. Set the script text to `~/.local/bin/img-to-server`. Keep the shell as `zsh`. Leave "Pass Input" alone: the script reads no input.
+5. Name the shortcut **Image to server** (click the title at the top).
+6. Open the shortcut's info panel (the `i` button in the right sidebar, or **Details**). Click **Add Keyboard Shortcut** and press `Ctrl+Cmd+V`.
+7. Grant Accessibility: System Settings > Privacy & Security > **Accessibility**. Turn on **Shortcuts**, and also **Shortcuts Events** or **System Events** if the list shows them. Without it the script cannot send `Cmd+V`.
+8. Run it once with an image on the clipboard (see "Use it" below). macOS asks whether Shortcuts may control **System Events**, and **iTerm2** if you use it. Click **Allow** each time.
+
+Check it worked: the path `/tmp/claude-img/...png` appears at the prompt of your ssh tab.
+
+### Use it
+
+1. Take a screenshot to the clipboard: `Cmd+Ctrl+Shift+4`, then drag over the area. Or copy an image in any app.
+2. Click the terminal tab that runs `ssh` (or `tssh`) to your server, with Claude Code open there.
+3. Press `Ctrl+Cmd+V`. The path appears at the prompt.
+4. Write the rest of your prompt and send it.
+
+With text on the clipboard (also text plus an image, or a file copied in Finder) the key sends a normal `Cmd+V`, so it is safe to press anywhere. The upload replaces the clipboard with the remote path.
+
+### How it picks the server
+
+1. If the front app is iTerm2, it takes the `ssh` running in the current tab (the foreground job on that tab's terminal).
+2. Otherwise, or when the iTerm2 tab runs no `ssh` (for example `ssh` inside a local tmux), it looks at every interactive `ssh` on the Mac and groups them by the host `ssh -G` resolves (user, hostname, port).
+   - One host: it uses it.
+   - Several hosts: a list asks **Upload image to which server?**. Cancel does nothing.
+   - None: a notification says **No ssh session found**.
+
+`ssh -N`, `-W`, `-O`, `-f`, `ssh host <command>` without `-t`, `scp`, `sftp`, `git` and `mosh` do not count. The upload reuses the session's user, port, `-i` key, `-J` jump host and `-F` config file, with `BatchMode=yes` (never asks for a password) and a 60-second limit. It reuses an open `ControlMaster` connection. The host must already be in `~/.ssh/known_hosts`: connect once by hand first.
+
+Ghostty cannot say which tab is in front, so with several `ssh` sessions open to different servers you get the list. Close the ones you do not need to skip it.
+
+To see what it would do without uploading: `img-to-server --dry-run` prints the target and the commands and pastes nothing.
+
+### Troubleshooting
+
+- **Nothing happens.** Check the Shortcuts app has **Accessibility** (setup step 7) and that the shortcut has the `Ctrl+Cmd+V` key. Run `img-to-server --dry-run` in a terminal to see what it finds. Another app that uses `Ctrl+Cmd+V` wins over the shortcut; pick a different key.
+- **The image uploads but nothing is pasted.** Accessibility is missing for Shortcuts. The path is already on the clipboard: press `Cmd+V`.
+- **A permission prompt appears on every run.** Click **Allow** (do not Deny). If you denied it before: System Settings > Privacy & Security > **Automation** > Shortcuts, turn on **System Events** and **iTerm2**.
+- **A notification says "No ssh session found".** No interactive `ssh` is running on this Mac. Check with `ps -axo tty,args | grep ssh`. `mosh` and `ssh -N` are not supported.
+- **The list appears when you expected none.** More than one server is connected (Ghostty case above). Pick one, or close the other sessions.
+- **"Upload to ... failed" with `Permission denied (publickey)` or `Host key verification failed`.** Set up key login, or connect once by hand with `ssh my-server` to save the host key.
+- **"pngpaste not found".** Run `brew install pngpaste`.
+- **On a server with several users**, `/tmp/claude-img` belongs to the first user who uploads. Others get "Permission denied" (see [server.md](server.md#7-several-users)).
+
 ## Paste an image to a server (iTerm2 only)
 
-Claude Code on a server cannot read your Mac's clipboard. In iTerm2, `Cmd+Ctrl+V` with an image on the clipboard, in a tab that runs `ssh` or `tssh`, copies the image to that server and types its path. Claude Code then reads the file when you send the prompt.
+This is the older iTerm2-only way. It is kept for comparison with [`img-to-server`](#paste-an-image-to-a-server-any-terminal), which now owns `Ctrl+Cmd+V`. The iTerm2 version is on **`Ctrl+Opt+Cmd+V`**. With an image on the clipboard, in a tab that runs `ssh` or `tssh`, it copies the image to that server and types its path.
 
-**This works only in iTerm2 on macOS.** Ghostty cannot run a script from a key, so in Ghostty `Cmd+V` stays the normal paste.
+**This works only in iTerm2 on macOS**, with the Python API script below. `Cmd+V` is always the normal paste, text or image, and never depends on the script. The upload has its own key because `Cmd+Shift+V` is iTerm's Advanced Paste.
 
-`Cmd+V` is always the normal paste, text or image, and never depends on the script. The upload has its own key, `Cmd+Ctrl+V`, because `Cmd+Shift+V` is iTerm's Advanced Paste.
-
-### What Cmd+Ctrl+V does
+### What Ctrl+Opt+Cmd+V does
 
 | Tab and clipboard | What happens |
 | --- | --- |
@@ -124,20 +176,20 @@ The path is typed, not pasted, so Claude Code shows it as text, not as `[Image #
 ### One-time setup
 
 1. Run `./install.sh`. It installs `pngpaste` (Brewfile) and links the script into `~/Library/Application Support/iTerm2/Scripts/AutoLaunch/`.
-2. Run `theme sync` (install.sh does it). The **Dotfiles** profile now maps `Cmd+Ctrl+V` to the script.
+2. Run `theme sync` (install.sh does it). The **Dotfiles** profile now maps `Ctrl+Opt+Cmd+V` to the script. If the old key still shows in Settings > Profiles > Keys, quit iTerm with `Cmd+Q` and open it again.
 3. In iTerm: Settings > General > Magic > turn on **Enable Python API**.
 4. Scripts > Manage > **Check for Updated Runtime**. Accept the download.
 5. Quit iTerm with `Cmd+Q` and open it again.
 6. Start the script once: Scripts > AutoLaunch > `dotfiles_image_paste.py`. If iTerm asks whether the script may use the API, allow it.
 7. Check it runs: Scripts > Manage > Console (`⌥⌘J`) shows `dotfiles_image_paste.py` running.
 
-If the script is not running, `Cmd+Ctrl+V` does nothing (harmless) and `Cmd+V` still pastes. Fix the setup when you want the upload (see [Troubleshooting](#troubleshooting)).
+If the script is not running, `Ctrl+Opt+Cmd+V` does nothing (harmless) and `Cmd+V` still pastes. Fix the setup when you want the upload (see [Troubleshooting](#troubleshooting)).
 
 ### Use it
 
 1. Take a screenshot to the clipboard: `Cmd+Ctrl+Shift+4`, then drag over the area. Or copy an image in any app.
 2. Click the iTerm tab that runs `tssh my-server` (Claude Code open on the server).
-3. Press `Cmd+Ctrl+V`.
+3. Press `Ctrl+Opt+Cmd+V`.
 4. Press `Enter` to upload. The path appears at the prompt.
 5. Write the rest of your prompt and send it.
 
@@ -149,7 +201,7 @@ If the script is not running, `Cmd+Ctrl+V` does nothing (harmless) and `Cmd+V` s
 
 ### Limits
 
-- iTerm2 on macOS only, and only in the **Dotfiles** profile (it holds the `Cmd+Ctrl+V` mapping).
+- iTerm2 on macOS only, and only in the **Dotfiles** profile (it holds the `Ctrl+Opt+Cmd+V` mapping).
 - SSH must log in with a key (agent or `-i`), no password. The host must already be in `~/.ssh/known_hosts`: connect once by hand first.
 - Only for an `ssh` that iTerm sees as the tab's job. `mosh`, `ssh` inside a local tmux, and `ssh -N` or `-W` get the normal Paste.
 - On a server with several users, `/tmp/claude-img` belongs to the first user who uploads. Other users get "Permission denied" (see [server.md](server.md#7-several-users)).
@@ -157,7 +209,7 @@ If the script is not running, `Cmd+Ctrl+V` does nothing (harmless) and `Cmd+V` s
 ### Troubleshooting
 
 - **After pulling an update, the key does not change.** Run `theme sync` so the profile picks it up.
-- **`Cmd+Ctrl+V` does nothing, or iTerm reports a script function error.** The script is not running. Check Scripts > Manage > Console. If it is missing, check **Enable Python API** is on, then run it once from Scripts > AutoLaunch > `dotfiles_image_paste.py`.
+- **`Ctrl+Opt+Cmd+V` does nothing, or iTerm reports a script function error.** The script is not running. Check Scripts > Manage > Console. If it is missing, check **Enable Python API** is on, then run it once from Scripts > AutoLaunch > `dotfiles_image_paste.py`.
 - **The Console shows Python errors on start, or the runtime is missing.** Scripts > Manage > Check for Updated Runtime (accept the download), then restart iTerm.
 - **Image in an `ssh` tab, but no question, only the normal Paste.** The tab does not use the **Dotfiles** profile, `theme sync` has not run since the update, or iTerm does not see `ssh` as the job (for example `ssh` inside a local tmux). The Console prints errors as `dotfiles_image_paste: ...`.
 - **"Upload to ... failed" with `Permission denied (publickey)` or `Host key verification failed`.** Set up key login, or connect once by hand with `ssh my-server` to save the host key.
