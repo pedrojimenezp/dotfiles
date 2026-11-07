@@ -164,15 +164,18 @@ exit
 Then finish the setup:
 
 1. On your laptop, log in again: `ssh my-ec2`. You are now in zsh.
-2. **Ghostty terminal name (once per server).** Skip this if you only use iTerm2. On your laptop, in a Ghostty tab (not iTerm2, because `infocmp` finds `xterm-ghostty` through Ghostty's `TERMINFO`), run:
+2. **Ghostty terminal name (once per server and per user).** Skip this if you only use iTerm2. On your laptop, in a Ghostty tab (not iTerm2, because `infocmp` finds `xterm-ghostty` through Ghostty's `TERMINFO`), run it for each user you log in as:
    ```sh
-   infocmp -x xterm-ghostty | ssh my-ec2 -- tic -x -
+   infocmp -x xterm-ghostty | ssh <user>@<host> -- tic -x -
    ```
-   This copies Ghostty's terminfo into `~/.terminfo` on the server. It needs no sudo and applies to that user only. It is needed because Ghostty sends `TERM=xterm-ghostty`; without the entry, tmux, nvim, less and the backspace key misbehave, or programs say "unknown terminal type". Check it:
+   This copies Ghostty's terminfo into `~/.terminfo` of that user on the server (`tic` saves there). It needs no sudo. It is needed because Ghostty sends `TERM=xterm-ghostty`; without the entry, tmux, nvim, less and the backspace key misbehave, or programs say "unknown terminal type". A user you switch to on the server (`sudo -iu <user>`) needs it too, since `TERM` carries over. Check it:
    ```sh
-   ssh my-ec2 'infocmp xterm-ghostty >/dev/null && echo ok'
+   ssh <user>@<host> 'infocmp xterm-ghostty >/dev/null && echo ok'
    ```
-   It prints `ok`.
+   It prints `ok`. Optional: to cover every user at once, install it system-wide (needs sudo on the server):
+   ```sh
+   infocmp -x xterm-ghostty | ssh <user>@<host> -- sudo tic -x -o /usr/share/terminfo -
+   ```
 3. On the server, put your secrets in `~/.zshrc.local` (it loads near the end, after all other settings, and is not tracked by git), then lock it:
    ```sh
    chmod 600 ~/.zshrc.local
