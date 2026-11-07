@@ -338,18 +338,19 @@ install_font() {
     return 0 # already installed
   fi
   echo "==> Installing ${NERD_FONT} Nerd Font"
-  if [[ $DRY -eq 1 ]]; then
-    tmp="<tmpdir>" # nothing is downloaded in dry-run
-  else
-    tmp="$(mktemp -d)"
-    # shellcheck disable=SC2064 # expand $tmp now: it is local
-    trap "rm -rf '${tmp}'" EXIT # remove the download on exit
+  if [[ $DRY -eq 1 ]]; then tmp="<tmpdir>"; else tmp="$(mktemp -d)" || return 0; fi # nothing is downloaded in dry-run
+  # A failure must not stop the install: drop the partial folder so the next run retries.
+  if ! {
+    run curl -fsSL -o "$tmp/font.tar.xz" "https://github.com/ryanoasis/nerd-fonts/releases/latest/download/${NERD_FONT}.tar.xz" &&
+      run mkdir -p "$dir" &&
+      run tar -xJf "$tmp/font.tar.xz" -C "$dir" &&
+      run fc-cache -f
+  }; then
+    echo "Warning: font install failed, re-run install.sh to retry" >&2
+    [[ $DRY -eq 1 ]] || rm -rf "$dir"
   fi
-  # download the release archive
-  run curl -fsSL -o "$tmp/font.tar.xz" "https://github.com/ryanoasis/nerd-fonts/releases/latest/download/${NERD_FONT}.tar.xz"
-  run mkdir -p "$dir" # target folder
-  run tar -xJf "$tmp/font.tar.xz" -C "$dir" # unpack the fonts
-  run fc-cache -f # refresh the font cache
+  [[ $DRY -eq 1 ]] || rm -rf "$tmp"
+  return 0
 }
 
 if [[ "$OSTYPE" == linux* ]]; then

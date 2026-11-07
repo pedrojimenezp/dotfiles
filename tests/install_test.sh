@@ -62,6 +62,32 @@ git -C "$ROOT/existing" init -q
 CLAUDE_SHARED_DIR="$ROOT/existing" run_install --dry-run --with-claude "$ROOT/none.git" --claude-accounts personal
 check "clone already there: installer still gets the name" grep -qE "existing/install.sh personal$" <<<"$OUT"
 
+echo "== font install failure"
+# install_font only runs on a Linux desktop, so run the function alone with stub tools on PATH.
+font_home="$ROOT/font-home"
+font_bin="$ROOT/font-bin"
+mkdir -p "$font_home" "$font_bin"
+printf '#!/bin/sh\nexit 0\n' >"$font_bin/fc-list"
+printf '#!/bin/sh\nexit 0\n' >"$font_bin/fc-cache"
+printf '#!/bin/sh\nexit 22\n' >"$font_bin/curl" # what curl -f returns on an HTTP error
+chmod +x "$font_bin"/*
+awk '/^install_font\(\) /,/^}/' "$SRC/install.sh" >"$ROOT/install_font.sh"
+FONT_RC=0
+FONT_OUT="$(
+  PATH="$font_bin:$PATH" HOME="$font_home" bash -c '
+    set -euo pipefail
+    DRY=0 NERD_FONT=Monaspace NERD_FONT_FAMILY=Monaspice
+    run() { "$@"; }
+    source "$2"
+    mkdir -p "$HOME/.local/share/fonts/MonaspaceNerdFont" # empty folder: not "installed", must be removed on failure
+    install_font
+    echo "continued"
+  ' _ "$SRC" "$ROOT/install_font.sh" 2>&1
+)" || FONT_RC=$?
+check "failed download: install continues with exit 0" bash -c '[[ $1 -eq 0 ]] && grep -qF continued <<<"$2"' _ "$FONT_RC" "$FONT_OUT"
+check "failed download: warning printed" grep -qF "Warning: font install failed, re-run install.sh to retry" <<<"$FONT_OUT"
+check "failed download: partial font folder removed" bash -c '[[ ! -e "$1/.local/share/fonts/MonaspaceNerdFont" ]]' _ "$font_home"
+
 echo "== old atuin config link"
 atuin_dir="$HOME/.config/atuin"
 mkdir -p "$atuin_dir"
