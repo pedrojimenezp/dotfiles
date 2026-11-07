@@ -102,7 +102,7 @@ Dynamic Profiles are **read-only** in the iTerm UI. To change something, edit th
 
 ## Paste an image to a server (any terminal)
 
-Claude Code on a server cannot read your Mac's clipboard. `img-to-server` fixes that in any terminal (Ghostty, iTerm2, anything): copy an image, switch to a tab that runs `ssh`, press `Ctrl+Cmd+V`. The image is copied with `scp` to `/tmp/claude-img/<date>-<time>.png` on that server and the path is pasted at the prompt, with no `Enter`. Claude Code reads the file at that path when you send the prompt.
+Claude Code on a server cannot read your Mac's clipboard. `img-to-server` fixes that in any terminal (Ghostty, iTerm2, anything): copy an image, switch to a tab that runs `ssh`, press `Ctrl+Cmd+V`. The image is copied with `scp` to `/tmp/claude-img/<date>-<time>.png` (or the file's own extension) on that server and the path is pasted at the prompt, with no `Enter`. Claude Code reads the file at that path when you send the prompt.
 
 macOS only. It needs `pngpaste` (the Brewfile installs it; or run `brew install pngpaste`). Files in that folder older than one day are deleted on each upload.
 
@@ -121,12 +121,20 @@ Check it worked: the path `/tmp/claude-img/...png` appears at the prompt of your
 
 ### Use it
 
-1. Take a screenshot to the clipboard: `Cmd+Ctrl+Shift+4`, then drag over the area. Or copy an image in any app.
+1. Put an image on the clipboard: a screenshot (`Cmd+Ctrl+Shift+4`, then drag over the area), **Copy Image** in a browser, `Cmd+C` in an image app, or `Cmd+C` on one image file in Finder.
 2. Click the terminal tab that runs `ssh` (or `tssh`) to your server, with Claude Code open there.
 3. Press `Ctrl+Cmd+V`. The path appears at the prompt.
 4. Write the rest of your prompt and send it.
 
-With text on the clipboard (also text plus an image, or a file copied in Finder) the key sends a normal `Cmd+V`, so it is safe to press anywhere. The upload replaces the clipboard with the remote path.
+What the key does with the clipboard:
+
+| Clipboard | What happens |
+| --- | --- |
+| One image file copied in Finder (png, jpg, jpeg, gif, webp, heic, tiff, bmp) | Uploads that file as is, keeping its extension |
+| Image data (screenshot, Copy Image), even with text or HTML beside it | Uploads it as a PNG |
+| Text only, several files, or a file that is not an image | Normal `Cmd+V` |
+
+So the key is safe to press anywhere. An upload replaces the clipboard with the remote path.
 
 ### How it picks the server
 

@@ -10,7 +10,8 @@ Copy any image on the Mac, switch to any terminal tab with an ssh session, press
 4. Tests in `tests/img_to_server_test.py`.
 
 ## Done
-- Script, iTerm plist key move, docs, cheatsheet, tests (37 pass); iTerm tests and tests/*_test.sh pass.
+- Clipboard rule: copied image file (one, image extension) uploads as is; image data uploads even with text types; else Cmd-V. A copied file wins over image data (Finder adds an icon image).
+- Script, iTerm plist key move, docs, cheatsheet, tests (44 pass); iTerm tests and tests/*_test.sh pass.
 
 ## Where we stopped
 Implementation finished, waiting for the user's real-machine test.
@@ -22,7 +23,7 @@ User creates the macOS Shortcut (docs/terminals.md) and tests with a real ssh se
 `img-to-server --dry-run` with an image on the clipboard and an ssh tab open; `python3 -I tests/img_to_server_test.py`.
 
 ## Open questions
-- Text-plus-image clipboards paste as text (same rule as the iTerm script).
+- A copied non-image file that also carries image data pastes normally.
 - The clipboard keeps the remote path after an upload.
 
 Updated: 2026-11-07 by niche@Pedros-MacBook-Pro-M4

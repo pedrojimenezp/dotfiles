@@ -100,14 +100,19 @@ class ScpOptions(unittest.TestCase):
 
 
 class Clipboard(unittest.TestCase):
-    def test_image_only(self):
-        self.assertTrue(mod.clipboard_is_image_only(IMAGE_INFO))
+    def test_image_data(self):
+        self.assertEqual(mod.clipboard_kind(IMAGE_INFO), "image")
 
-    def test_text_or_file_blocks_upload(self):
-        self.assertFalse(mod.clipboard_is_image_only(TEXT_INFO))
-        self.assertFalse(mod.clipboard_is_image_only(IMAGE_INFO + ", «class utf8», 3"))
-        self.assertFalse(mod.clipboard_is_image_only(IMAGE_INFO + ", «class furl», 3"))
-        self.assertFalse(mod.clipboard_is_image_only(""))
+    def test_image_data_with_text_types_is_still_an_image(self):
+        self.assertEqual(mod.clipboard_kind(IMAGE_INFO + ", «class HTML», 9, string, 3"), "image")
+        self.assertEqual(mod.clipboard_kind("«class PNGf», 1, «class utf8», 3"), "image")
+
+    def test_file_wins_over_its_icon_image(self):
+        self.assertEqual(mod.clipboard_kind("«class furl», 40, TIFF picture, 5678"), "file")
+
+    def test_text_or_empty_is_not_an_image(self):
+        self.assertIsNone(mod.clipboard_kind(TEXT_INFO))
+        self.assertIsNone(mod.clipboard_kind(""))
 
 
 class FakeSystem:
@@ -128,6 +133,7 @@ class FakeSystem:
         self.notes = []
         self.clipboard_text = None
         self.local_files = []
+        self.files = []          # paths reported as copied files
 
     def run(self, argv, timeout=10, data=None):
         self.calls.append(argv)
@@ -136,7 +142,7 @@ class FakeSystem:
             code, err = self.fail[name]
             return code, "", err
         if name == "osascript":
-            return self.osascript(argv[2])
+            return self.osascript(argv[-1], "-l" in argv)
         if name == "ps":
             return 0, (self.ps_tty if argv[1] == "-t" else self.ps_all), ""
         if name == "ssh" and argv[1] == "-G":
@@ -155,7 +161,9 @@ class FakeSystem:
             return 0, "", ""
         return 0, "", ""
 
-    def osascript(self, script):
+    def osascript(self, script, javascript=False):
+        if javascript:
+            return 0, "\n".join(self.files), ""
         if script == "clipboard info":
             return 0, self.clip, ""
         if "frontmost" in script and "get name" in script:
@@ -192,6 +200,68 @@ class MainFlow(unittest.TestCase):
     def main(self, *args):
         with contextlib.redirect_stdout(self.out), contextlib.redirect_stderr(self.err):
             return mod.main(list(args))
+
+    def one_host(self):
+        self.sys.hosts = {"dev": ("me", "dev.example.com", "22")}
+        self.sys.ps_all = "101 ttys001 ssh dev\n"
+
+    def make_file(self, name):
+        tmp = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, tmp, ignore_errors=True)
+        path = os.path.join(tmp, name)
+        with open(path, "wb") as f:
+            f.write(b"x")
+        return path
+
+    def scp_call(self):
+        return next(c for c in self.sys.calls if os.path.basename(c[0]) == "scp")
+
+    def test_image_data_with_text_types_uploads(self):
+        self.one_host()
+        self.sys.clip = IMAGE_INFO + ", «class HTML», 9, «class utf8», 3"
+        self.assertEqual(self.main(), 0)
+        self.assertIn("pngpaste", self.sys.names())
+        self.assertTrue(self.scp_call()[-1].endswith(".png"))
+        self.assertEqual(self.sys.pasted, 1)
+
+    def test_one_copied_image_file_uploads_as_is_and_keeps_extension(self):
+        self.one_host()
+        path = self.make_file("Photo.JPG")
+        self.sys.clip = "«class furl», 40, TIFF picture, 5678"
+        self.sys.files = [path]
+        self.assertEqual(self.main(), 0)
+        self.assertNotIn("pngpaste", self.sys.names())
+        scp = self.scp_call()
+        self.assertIn(path, scp)
+        self.assertRegex(scp[-1], r"^dev:/tmp/claude-img/\d{8}-\d{6}-\d{3}\.jpg$")
+        self.assertTrue(os.path.exists(path))
+        self.assertEqual(self.sys.pasted, 1)
+
+    def test_several_copied_files_paste_normally(self):
+        self.one_host()
+        self.sys.clip = "«class furl», 40"
+        self.sys.files = [self.make_file("a.png"), self.make_file("b.png")]
+        self.assertEqual(self.main(), 0)
+        self.assertNotIn("scp", self.sys.names())
+        self.assertEqual(self.sys.pasted, 1)
+
+    def test_copied_file_that_is_not_an_image_pastes_normally(self):
+        self.one_host()
+        self.sys.clip = "«class furl», 40"
+        self.sys.files = [self.make_file("notes.txt")]
+        self.assertEqual(self.main(), 0)
+        self.assertNotIn("scp", self.sys.names())
+        self.assertEqual(self.sys.pasted, 1)
+
+    def test_copied_image_file_dry_run(self):
+        self.one_host()
+        path = self.make_file("a.png")
+        self.sys.clip = "«class furl», 40"
+        self.sys.files = [path]
+        self.assertEqual(self.main("--dry-run"), 0)
+        self.assertIn(f"clipboard: {path}", self.out.getvalue())
+        self.assertNotIn("scp", self.sys.names())
+        self.assertEqual(self.sys.pasted, 0)
 
     def two_hosts(self):
         self.sys.hosts = {"dev": ("me", "dev.example.com", "22"), "prod": ("me", "prod.example.com", "2222")}

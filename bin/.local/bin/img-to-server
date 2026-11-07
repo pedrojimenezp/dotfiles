@@ -2,9 +2,14 @@
 """Uploads the clipboard image to an ssh server and pastes the remote path.
 
 With an image on the clipboard it finds the ssh session of the front terminal, copies the
-image with scp to /tmp/claude-img/<timestamp>.png on that server (files there older than a
+image with scp to /tmp/claude-img/<timestamp>.<ext> on that server (files there older than a
 day are deleted), puts the remote path on the clipboard and sends Cmd-V. Without an image it
 only sends Cmd-V, so it is harmless to run anywhere. Works with any terminal.
+
+What counts as an image on the clipboard:
+  1. One copied file with an image extension: uploaded as is, extension kept.
+  2. Image data (PNG, TIFF, JPEG, ...), even with text or HTML types beside it: saved with pngpaste.
+  3. Anything else (text, several files, other files): normal Cmd-V.
 
 Finding the server, in order:
   1. Front app is iTerm2: the foreground ssh on the current session's tty.
@@ -61,7 +66,15 @@ UPLOAD_SETTINGS = [
     "-o", "LogLevel=ERROR",                 # no banners in the error text
 ]
 
-TEXT_TYPES = {"«class utf8»", "«class ut16»", "string", "Unicode text", "«class furl»"}
+FILE_TYPE = "«class furl»"
+IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".heic", ".tiff", ".tif", ".bmp"}
+# Prints the path of every file on the clipboard, one per line.
+FILE_PATHS_SCRIPT = (
+    'ObjC.import("AppKit");'
+    'var a = $.NSPasteboard.generalPasteboard.readObjectsForClassesOptions('
+    '$.NSArray.arrayWithObject($.NSURL), $({NSPasteboardURLReadingFileURLsOnlyKey: true}));'
+    'var o = []; if (a) { for (var i = 0; i < a.count; i++) { o.push(ObjC.unwrap(a.objectAtIndex(i).path)); } }'
+    'o.join("\\n")')
 IMAGE_TYPES = {"«class PNGf»", "TIFF picture", "JPEG picture", "GIF picture", "«class jp2 »", "«class heic»"}
 
 Target = namedtuple("Target", "ssh_path options dest")
@@ -148,9 +161,9 @@ def to_scp_options(options):
     return out
 
 
-def remote_image_path(now):
+def remote_image_path(now, ext=".png"):
     """Returns the upload path for a datetime, e.g. /tmp/claude-img/20261031-142501-123.png."""
-    return f"{REMOTE_DIR}/{now:%Y%m%d-%H%M%S}-{now.microsecond // 1000:03d}.png"
+    return f"{REMOTE_DIR}/{now:%Y%m%d-%H%M%S}-{now.microsecond // 1000:03d}{ext}"
 
 
 def prepare_command(ssh_path, target):
@@ -172,10 +185,27 @@ def clipboard_types(info):
     return set(parts[0::2]) if len(parts) > 1 else set()
 
 
-def clipboard_is_image_only(info):
-    """True when `clipboard info` lists an image type and no text or file type."""
+def clipboard_kind(info):
+    """Classifies `clipboard info` output: "file" (a file is copied), "image" (image data) or None.
+
+    A copied file wins over image data, because file managers add an icon image beside it.
+    """
     types = clipboard_types(info)
-    return bool(types & IMAGE_TYPES) and not types & TEXT_TYPES
+    if FILE_TYPE in types:
+        return "file"
+    return "image" if types & IMAGE_TYPES else None
+
+
+def clipboard_image_file():
+    """Returns the path of the one image file on the clipboard, or None.
+
+    None when there are several files, a file without an image extension, or no file.
+    """
+    code, out, _ = osascript(FILE_PATHS_SCRIPT, language="JavaScript")
+    paths = [p for p in out.split("\n") if p] if code == 0 else []
+    if len(paths) != 1 or not os.path.isfile(paths[0]):
+        return None
+    return paths[0] if os.path.splitext(paths[0])[1].lower() in IMAGE_EXTENSIONS else None
 
 
 def process_argv(pid):
@@ -243,8 +273,9 @@ def osa_quote(text):
     return '"' + text.replace("\\", "\\\\").replace('"', '\\"') + '"'
 
 
-def osascript(script, timeout=10):
-    return run([find_tool("osascript") or "/usr/bin/osascript", "-e", script], timeout=timeout)
+def osascript(script, timeout=10, language=None):
+    lang = ["-l", language] if language else []
+    return run([find_tool("osascript") or "/usr/bin/osascript", *lang, "-e", script], timeout=timeout)
 
 
 def notify(text):
@@ -368,16 +399,21 @@ def detect_candidates():
     return group_targets(list_ssh_targets())
 
 
-def upload(target, dry_run):
-    """Copies the clipboard image to the target; returns (remote path, error text or None)."""
+def upload(target, dry_run, source=None):
+    """Copies an image to the target; returns (remote path, error text or None).
+
+    source is an image file to send as is; without it the clipboard image is saved with
+    pngpaste to a temporary file that is always deleted.
+    """
     ssh_path = target.ssh_path
     scp_path = find_tool("scp") or "/usr/bin/scp"
     pngpaste = find_tool("pngpaste") or "pngpaste"
-    remote = remote_image_path(datetime.datetime.now())
-    tmp = tempfile.mkdtemp(prefix="img-to-server-") if not dry_run else "/tmp/img-to-server-XXXX"
-    local = os.path.join(tmp, "clipboard.png")
-    commands = [[pngpaste, local], prepare_command(ssh_path, target),
-                copy_command(scp_path, target, local, remote)]
+    ext = os.path.splitext(source)[1].lower() if source else ".png"
+    remote = remote_image_path(datetime.datetime.now(), ext)
+    tmp = None if source or dry_run else tempfile.mkdtemp(prefix="img-to-server-")
+    local = source or os.path.join(tmp or "/tmp/img-to-server-XXXX", "clipboard.png")
+    commands = [] if source else [[pngpaste, local]]
+    commands += [prepare_command(ssh_path, target), copy_command(scp_path, target, local, remote)]
     if dry_run:
         for command in commands:
             print("would run:", shlex.join(command))
@@ -391,7 +427,8 @@ def upload(target, dry_run):
                 return remote, f"{what} failed: {err.strip()[-300:] or f'exit code {code}'}"
         return remote, None
     finally:
-        shutil.rmtree(tmp, ignore_errors=True)
+        if tmp:
+            shutil.rmtree(tmp, ignore_errors=True)
 
 
 def main(argv):
@@ -401,16 +438,20 @@ def main(argv):
     dry_run = bool(argv)
 
     code, info, _ = osascript("clipboard info")
-    if code != 0 or not clipboard_is_image_only(info):
+    kind = clipboard_kind(info) if code == 0 else None
+    source = clipboard_image_file() if kind == "file" else None
+    if kind == "file" and not source:
+        kind = None
+    if not kind:
         if dry_run:
-            print("clipboard: no image only; would send Cmd-V")
+            print("clipboard: no image; would send Cmd-V")
             return 0
         send_paste()
         return 0
     if dry_run:
-        print("clipboard: image")
+        print(f"clipboard: {source or 'image data'}")
 
-    if not find_tool("pngpaste") and not dry_run:
+    if kind == "image" and not find_tool("pngpaste") and not dry_run:
         send_paste()
         return fail("pngpaste not found. Install it with: brew install pngpaste")
 
@@ -433,7 +474,7 @@ def main(argv):
         label, target = next(c for c in candidates if c[0] == choice)
     print(f"target: {label}")
 
-    remote, error = upload(target, dry_run)
+    remote, error = upload(target, dry_run, source)
     if error:
         return fail(f"Upload to {label} failed. {error}")
     if dry_run:
