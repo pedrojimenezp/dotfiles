@@ -12,7 +12,7 @@ Trigger `img-to-server` with skhd.zig (Ctrl+Cmd+V) instead of a Shortcuts Quick 
 ## Done
 - All four steps, with unit tests (stubbed Quartz, no real keys) and docs/terminals.md rewritten.
 - skhd-zig is a Homebrew cask, not a formula: Brewfile uses `cask "jackielii/tap/skhd-zig"`; app at ~/Applications/skhd.app.
-- skhd runs commands as `$SHELL -c` (default /bin/bash); skhdrc pins `.shell "/bin/sh"` so `$HOME` expands.
+- skhd runs commands as `$SHELL -c` (default /bin/bash), so `$HOME` expands in skhdrc without pinning a shell.
 
 ## Where we stopped
 Implementation and tests done in the worktree; nothing tested on a real Mac yet.
