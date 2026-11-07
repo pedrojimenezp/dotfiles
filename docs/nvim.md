@@ -129,6 +129,16 @@ A [hunk](glossary.md#hunk) is one block of changed lines in a file. These keys w
 | `<leader>hp` | Preview hunk |
 | `<leader>hb` | Blame line |
 
+### Diff view (diffview.nvim)
+
+Side-by-side diffs of every changed file, in real buffers, so the language server keys below work in them. From a shell, `review [dir]` opens it for each repo against its base branch ([tmux.md](tmux.md): `prefix R`).
+
+| Keys | What it does |
+| --- | --- |
+| `<leader>gd` | Open the diff view of the working tree |
+| `<leader>gh` | History of the current file |
+| `<leader>gq` | Close the diff view |
+
 ### Language server ([LSP](glossary.md#lsp))
 
 A language server gives the editor code help: definitions, rename, errors. These keys work when a server is attached to the file.
@@ -200,6 +210,7 @@ Check what is active with `:ConformInfo`.
 | conform.nvim | Formatters and format on save |
 | nvim-lint | Linters: golangci-lint (Go), shellcheck (sh, bash) |
 | gitsigns.nvim | Git signs in the gutter, hunk actions |
+| diffview.nvim | Diff view of changes and file history (`<leader>gd`, `<leader>gh`) |
 | which-key.nvim | Key hints menu |
 | render-markdown.nvim | Renders Markdown in the buffer: headings, code blocks, tables, lists (`<leader>um` toggles) |
 | oil.nvim | Edit the file system like a buffer (press `-`) |

@@ -237,7 +237,7 @@ Each top-level folder of the repo is a [package](glossary.md#package) whose cont
 | `lazygit` | `~/.config/lazygit/config.yml` | lazygit renders diffs with delta; `.zshrc` sets `LG_CONFIG_FILE` so macOS reads it too |
 | `starship` | `~/.config/starship.toml` | Two-line framed prompt |
 | `mise` | `~/.config/mise/config.toml` | Global tools: node, go and the CLI tools of [tools.md](tools.md) |
-| `bin` | `~/.local/bin` | Scripts: `tmux-sessionizer`, `tmux-new-session`, `tmux-popup`, `tmux-lazygit`, `theme`, `dotfiles-help`, `dotfiles-usage`, `dotfiles-log` |
+| `bin` | `~/.local/bin` | Scripts: `tmux-sessionizer`, `tmux-new-session`, `tmux-popup`, `tmux-lazygit`, `review`, `theme`, `dotfiles-help`, `dotfiles-usage`, `dotfiles-log` |
 | `theme` | `~/.config/theme/config` | The light/dark theme pair |
 | `ghostty` | `~/.config/ghostty/config` | Ghostty terminal; linked only when Ghostty is installed |
 | `iterm` | `~/.config/iterm/dotfiles-profile.plist` | iTerm2 profile template; macOS only |

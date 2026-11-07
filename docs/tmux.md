@@ -55,6 +55,7 @@ Keys from this config. The mouse is on: click a pane or window name, drag a bord
 | `prefix f` | Project session picker |
 | `prefix t` | Toggle light/dark theme ([theme.md](theme.md)) |
 | `prefix G` | lazygit in a popup, in the pane's folder (pick a repo first in a folder that only holds repos) |
+| `prefix R` | Review changes: one window per repo with nvim diffview (`bin/.local/bin/review`) |
 | `` prefix ` `` | Scratch shell popup that keeps running |
 | `prefix A` | Claude Code popup that keeps running |
 | `prefix Space` | Copy with hints (tmux-fingers). Replaces the default `next-layout`. |
