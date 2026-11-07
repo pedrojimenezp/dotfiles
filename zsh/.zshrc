@@ -2,17 +2,16 @@
 # Secrets and machine-specific settings go in ~/.zshrc.local (sourced just before syntax highlighting, not tracked).
 
 # --- Homebrew (macOS; skipped where brew is absent) ---
-# Find brew in the usual locations and export its PATH, MANPATH, etc.
 for brew_bin in /opt/homebrew/bin/brew /usr/local/bin/brew /home/linuxbrew/.linuxbrew/bin/brew; do
-  if [[ -x $brew_bin ]]; then       # first brew that exists wins
-    eval "$($brew_bin shellenv)"    # sets HOMEBREW_PREFIX and updates PATH
-    break                           # stop searching
+  if [[ -x $brew_bin ]]; then
+    eval "$($brew_bin shellenv)"
+    break
   fi
 done
-unset brew_bin                      # keep the shell namespace clean
+unset brew_bin
 
 # --- PATH ---
-typeset -U path                     # keep PATH entries unique
+typeset -U path
 path=("$HOME/.local/bin" $path)     # user scripts and the mise binary
 
 # Sources the cached output of `<tool> <args>`; forking each tool on every start costs ~30 ms.
@@ -34,18 +33,18 @@ if (( $+commands[mise] )); then
 fi
 
 # --- Environment ---
-if command -v nvim >/dev/null 2>&1; then  # prefer Neovim when installed
-  export EDITOR=nvim                      # editor for git commit, crontab, etc.
+if command -v nvim >/dev/null 2>&1; then
+  export EDITOR=nvim
 else
   export EDITOR=vim                       # fallback for servers
 fi
-export VISUAL=$EDITOR                     # same editor for programs that read VISUAL
-export PAGER=less                         # default pager
+export VISUAL=$EDITOR
+export PAGER=less
 export LESS='-R -F -X'                    # colors, quit if one screen, no screen clear
 command -v delta >/dev/null 2>&1 && export GH_PAGER="delta -s"  # gh diffs side by side with delta
 
 # --- Go ---
-export GOPATH="$HOME/go"                  # Go workspace and `go install` target
+export GOPATH="$HOME/go"
 path+=("$GOPATH/bin")                    # Go tools, after ~/.local/bin so those win
 
 # --- OS-specific settings ---
@@ -56,10 +55,10 @@ case $OSTYPE in
     for ghostty_dir in "$HOME/Applications/Ghostty.app/Contents/MacOS" /Applications/Ghostty.app/Contents/MacOS; do # new appdir first, then old
       if [[ -x $ghostty_dir/ghostty ]]; then  # skip empty leftover app folders
         path+=("$ghostty_dir")                # ghostty CLI lives inside the app bundle
-        break                                 # use the first install found
+        break
       fi
     done
-    unset ghostty_dir                         # keep the shell namespace clean
+    unset ghostty_dir
     ;;
   linux*)
     alias o='xdg-open'                    # open files/URLs with the default app
@@ -68,39 +67,39 @@ case $OSTYPE in
 esac
 
 # --- History ---
-HISTFILE="$HOME/.zsh_history"             # history file location
-HISTSIZE=100000                           # entries kept in memory
-SAVEHIST=100000                           # entries saved to the file
-setopt SHARE_HISTORY                      # share history between open shells (implies INC_APPEND)
-setopt HIST_IGNORE_ALL_DUPS               # drop older duplicate commands
-setopt HIST_FIND_NO_DUPS                  # skip duplicate entries while searching history
+HISTFILE="$HOME/.zsh_history"
+HISTSIZE=100000
+SAVEHIST=100000
+setopt SHARE_HISTORY
+setopt HIST_IGNORE_ALL_DUPS
+setopt HIST_FIND_NO_DUPS
 setopt HIST_IGNORE_SPACE                  # commands starting with a space are not saved
-setopt HIST_REDUCE_BLANKS                 # trim extra whitespace
+setopt HIST_REDUCE_BLANKS
 setopt EXTENDED_HISTORY                   # store timestamps
 setopt HIST_FCNTL_LOCK                    # lock with fcntl, not the .LOCK file: no multi-second waits or stale locks
 
 # --- Shell options ---
-setopt AUTO_CD                            # typing a directory name cd's into it
-setopt INTERACTIVE_COMMENTS               # allow # comments at the prompt
-setopt NO_BEEP                            # no terminal bell
+setopt AUTO_CD
+setopt INTERACTIVE_COMMENTS
+setopt NO_BEEP
 bindkey -e                                # emacs keymap (Ctrl-A, Ctrl-E, Ctrl-R, ...)
 # Ctrl-L also wipes the scrollback (CSI 3 J), like a full clear; Cmd-K relies on this outside tmux
 clear-screen-and-scrollback() {
   printf '\e[3J'                           # ask the terminal to erase its scrollback
   zle clear-screen                          # then the normal clear + prompt redraw
 }
-zle -N clear-screen-and-scrollback        # register the function as a widget
+zle -N clear-screen-and-scrollback
 bindkey '^L' clear-screen-and-scrollback  # clear the screen and the scrollback
 
 autoload -Uz up-line-or-beginning-search down-line-or-beginning-search  # built-in widgets: match history by typed prefix
-zle -N up-line-or-beginning-search        # register the widget
-zle -N down-line-or-beginning-search      # register the widget
+zle -N up-line-or-beginning-search
+zle -N down-line-or-beginning-search
 bindkey '^[[A' up-line-or-beginning-search    # Up: earlier command that starts with the typed text (normal cursor mode)
 bindkey '^[OA' up-line-or-beginning-search    # Up, application mode (tmux, after smkx)
 bindkey '^[[B' down-line-or-beginning-search  # later command that starts with the typed text (normal cursor mode)
 bindkey '^[OB' down-line-or-beginning-search  # Down, application mode (tmux, after smkx)
-autoload -Uz edit-command-line            # built-in widget: edit the current line in $VISUAL
-zle -N edit-command-line                  # register the widget
+autoload -Uz edit-command-line
+zle -N edit-command-line
 bindkey '^X^E' edit-command-line          # edit the command line in $VISUAL
 
 # --- Completion ---
@@ -109,8 +108,8 @@ ZSH_PLUGIN_DIR=${XDG_DATA_HOME:-$HOME/.local/share}/zsh-plugins  # git clones ma
 if [[ -d $ZSH_PLUGIN_DIR/zsh-completions/src ]]; then
   fpath=("$ZSH_PLUGIN_DIR/zsh-completions/src" $fpath)
 fi
-autoload -Uz compinit                     # load the completion system loader
-zcompdump=${ZDOTDIR:-$HOME}/.zcompdump   # where compinit keeps its cache
+autoload -Uz compinit
+zcompdump=${ZDOTDIR:-$HOME}/.zcompdump
 zcompfresh=( ${ZDOTDIR:-$HOME}/.zcompdump(N.mh-24) )  # matches only if the dump exists and is under 24h old
 if (( $#zcompfresh )); then
   compinit -C -d "$zcompdump"             # reuse it, skipping the security scan for speed
@@ -134,9 +133,9 @@ fi
 unset zcompdump zcompfresh
 zstyle ':completion:*' menu no            # fzf-tab needs the built-in menu off
 zstyle ':completion:*:descriptions' format '[%d]'  # group headers, shown by fzf-tab
-zstyle ':fzf-tab:*' switch-group ',' '.'  # move between groups with , and .
+zstyle ':fzf-tab:*' switch-group ',' '.'
 zstyle ':completion:*' matcher-list 'm:{a-z}={A-Za-z}'  # case-insensitive matching
-zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}" # color completions like ls
+zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
 
 if command -v eza >/dev/null 2>&1; then
   zstyle ':fzf-tab:complete:cd:*' fzf-preview 'eza -1 --color=always $realpath'  # list the folder while choosing
@@ -144,7 +143,7 @@ fi
 
 # --- Bell after long commands (tmux monitor-bell then flags the window) ---
 zmodload zsh/datetime                     # provides $EPOCHSECONDS
-autoload -Uz add-zsh-hook                 # safe way to add preexec/precmd hooks
+autoload -Uz add-zsh-hook
 LONG_CMD_BELL_IGNORE=${LONG_CMD_BELL_IGNORE:-"nvim vim vi less man lazygit lg lzd tmux ssh tssh claude top btop htop fzf"}  # long by nature; override in ~/.zshrc.local
 long_cmd_first_word() {                   # sets long_cmd_name to the real program of a command line (no fork)
   local -a words=(${(z)1})                # split like the shell would (one word stays an array)
@@ -162,26 +161,26 @@ long_cmd_first_word() {                   # sets long_cmd_name to the real progr
   done
 }
 long_cmd_start() {
-  long_cmd_first_word "$1"                # program name, matched against the ignore list later
-  long_cmd_t0=$EPOCHSECONDS               # start time in seconds
+  long_cmd_first_word "$1"
+  long_cmd_t0=$EPOCHSECONDS
 }
 long_cmd_bell() {
   local t0=$long_cmd_t0 name=$long_cmd_name  # copy, then reset so an empty prompt never rings
-  long_cmd_t0= long_cmd_name=             # forget this command
+  long_cmd_t0= long_cmd_name=
   [[ -n $t0 && -t 1 ]] || return          # nothing ran, or output is not a terminal
   (( EPOCHSECONDS - t0 >= ${LONG_CMD_BELL_SECONDS:-30} )) || return  # too quick to bother
   [[ " $LONG_CMD_BELL_IGNORE " == *" ${name:t} "* ]] && return       # skip full-screen programs
-  printf '\a'                             # ring the terminal bell
+  printf '\a'
 }
-add-zsh-hook preexec long_cmd_start       # runs just before each command
-add-zsh-hook precmd long_cmd_bell         # runs just before each prompt
+add-zsh-hook preexec long_cmd_start
+add-zsh-hook precmd long_cmd_bell
 
 # --- Remote tmux ---
 # tssh <ssh args>: connect and attach to (or create) the remote tmux session "main".
 # -t forces a tty for tmux; the remote shell is interactive login (-lic) so .zshrc puts mise's tmux on PATH.
 # The single-quoted command is expanded by the remote shell, so $SHELL is the server's.
 tssh() { ssh -t "$@" 'exec $SHELL -lic "tmux new-session -A -s main"'; }
-compdef tssh=ssh                          # complete hosts and options like ssh
+compdef tssh=ssh
 
 # --- Aliases ---
 if command -v eza >/dev/null 2>&1; then
@@ -218,9 +217,9 @@ if (( $+commands[zoxide] )); then
   _cache_init zoxide init zsh             # adds `z` and `zi` jump commands
 fi
 if (( $+commands[starship] )); then
-  _cache_init starship init zsh           # prompt
+  _cache_init starship init zsh
 fi
-unfunction _cache_init                    # keep the shell namespace clean
+unfunction _cache_init
 
 # --- Light/dark theme (bin/.local/bin/theme; pair in ~/.config/theme/config, mode in ~/.local/state/theme) ---
 alias tt='theme toggle'                   # flip between light and dark
@@ -234,7 +233,7 @@ export BAT_THEME=ansi                     # bat uses the terminal's 16 colors, s
 if [[ -z ${SSH_CONNECTION:-}${SSH_TTY:-}${TMUX:-} && -t 1 ]] && command -v theme >/dev/null 2>&1; then
   theme_state=${XDG_STATE_HOME:-$HOME/.local/state}/theme  # same file as bin/.local/bin/theme; no process spawned
   theme_mode=""                           # stays empty (auto) when the file is missing
-  [[ -r $theme_state ]] && read -r theme_mode <"$theme_state"  # first line only
+  [[ -r $theme_state ]] && read -r theme_mode <"$theme_state"
   case $theme_mode in
     dark|light)
       if [[ $OSTYPE == darwin* && ${TERM_PROGRAM:-} == ghostty ]]; then
@@ -251,12 +250,12 @@ fi
 
 # --- Plugins (fzf-tab after compinit and fzf, before the widget wrappers; syntax-highlighting is at the end of the file) ---
 [[ -f $ZSH_PLUGIN_DIR/fzf-tab/fzf-tab.plugin.zsh ]] &&
-  source "$ZSH_PLUGIN_DIR/fzf-tab/fzf-tab.plugin.zsh"                                # Tab completion through fzf
+  source "$ZSH_PLUGIN_DIR/fzf-tab/fzf-tab.plugin.zsh"
 [[ -f $ZSH_PLUGIN_DIR/zsh-autosuggestions/zsh-autosuggestions.zsh ]] &&
-  source "$ZSH_PLUGIN_DIR/zsh-autosuggestions/zsh-autosuggestions.zsh"               # grey history suggestions
+  source "$ZSH_PLUGIN_DIR/zsh-autosuggestions/zsh-autosuggestions.zsh"
 
 # --- Claude Code shared shell helpers ---
-[[ -f $HOME/.config/claude-shared/claude.sh ]] && source "$HOME/.config/claude-shared/claude.sh"  # optional
+[[ -f $HOME/.config/claude-shared/claude.sh ]] && source "$HOME/.config/claude-shared/claude.sh"
 
 # --- Local, untracked overrides (secrets, machine settings): keep it after the plugins, before syntax highlighting ---
 if [[ -f $HOME/.zshrc.local ]]; then source "$HOME/.zshrc.local"; fi  # an if keeps $? at 0 when the file is missing (a failed [[ ]] would turn the prompt red)
@@ -265,5 +264,5 @@ if [[ -n ${SSH_CONNECTION:-} ]]; then export PROMPT_HOST=${HOST_LABEL:-${HOST%%.
 
 # --- Syntax highlighting: must load after everything that defines widgets, so keep it last ---
 if [[ -f $ZSH_PLUGIN_DIR/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ]]; then
-  source "$ZSH_PLUGIN_DIR/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"  # command coloring
+  source "$ZSH_PLUGIN_DIR/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
 fi

@@ -1,34 +1,33 @@
 # ~/.config/git/config: global git config (read before ~/.gitconfig, which therefore wins and should not exist).
 
 [init]
-	defaultBranch = main                  # new repos start on main
+	defaultBranch = main
 
 [core]
-	pager = delta                         # use delta to page diffs and logs
-	excludesFile = ~/.config/git/ignore   # global ignore list
+	pager = delta
+	excludesFile = ~/.config/git/ignore
 
 [interactive]
-	diffFilter = delta --color-only       # delta also colors `git add -p`
+	diffFilter = delta --color-only
 
 [delta]
-	navigate = true                       # n/N jump between files in a diff
-	side-by-side = false                  # unified view (narrow terminals, tmux panes)
-	line-numbers = true                   # show line numbers in diffs
+	navigate = true
+	line-numbers = true
 	syntax-theme = ansi                   # highlight code with the terminal's 16 colors (follows any theme)
 	detect-dark-light = auto              # pick light or dark diff backgrounds from the terminal background
 
 [pull]
-	rebase = true                         # rebase instead of merge on pull
+	rebase = true
 
 [rebase]
-	autoStash = true                      # stash dirty changes around a rebase
+	autoStash = true
 	autoSquash = true                     # apply fixup!/squash! commits automatically
 
 [push]
-	autoSetupRemote = true                # first push creates the upstream branch
+	autoSetupRemote = true
 
 [fetch]
-	prune = true                          # drop remote branches deleted upstream
+	prune = true
 
 [diff]
 	colorMoved = default                  # color moved lines differently from added/removed
@@ -38,26 +37,26 @@
 	conflictstyle = diff3                 # show base text in conflict markers (zdiff3 needs git 2.35+, fatal on Ubuntu 22.04)
 
 [rerere]
-	enabled = true                        # remember and reuse conflict resolutions
+	enabled = true
 
 [url "ssh://git@github.com/"]
 	pushInsteadOf = https://github.com/   # push over SSH; the slashes keep github.company.com out; fetch stays https
 
 [filter "lfs"]
-	clean = git-lfs clean -- %f           # Git LFS: store big files as pointers
-	smudge = git-lfs smudge -- %f         # Git LFS: restore big files on checkout
-	process = git-lfs filter-process      # Git LFS: faster batch filter
+	clean = git-lfs clean -- %f
+	smudge = git-lfs smudge -- %f
+	process = git-lfs filter-process
 	required = true                       # fail if git-lfs is missing
 
 [alias]
-	st = status -sb                       # short status
-	co = checkout                         # shorter checkout
-	sw = switch                           # switch branches
+	st = status -sb
+	co = checkout
+	sw = switch
 	br = branch -vv                       # branches with upstream info
 	lg = log --oneline --graph --decorate -20  # compact graph log
 	last = log -1 --stat                  # show the last commit
-	unstage = restore --staged            # remove files from the index
-	amend = commit --amend --no-edit      # add staged changes to the last commit
+	unstage = restore --staged
+	amend = commit --amend --no-edit
 
 # HTTPS GitHub remotes use the `gh auth login` token. The empty `helper =` drops older
 # helpers (e.g. a stale keychain token). Without gh this does nothing. SSH is unaffected.

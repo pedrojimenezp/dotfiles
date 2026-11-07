@@ -11,12 +11,13 @@ Apply three approved audit fixes: resilient font step, remove the old-tool clean
 ## Done
 - Fix 1: install_font warns, removes `$dir` and the temp dir, returns 0; test added in tests/install_test.sh.
 - Fix 2: removed Step 3b2, its test block, the uninstall data path and its test lines, and the doc mentions; refreshed the brew uninstall list in docs/migrate-to-mise.md.
+- Fix 3: trimmed restating comments in .zshrc, tmux.conf and git config; dropped delta's default `side-by-side = false`. dotfiles-help --list, tmux show/list-keys and git config --list verified identical.
 
 ## Where we stopped
-Fixes 1 and 2 committed. Fix 3 next.
+All three fixes done and committed; full test run passed.
 
 ## Next step
-Fix 3, then the full test run.
+Review, then merge (not pushed).
 
 ## How to test
 Run each `tests/*_test.sh` with bash, and `python3 -I tests/*_test.py`; shellcheck install.sh, uninstall.sh and touched tests.
