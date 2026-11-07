@@ -69,6 +69,33 @@ git -C "$ROOT/feat/api" checkout -q a.txt
 mkdir -p "$ROOT/feat/api/sub"
 contains "subfolder of a repo: uses the repo root" "cd $ROOT/feat/api && nvim" "$(run --print "$ROOT/feat/api/sub")"
 
+# Feature folder of worktrees nested inside an outer repo that ignores it: the inner repos, not the outer one.
+mkrepo "$ROOT/outer" main
+echo "worktrees/" >"$ROOT/outer/.gitignore"
+git -C "$ROOT/outer" add .gitignore
+git -C "$ROOT/outer" commit -q -m ignore
+mkdir -p "$ROOT/outer/worktrees/feat"
+for r in api web; do
+  git -C "$ROOT/outer" worktree add -q -b "f-$r" "$ROOT/outer/worktrees/feat/$r" HEAD
+  echo x >"$ROOT/outer/worktrees/feat/$r/x.txt" # untracked
+done
+out="$(run --print "$ROOT/outer/worktrees/feat")"
+contains "nested feature folder: api listed" "cd $ROOT/outer/worktrees/feat/api && nvim" "$out"
+contains "nested feature folder: web listed" "cd $ROOT/outer/worktrees/feat/web && nvim" "$out"
+check "nested feature folder: outer repo not listed" "0" "$(grep -c '^outer' <<<"$out")"
+
+# Top level of a repo that also holds a nested repo folder: that repo, not the nested one.
+mkrepo "$ROOT/top" main
+echo t >"$ROOT/top/t.txt"
+mkrepo "$ROOT/top/inner" main
+out="$(run --print "$ROOT/top")"
+contains "top level with nested repo: reviews the top repo" "top: branch main" "$out"
+check "top level with nested repo: inner not listed" "0" "$(grep -c '^inner' <<<"$out")"
+
+# Subfolder of a single repo: that repo.
+mkdir -p "$ROOT/top/src/deep"
+contains "subfolder of a single repo: reviews the repo" "cd $ROOT/top && nvim" "$(run --print "$ROOT/top/src/deep")"
+
 # Single repo, outside tmux: exec nvim in the repo.
 check "single repo, no tmux: opens nvim" "nvim -c DiffviewOpen $mb" "$(run "$ROOT/feat/api" | tail -1)"
 
