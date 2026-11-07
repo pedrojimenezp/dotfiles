@@ -26,7 +26,7 @@ esac
 tools="tssh" # a zsh function, not a file; z and zi are only aliases of zoxide below
 while read -r name; do
   case "$name" in
-    zsh-*|fzf-tab|tree-sitter-cli|tmux-fingers|git-lfs|zls|font-*) continue ;; # plugins, libraries, helpers: no command to count
+    zsh-*|fzf-tab|tree-sitter-cli|git-lfs|zls|font-*) continue ;; # plugins, libraries, helpers: no command to count
     ripgrep) name=rg ;; git-delta) name="delta" ;; tealdeer) name=tldr ;; neovim) name=nvim ;; # command differs from formula
   esac
   tools="$tools $name"

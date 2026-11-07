@@ -58,8 +58,6 @@ Keys from this config. The mouse is on: click a pane or window name, drag a bord
 | `prefix R` | Review changes: one window per repo with nvim diffview (`bin/.local/bin/review`) |
 | `` prefix ` `` | Scratch shell popup that keeps running |
 | `prefix A` | Claude Code popup that keeps running |
-| `prefix Space` | Copy with hints (tmux-fingers). Replaces the default `next-layout`. |
-| `prefix j` | Jump mode (tmux-fingers): hints move the copy-mode cursor to a match, see [Copy with hints](#copy-with-hints) |
 | `prefix s` | Pick a session from a list sorted by name (`O` in the picker changes the sort order; popup sessions are hidden) |
 | `prefix N` | New session: asks for a name (anything but letters, digits, `_` and `-` becomes `-`, so `my.app` is `my-app`; empty uses the folder's name), then opens an fzf popup to pick the folder: this pane's path first, then zoxide's folders, then the `prefix f` projects. Type a path that is not in the list and press `Enter` to use it (`~` works). An existing session with that name is just switched to; `Esc` cancels |
 | `prefix (` / `prefix )` | Previous / next session (popup sessions skipped) |
@@ -99,21 +97,14 @@ In a folder that has no `.git` of its own but holds repos (a feature folder of w
 
 Press the same key again to hide a persistent popup (either key works inside any of them), or use `prefix d`. The program keeps running. If the program exits, the popup closes and the next press starts a fresh one.
 
-### Copy with hints
+### Copying text
 
-`prefix Space` ([tmux-fingers](https://github.com/Morantron/tmux-fingers)) highlights URLs, file paths, git hashes, IPs, UUIDs and numbers (4+ digits) in the visible pane, each with a letter hint.
+In iTerm2, with `mouse on`, tmux copies to the system clipboard through [OSC 52](glossary.md#osc-52). Turn on iTerm2's "Applications in terminal may access clipboard" (Settings > General > Selection); the dotfiles do not set it.
 
-| Keys (in hint mode) | What it does |
-| --- | --- |
-| `a`-`z` | Copy the match |
-| `Ctrl` + letter | Copy and open it (for example a URL in the browser) |
-| `Shift` + letter | Copy and paste it into the pane |
-| `Tab` | Multi mode: pick several matches, `Tab` again copies them all |
-| `q` or `Esc` | Leave |
-
-`prefix j` starts jump mode instead: pick a hint and copy mode opens with the cursor on that match. The plugin default is `prefix J`, which would replace the pane resize, so `@fingers-jump-key` is set to `j`.
-
-The copy goes to the tmux buffer, the system clipboard and, through [OSC 52](glossary.md#osc-52), your local clipboard even over SSH.
+- Double-click copies a word, triple-click a line.
+- Click and drag selects; the text is copied when you release.
+- `Option` + drag uses iTerm2's own selection and bypasses tmux, for example across split panes.
+- From the keyboard: `prefix [` opens copy mode, `/text` then `Enter` searches, `v` starts the selection, move, and `y` copies and leaves.
 
 ### Status bar and pane labels
 
@@ -172,7 +163,6 @@ Other TPM keys: `prefix U` updates plugins.
 | Plugin | What it does |
 | --- | --- |
 | `tmux-plugins/tpm` | The plugin manager |
-| `Morantron/tmux-fingers` | Copy with hints |
 | `tmux-plugins/tmux-resurrect` | Save and restore sessions |
 | `tmux-plugins/tmux-continuum` | Auto-save every 15 minutes, auto-restore |
 
@@ -195,10 +185,8 @@ Saves hold sessions, windows, panes, their folders and the visible text of each 
 ## Troubleshooting
 
 - **Errors about unknown options on start**: your tmux is older than 3.5. See [Requirements](#requirements).
-- **`prefix Space` does nothing**: the `tmux-fingers` binary is missing. Run `mise install` and restart tmux (the binary comes from the mise config). Upstream publishes the binary only for macOS arm64 and Linux x86_64, so on an Intel Mac or Linux arm64 the mise config skips it; tmux still starts without errors and `prefix Space` has no hints there. Otherwise the first load shows an install menu: pick "Download standalone binary" (Linux x86_64 and macOS arm64) or build from source (needs Crystal).
 - **A plugin is missing**: press `prefix I`.
 - **`Cmd+K` does nothing**: the pane runs vim or nvim, by design. Or you are not in Ghostty or iTerm.
-- **You need a layout**: `prefix Space` is tmux-fingers here, not `next-layout`. Use `prefix :` then `select-layout tiled` (or `even-horizontal`).
 - **Colors look wrong in the bar**: the bar uses your terminal's colors. Check your terminal theme ([theme.md](theme.md)).
 
 ## How it works
@@ -211,7 +199,7 @@ Saves hold sessions, windows, panes, their folders and the visible text of each 
 
 **Pane keys and `prefix Ctrl+l`.** `Ctrl+h/j/k/l` are the plain bindings from the vim-tmux-navigator README, written in `tmux.conf` instead of loaded as a plugin, because the plugin spent over a second at every reload spawning `tmux` processes. Plain `Ctrl+l` moves right, and `prefix Ctrl+l` clears the screen and the scrollback. The scrollback clears 0.3 seconds after the screen, because the shell redraw would otherwise push the old screen back into history. In vim or nvim the binding is skipped, because the `Ctrl+l` would reach the editor and move focus.
 
-**Fast reloads.** TPM runs with `run -b`, so the plugins (tmux-fingers alone takes about 3 seconds) load in the background and `prefix r` returns at once. Plugin keys and the autosave in the status line appear a few seconds after a reload.
+**Fast reloads.** TPM runs with `run -b`, so the plugins load in the background and `prefix r` returns at once. Plugin keys and the autosave in the status line appear a few seconds after a reload.
 
 **Escape sequences.** `set-clipboard on` uses [OSC 52](glossary.md#osc-52). `allow-passthrough on` lets programs, and the `theme` script, send escape sequences through tmux. Extended keys are on (CSI u format), and `xterm*` terminals are marked as supporting them. This lets `Shift+Enter` and `Ctrl+Enter` reach programs such as Claude Code. Colors are `tmux-256color` plus true color.
 
@@ -231,7 +219,8 @@ Saves hold sessions, windows, panes, their folders and the visible text of each 
 
 **Pane labels.** A `window-layout-changed` hook sets `pane-border-status top` when a window has 2 or more panes, and `off` otherwise. It runs on split, close, layout change and session restore.
 
-**Plugins.** `install.sh` clones TPM into `~/.config/tmux/plugins/tpm` and installs the plugins. It never starts tmux-fingers' wizard. tmux-fingers is a wrapper around a `tmux-fingers` binary (Crystal), which mise installs from the upstream GitHub release (`github:Morantron/tmux-fingers` in the mise config) before tmux first loads the plugin. For patterns and styles see its README (`@fingers-pattern-N`, `@fingers-hint-style`).
+
+**Plugins.** `install.sh` clones TPM into `~/.config/tmux/plugins/tpm` and installs the plugins.
 
 **Sessions survive restarts.** resurrect saves with `@resurrect-capture-pane-contents on` and `@resurrect-processes "ssh"`. continuum uses `@continuum-save-interval` 15 and `@continuum-restore on`. Files live in `~/.local/share/tmux/resurrect/` (or `~/.tmux/resurrect/` if that folder exists). The newest save is the file the `last` link points to.
 

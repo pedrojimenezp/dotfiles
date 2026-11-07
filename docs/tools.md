@@ -29,7 +29,6 @@ You'll use it for: finding what a tool is for and how to start it. Run `tldr <to
 | --- | --- | --- |
 | `neovim` | Main editor ([nvim.md](nvim.md)) | `nvim file.go` (or `vim file.go`) |
 | `tmux` | [Sessions](glossary.md#session), [windows](glossary.md#window), [panes](glossary.md#pane) ([tmux.md](tmux.md)) | `tmux new-session -A -s work` |
-| `tmux-fingers` | Binary behind the tmux hint-copy plugin ([tmux.md](tmux.md#copy-with-hints)) | `prefix Space`, then a hint letter (see [tmux.md](tmux.md)) |
 | `stow` | [Links](glossary.md#link) each [package](glossary.md#package) into `$HOME` (Homebrew on macOS, apt on Linux) | `stow --restow --no-folding -d ~/dotfiles -t ~ zsh` |
 | `starship` | [Prompt](glossary.md#prompt) (see below) | `starship explain` |
 | `zsh-autosuggestions` | Grey history suggestion while you type | Press `Right` to accept |
@@ -66,7 +65,6 @@ Optional, commented in the `Brewfile` (macOS: remove the `#` and run `brew bundl
 | `delta` (git-delta) | Diff pager for git, lazygit and `gh` (`GH_PAGER`) ([git.md](git.md)) | `git diff`, `gh pr diff` |
 | `lazygit` | Git UI (alias `lg`) | `lg` (`?` shows keys, `q` quits) |
 | `lazydocker` | Docker UI (alias `lzd`) | `lzd` |
-| `dive` | Explore Docker image layers | `dive my-image:latest` |
 | `gh` | GitHub CLI | `gh pr create --draft`, `gh auth login` |
 | `git-lfs` | Large files in git (used by the git config filter) | `git lfs track "*.psd"` |
 
@@ -80,16 +78,15 @@ Optional, commented in the `Brewfile` (macOS: remove the `#` and run `brew bundl
 | `shfmt` | Formats shell scripts | `shfmt -w script.sh` |
 | `golangci-lint` | Go linters | `golangci-lint run` |
 | `tree-sitter` (CLI) | Builds treesitter parsers for nvim | Used by nvim; no manual command |
-| `glow` | Renders Markdown in the terminal | `glow docs/` (see [Reading Markdown](#reading-markdown)) |
 | `mermaid-ascii` | Draws Mermaid diagrams as text | `mermaid-ascii -f diagram.mmd` |
 
 ## Reading Markdown
 
-Three tools, all from mise, so they also work on a server over SSH and inside tmux:
+These work on a server over SSH and inside tmux:
 
-- `glow file.md` renders one file in a pager (`q` quits). `glow docs/` opens a browser for the Markdown files in a folder. Add `-p` to page the output. The style follows the terminal background; force one with `glow -s dark file.md`.
-- `mermaid-ascii -f diagram.mmd` draws a Mermaid diagram as text. It supports only flowcharts (`graph` or `flowchart`, with `TD`, `TB`, `BT`, `LR` or `RL`) and sequence diagrams (`sequenceDiagram`). Other types (class, state, gantt, pie) fail with an "unsupported graph type" error. glow shows a `mermaid` code block as plain text, so copy the block into a `.mmd` file to draw it.
-- In nvim, [render-markdown.nvim](nvim.md#plugins) renders headings, code blocks, tables and lists in the buffer; `<leader>um` toggles it.
+- In nvim, [render-markdown.nvim](nvim.md#plugins) renders `.md` files (headings, code blocks, tables, lists) in the buffer; `<leader>um` toggles it.
+- `bat file.md` gives a quick look with syntax colors.
+- `mermaid-ascii -f diagram.mmd` draws a Mermaid diagram as text. It supports only flowcharts (`graph` or `flowchart`, with `TD`, `TB`, `BT`, `LR` or `RL`) and sequence diagrams (`sequenceDiagram`). Other types (class, state, gantt, pie) fail with an "unsupported graph type" error. To draw a `mermaid` code block, copy it into a `.mmd` file.
 
 ## macOS-only (casks)
 
@@ -149,7 +146,7 @@ mise installs the tools of this repo and switches versions of node, go and other
 - **Old mise (macOS)**: a standalone mise in `~/.local/bin` would shadow the Homebrew one, so `install.sh` renames it to `mise.backup-<stamp>`.
 - **PATH**: `.zshrc` activates mise early, so its tools come before any Homebrew copy of the same tool.
 - **Zig**: `zig` and `zls` must match, so both are pinned to one version in the config; change them together.
-- **tmux**: comes from mise too (build from `tmux/tmux-builds`), because apt's tmux is older than the 3.5 that `tmux.conf` needs. `tmux-fingers` is a GitHub release binary from the same config, only for macOS arm64 and Linux x86_64 (upstream builds no other); elsewhere it is skipped and `prefix Space` does nothing.
+- **tmux**: comes from mise too (build from `tmux/tmux-builds`), because apt's tmux is older than the 3.5 that `tmux.conf` needs.
 - **Completions**: mise tools bring no zsh completions. Load the ones you want from `~/.zshrc.local`, for example `gh completion -s zsh` ([zsh.md](zsh.md#completions-for-mise-tools)).
 
 ## Usage report: dotfiles-usage
@@ -169,7 +166,7 @@ It lists how often each tool of this repo was used in that period, most used fir
 
 **dotfiles-usage internals.**
 
-- **Tool list.** Nothing is kept by hand. It reads the `brew` lines of the `Brewfile`, the tools of the mise config, the scripts in `bin/.local/bin` and the `tssh` function. Plugins, libraries and helpers such as `zls`, `git-lfs` and `tmux-fingers` have no command to count, so they are skipped. Aliases in `zsh/.zshrc` count for their tool: `lg` is `lazygit`, `vim` is `nvim`, `tt` is `theme`, `ls` is `eza`, `z` is `zoxide`.
+- **Tool list.** Nothing is kept by hand. It reads the `brew` lines of the `Brewfile`, the tools of the mise config, the scripts in `bin/.local/bin` and the `tssh` function. Plugins, libraries and helpers such as `zls` and `git-lfs` have no command to count, so they are skipped. Aliases in `zsh/.zshrc` count for their tool: `lg` is `lazygit`, `vim` is `nvim`, `tt` is `theme`, `ls` is `eza`, `z` is `zoxide`.
 - **History.** It reads `~/.zsh_history`, which needs `EXTENDED_HISTORY`. It undercounts repeated commands, because `HIST_IGNORE_ALL_DUPS` keeps only the latest copy of each line. `DOTFILES_USAGE_HISTFILE=file` reads another zsh history file.
 - **Key-launched tools.** They do not reach shell history, so `tmux-popup`, `tmux-sessionizer`, `dotfiles-help` and `theme` call `dotfiles-log <tool>`. It appends `<epoch> <tool>` to `${XDG_STATE_HOME:-~/.local/state}/dotfiles/usage.log` and never fails. `dotfiles-log --path` prints the file, and deleting it resets the counts. A script that calls `dotfiles-log` is counted from that log only.
 - **What `theme` counts.** Only runs you start: `toggle`, `dark`, `light`, `auto`, `pick` and `set`, including nvim's `<leader>ut` and the `tt` alias. Automatic calls such as `theme apply` at shell start, `theme file`, `theme mode` and `sync` are not counted.

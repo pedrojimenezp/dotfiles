@@ -8,7 +8,6 @@ go = "latest"   # global default; projects pin their own in mise.toml
 # --- Editor and terminal ---
 neovim = "latest"         # main editor (Lua config in nvim/)
 tmux = "latest"           # terminal multiplexer; tmux.conf needs 3.5+, newer than apt ships
-"github:Morantron/tmux-fingers" = { version = "latest", os = ["macos-arm64", "linux-x64"] }  # binary for the tmux-fingers plugin: hint-based copy (prefix Space); upstream builds only these two
 starship = "latest"       # fast, customizable shell prompt
 
 # --- Shell productivity ---
@@ -28,7 +27,6 @@ hyperfine = "latest"      # command-line benchmarking
 delta = "latest"          # syntax-highlighting pager for git diff/log (git-delta)
 lazygit = "latest"        # terminal UI for git
 lazydocker = "latest"     # terminal UI for Docker
-dive = "latest"           # explore Docker image layers
 gh = "latest"             # GitHub CLI
 git-lfs = "latest"        # large file storage for git (referenced in the git config filter)
 
@@ -41,7 +39,6 @@ tree-sitter = "latest"    # CLI that nvim-treesitter (main branch) needs to comp
 golangci-lint = "latest"  # Go linter aggregator
 
 # --- Markdown ---
-glow = "latest"           # renders Markdown in the terminal (`glow file.md`, `glow docs/`)
 mermaid-ascii = "latest"  # renders Mermaid diagrams as ASCII text (`mermaid-ascii -f diagram.mmd`)
 
 [settings]
