@@ -122,9 +122,9 @@ github_ssh_ok() {
 # Packages to link.
 PACKAGES=(zsh nvim tmux vim git lazygit starship mise bin theme)
 
-# iTerm Dynamic Profile template (theme sync builds the real profile): macOS only.
+# iTerm Dynamic Profile template (theme sync builds the real profile) and skhd hotkeys: macOS only.
 if [[ "$OSTYPE" == darwin* ]]; then
-  PACKAGES+=(iterm)
+  PACKAGES+=(iterm skhd)
 fi
 
 # Step 1: Homebrew packages (macOS only: Linux installs its tools with mise, per user).

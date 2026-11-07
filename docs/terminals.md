@@ -24,6 +24,7 @@ If you have neither, install one and run `./install.sh` again: it links the conf
 | --- | --- | --- |
 | `ghostty` | `~/.config/ghostty/config` | macOS and Linux. Linked only if Ghostty is installed. |
 | `iterm` | `~/.config/iterm/dotfiles-profile.plist` (template) and the AutoLaunch script `dotfiles_image_paste.py` | **macOS only** |
+| `skhd` | `~/.config/skhd/skhdrc` (the `Ctrl+Cmd+V` image-paste key) | **macOS only** |
 
 ## Requirements
 
@@ -108,14 +109,18 @@ macOS only. It needs `pngpaste` (the Brewfile installs it; or run `brew install 
 
 ### One-time setup
 
-1. Run `./install.sh`. It installs `pngpaste` and links `~/.local/bin/img-to-server`.
-2. Open the **Shortcuts** app > **New Shortcut** (`Cmd+N`).
-3. Search for **Run Shell Script** in the action list and add it.
-4. Set the script text to `~/.local/bin/img-to-server`. Keep the shell as `zsh`. Leave "Pass Input" alone: the script reads no input.
-5. Name the shortcut **Image to server** (click the title at the top).
-6. Open the shortcut's info panel (the `i` button in the right sidebar, or **Details**). Click **Add Keyboard Shortcut** and press `Ctrl+Cmd+V`.
-7. Grant Accessibility: System Settings > Privacy & Security > **Accessibility**. Turn on **Shortcuts**, and also **Shortcuts Events** or **System Events** if the list shows them. Without it the script cannot send `Cmd+V`.
-8. Run it once with an image on the clipboard (see "Use it" below). macOS asks whether Shortcuts may control **System Events**, and **iTerm2** if you use it. Click **Allow** each time.
+The key comes from [skhd.zig](https://github.com/jackielii/skhd.zig), a small hotkey daemon. It runs in the background and needs only the **Accessibility** permission. The script sends `Cmd+V` with that same permission.
+
+1. Run `./install.sh`. It installs `skhd-zig` and `pngpaste` with Homebrew and links `~/.config/skhd/skhdrc` (the key binding) and `~/.local/bin/img-to-server`.
+2. Start the service. In a terminal:
+
+   ```sh
+   skhd --install-service
+   skhd --start-service
+   ```
+
+3. Turn on Accessibility: System Settings > Privacy & Security > **Accessibility** > switch **skhd** on. macOS usually opens that pane for you on the first start. If **skhd** is not in the list, click **+** and pick `~/Applications/skhd.app` (where the Brewfile's Homebrew cask puts it; `/Applications/skhd.app` if you installed it by hand). skhd notices the switch within a second; if not, run `skhd --restart-service`.
+4. If you once made an **Image to server** shortcut in the Shortcuts app, delete it. It would compete for the same key.
 
 Check it worked: the path `/tmp/claude-img/...png` appears at the prompt of your ssh tab.
 
@@ -138,7 +143,7 @@ So the key is safe to press anywhere. An upload replaces the clipboard with the 
 
 ### How it picks the server
 
-1. If the front app is iTerm2, it takes the `ssh` running in the current tab (the foreground job on that tab's terminal).
+1. If the front app is iTerm2, it takes the `ssh` running in the current tab (the foreground job on that tab's terminal). The first time, macOS asks whether skhd may control iTerm2: click **Allow**. If you refuse, it silently uses step 2.
 2. Otherwise, or when the iTerm2 tab runs no `ssh` (for example `ssh` inside a local tmux), it looks at every interactive `ssh` on the Mac and groups them by the host `ssh -G` resolves (user, hostname, port).
    - One host: it uses it.
    - Several hosts: a list asks **Upload image to which server?**. Cancel does nothing.
@@ -152,9 +157,9 @@ To see what it would do without uploading: `img-to-server --dry-run` prints the 
 
 ### Troubleshooting
 
-- **Nothing happens.** Check the Shortcuts app has **Accessibility** (setup step 7) and that the shortcut has the `Ctrl+Cmd+V` key. Run `img-to-server --dry-run` in a terminal to see what it finds. Another app that uses `Ctrl+Cmd+V` wins over the shortcut; pick a different key.
-- **The image uploads but nothing is pasted.** Accessibility is missing for Shortcuts. The path is already on the clipboard: press `Cmd+V`.
-- **A permission prompt appears on every run.** Click **Allow** (do not Deny). If you denied it before: System Settings > Privacy & Security > **Automation** > Shortcuts, turn on **System Events** and **iTerm2**.
+- **The key does nothing.** Run `skhd --status` and read `~/Library/Logs/skhd.log`. The usual causes: the service is not running (`skhd --start-service`), **skhd** is off under Accessibility (setup step 3), or another app already uses `Ctrl+Cmd+V`. Run `img-to-server --dry-run` in a terminal to see what the script finds. After editing `~/.config/skhd/skhdrc`, skhd reloads it by itself.
+- **The image uploads but nothing is pasted.** The path is already on the clipboard: press `Cmd+V`. Check that skhd has Accessibility (setup step 3), then `skhd --restart-service`.
+- **Anything else with the upload.** Each run adds a block to `~/Library/Logs/img-to-server.log`: front app, clipboard kind, the target or why there is none, every command with its exit code and error text, how it pasted. It never holds the clipboard contents, and it is cut to its last 200 KB when it passes 1 MB.
 - **A notification says "No ssh session found".** No interactive `ssh` is running on this Mac. Check with `ps -axo tty,args | grep ssh`. `mosh` and `ssh -N` are not supported.
 - **The list appears when you expected none.** More than one server is connected (Ghostty case above). Pick one, or close the other sessions.
 - **"Upload to ... failed" with `Permission denied (publickey)` or `Host key verification failed`.** Set up key login, or connect once by hand with `ssh my-server` to save the host key.

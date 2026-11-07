@@ -9,6 +9,9 @@ brew "btop"                    # resource monitor (CPU, memory, disks, network);
 brew "pngpaste"                # saves the clipboard image as a PNG file
 # brew "mosh"                  # optional: SSH-like shell that survives roaming and sleep
 
+tap "jackielii/tap"            # skhd.zig is published here
+
 # --- macOS-only apps and fonts ---
 cask "ghostty"                          # GPU-accelerated terminal emulator
 cask "font-monaspice-nerd-font"         # Monaspace (GitHub Next) Nerd Font, used by Ghostty and iTerm
+cask "jackielii/tap/skhd-zig"           # hotkey daemon: skhd.app and the skhd command

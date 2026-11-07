@@ -20,7 +20,7 @@ STATE="${XDG_STATE_HOME:-$HOME/.local/state}"
 CACHE="${XDG_CACHE_HOME:-$HOME/.cache}"
 
 # Same packages as install.sh, plus the macOS and Ghostty ones: a package with no links does nothing.
-PACKAGES=(zsh nvim tmux vim git lazygit starship mise bin theme iterm ghostty)
+PACKAGES=(zsh nvim tmux vim git lazygit starship mise bin theme iterm skhd ghostty)
 
 # What happened, for the summary.
 REMOVED=()

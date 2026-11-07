@@ -241,12 +241,13 @@ Each top-level folder of the repo is a [package](glossary.md#package) whose cont
 | `theme` | `~/.config/theme/config` | The light/dark theme pair |
 | `ghostty` | `~/.config/ghostty/config` | Ghostty terminal; linked only when Ghostty is installed |
 | `iterm` | `~/.config/iterm/dotfiles-profile.plist` | iTerm2 profile template; macOS only |
+| `skhd` | `~/.config/skhd/skhdrc` | skhd hotkey: `Ctrl+Cmd+V` uploads a clipboard image to an ssh server ([terminals.md](terminals.md#paste-an-image-to-a-server-any-terminal)); macOS only |
 
 ### What `install.sh` does, in order
 
 1. Checks the system packages. `zsh` is always needed; Linux also needs `git`, `curl`, `unzip`, `stow` and `libatomic1` (and `xz` on a desktop). Anything missing stops the script, which prints the `apt-get` line for an admin.
-2. **macOS:** runs `brew bundle --no-upgrade` to install what is missing (`mise`, `stow`, `btop`, the apps), then `chmod go-w` on Homebrew's zsh completion folders. `brew` is found in the standard prefixes even when it is not on `PATH`. Without it, the script prints the install command and stops. Linux skips this step.
-3. Picks the packages: the first ten above, plus `iterm` on macOS and `ghostty` when Ghostty is installed.
+2. **macOS:** runs `brew bundle --no-upgrade` to install what is missing (`mise`, `stow`, `btop`, `pngpaste`, the apps and `skhd-zig`), then `chmod go-w` on Homebrew's zsh completion folders. `brew` is found in the standard prefixes even when it is not on `PATH`. Without it, the script prints the install command and stops. Linux skips this step.
+3. Picks the packages: the first ten above, plus `iterm` and `skhd` on macOS and `ghostty` when Ghostty is installed.
 4. Backs up an old standalone `~/.local/bin/mise` that would hide the Homebrew one (macOS).
 5. Backs up every real file a package would replace, as `<file>.backup-YYYYmmdd-HHMMSS`. Links that already point into the repo stay. `~/.gitconfig` is backed up too, because git reads it before `~/.config/git/config`.
 6. Links the packages with `stow --restow --no-folding`. Without `stow`, it makes plain links.

@@ -122,6 +122,7 @@ class FakeSystem:
         self.clip = IMAGE_INFO
         self.front = "Ghostty"
         self.iterm_tty = "/dev/ttys003"
+        self.iterm_error = "no window"   # stderr when the iTerm2 lookup fails
         self.ps_tty = ""
         self.ps_all = ""
         self.hosts = {}          # dest -> (user, hostname, port)
@@ -163,18 +164,15 @@ class FakeSystem:
 
     def osascript(self, script, javascript=False):
         if javascript:
+            if "frontmostApplication" in script:
+                return 0, self.front + "\n", ""
             return 0, "\n".join(self.files), ""
         if script == "clipboard info":
             return 0, self.clip, ""
-        if "frontmost" in script and "get name" in script:
-            return 0, self.front + "\n", ""
         if "tty of current session" in script:
-            return (0, self.iterm_tty + "\n", "") if self.iterm_tty else (1, "", "no window")
+            return (0, self.iterm_tty + "\n", "") if self.iterm_tty else (1, "", self.iterm_error)
         if script.startswith("choose from list"):
             return 0, (self.pick or "false") + "\n", ""
-        if "keystroke" in script:
-            self.pasted += 1
-            return 0, "", ""
         if "display notification" in script:
             self.notes.append(script)
             return 0, "", ""
@@ -187,8 +185,13 @@ class FakeSystem:
 class MainFlow(unittest.TestCase):
     def setUp(self):
         self.sys = FakeSystem()
-        self.saved = {n: getattr(mod, n) for n in ("run", "find_tool", "process_argv")}
+        self.saved = {n: getattr(mod, n) for n in ("run", "find_tool", "process_argv", "post_cmd_v", "LOG_PATH")}
         mod.run = self.sys.run
+        mod.post_cmd_v = self.post_cmd_v      # never posts real key events
+        self.log_dir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.log_dir, ignore_errors=True)
+        mod.LOG_PATH = os.path.join(self.log_dir, "img-to-server.log")
+        self.post_error = None
         mod.find_tool = lambda name: "/stub/" + name
         mod.process_argv = lambda pid: self.sys.argvs.get(pid)
         self.out, self.err = io.StringIO(), io.StringIO()
@@ -196,6 +199,15 @@ class MainFlow(unittest.TestCase):
     def tearDown(self):
         for name, fn in self.saved.items():
             setattr(mod, name, fn)
+
+    def post_cmd_v(self):
+        if self.post_error:
+            raise OSError(self.post_error)
+        self.sys.pasted += 1
+
+    def log_text(self):
+        with open(mod.LOG_PATH) as f:
+            return f.read()
 
     def main(self, *args):
         with contextlib.redirect_stdout(self.out), contextlib.redirect_stderr(self.err):
@@ -272,7 +284,7 @@ class MainFlow(unittest.TestCase):
         self.sys.clip = TEXT_INFO
         self.assertEqual(self.main(), 0)
         self.assertEqual(self.sys.pasted, 1)
-        self.assertEqual(self.sys.names(), ["osascript", "osascript"])
+        self.assertEqual(self.sys.names(), ["osascript", "osascript"])   # front app, clipboard info
         self.assertEqual(self.sys.notes, [])
 
     def test_no_image_dry_run_pastes_nothing(self):
@@ -287,7 +299,7 @@ class MainFlow(unittest.TestCase):
         self.assertEqual(self.main(), 0)
         names = self.sys.names()
         self.assertEqual(names.count("scp"), 1)
-        self.assertEqual(names[-3:], ["scp", "pbcopy", "osascript"])
+        self.assertEqual(names[-2:], ["scp", "pbcopy"])
         self.assertEqual(self.sys.pasted, 1)
         self.assertRegex(self.sys.clipboard_text, r"^/tmp/claude-img/\d{8}-\d{6}-\d{3}\.png$")
         scp = next(c for c in self.sys.calls if os.path.basename(c[0]) == "scp")
@@ -399,9 +411,138 @@ class MainFlow(unittest.TestCase):
         self.assertEqual(self.sys.pasted, 1)
         self.assertIn("pngpaste not found", self.sys.notes[0])
 
+    def test_front_app_comes_from_nsworkspace_without_system_events(self):
+        self.sys.clip = TEXT_INFO
+        self.assertEqual(self.main(), 0)
+        scripts = [c[-1] for c in self.sys.calls if os.path.basename(c[0]) == "osascript"]
+        self.assertTrue(any("NSWorkspace" in sc for sc in scripts))
+
+    def test_no_system_events_anywhere(self):
+        self.one_host()
+        self.assertEqual(self.main(), 0)
+        self.sys.front = "iTerm2"
+        self.sys.ps_tty = "201 S+ ssh dev\n"
+        self.assertEqual(self.main(), 0)
+        self.assertFalse(any("System Events" in " ".join(c) or "keystroke" in " ".join(c) for c in self.sys.calls))
+        with open(SCRIPT) as f:
+            source = f.read()
+        self.assertNotIn('tell application "System Events"', source)
+        self.assertNotIn("keystroke", source)
+
+    def test_upload_pastes_with_quartz(self):
+        self.one_host()
+        self.assertEqual(self.main(), 0)
+        self.assertEqual(self.sys.pasted, 1)
+        self.assertIn("paste: cgevent", self.log_text())
+
+    def test_paste_fallback_keeps_path_on_clipboard_and_notifies(self):
+        self.one_host()
+        self.post_error = "CoreGraphics is not available"
+        self.assertEqual(self.main(), 0)
+        self.assertEqual(self.sys.pasted, 0)
+        self.assertRegex(self.sys.clipboard_text, r"^/tmp/claude-img/\d{8}-\d{6}-\d{3}\.png$")
+        self.assertEqual(len(self.sys.notes), 1)
+        self.assertIn("Path copied: press Cmd+V", self.sys.notes[0])
+        self.assertIn("paste: clipboard", self.log_text())
+
+    def test_paste_fallback_without_image_leaves_clipboard_alone(self):
+        self.sys.clip = TEXT_INFO
+        self.post_error = "no quartz"
+        self.assertEqual(self.main(), 0)
+        self.assertIsNone(self.sys.clipboard_text)
+        self.assertIn("press Cmd+V", self.sys.notes[0])
+
+    def test_iterm_not_authorized_falls_back_to_process_list(self):
+        self.sys.front = "iTerm2"
+        self.sys.iterm_tty = ""
+        self.sys.iterm_error = "execution error: Not authorized to send Apple events to iTerm2. (-1743)"
+        self.sys.hosts = {"dev": ("me", "dev.example.com", "22")}
+        self.sys.ps_all = "301 ttys009 ssh dev\n"
+        self.assertEqual(self.main(), 0)
+        self.assertEqual(self.sys.names().count("scp"), 1)
+        self.assertEqual(self.sys.notes, [])
+        self.assertEqual(self.err.getvalue(), "")
+        self.assertIn("not authorized to control iTerm2", self.log_text())
+
+    def test_log_block_has_the_run_and_no_clipboard_contents(self):
+        self.one_host()
+        path = self.make_file("secret-name.png")
+        with open(path, "wb") as f:
+            f.write(b"SECRETBYTES")
+        self.sys.clip = "«class furl», 40"
+        self.sys.files = [path]
+        self.assertEqual(self.main(), 0)
+        text = self.log_text()
+        for expected in ("front app: Ghostty", "clipboard: file", "target: dev (me@dev.example.com)",
+                         "paste: cgevent", "result: exit 0"):
+            self.assertIn(expected, text)
+        self.assertNotIn("SECRETBYTES", text)
+        self.assertNotIn(self.sys.clipboard_text, text)
+
+    def test_failed_command_is_logged_with_exit_code_and_stderr(self):
+        self.one_host()
+        self.sys.fail["scp"] = (1, "Permission denied (publickey).")
+        self.assertEqual(self.main(), 1)
+        text = self.log_text()
+        self.assertIn("upload failed: scp failed: Permission denied", text)
+        self.assertIn("result: exit 1", text)
+
+    def test_dry_run_prints_the_log_and_writes_none(self):
+        self.one_host()
+        self.assertEqual(self.main("--dry-run"), 0)
+        self.assertIn("would log:", self.out.getvalue())
+        self.assertIn("front app: Ghostty", self.out.getvalue())
+        self.assertFalse(os.path.exists(mod.LOG_PATH))
+
+    def test_each_run_appends_one_block(self):
+        self.sys.clip = TEXT_INFO
+        self.main()
+        self.main()
+        self.assertEqual(self.log_text().count("=== 20"), 2)
+
     def test_bad_arguments(self):
         self.assertEqual(self.main("--nope"), 2)
         self.assertEqual(self.sys.calls, [])
+
+
+class WriteLog(unittest.TestCase):
+    def setUp(self):
+        self.dir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.dir, ignore_errors=True)
+        self.path = os.path.join(self.dir, "Library", "Logs", "img-to-server.log")
+
+    def test_creates_folder_and_appends(self):
+        mod.write_log(["a"], self.path)
+        mod.write_log(["b"], self.path)
+        with open(self.path) as f:
+            self.assertEqual(f.read(), "a\n\nb\n\n")
+
+    def test_big_file_is_cut_to_the_newest_part(self):
+        os.makedirs(os.path.dirname(self.path))
+        line = "old line %06d\n"
+        with open(self.path, "w") as f:
+            for i in range(mod.LOG_MAX_BYTES // len(line % 0) + 10):
+                f.write(line % i)
+        before = os.path.getsize(self.path)
+        self.assertGreater(before, mod.LOG_MAX_BYTES)
+        mod.write_log(["new block"], self.path)
+        size = os.path.getsize(self.path)
+        self.assertLess(size, mod.LOG_KEEP_BYTES + 100)
+        with open(self.path) as f:
+            lines = f.read().splitlines()
+        self.assertTrue(lines[0].startswith("old line "))     # cut at a line start
+        self.assertEqual(len(lines[0]), len(line % 0) - 1)
+        self.assertIn("new block", lines)
+        self.assertEqual(lines[-3], "old line %06d" % (before // len(line % 0) - 1))
+
+    def test_small_file_is_kept(self):
+        mod.write_log(["x" * 1000], self.path)
+        mod.write_log(["y"], self.path)
+        self.assertGreater(os.path.getsize(self.path), 1000)
+
+    def test_unwritable_log_does_not_raise(self):
+        with contextlib.redirect_stderr(io.StringIO()):
+            mod.write_log(["a"], "/dev/null/nope/log")
 
 
 class RunHelper(unittest.TestCase):
@@ -422,10 +563,11 @@ class StubbedPath(unittest.TestCase):
 
     STUBS = {
         "osascript": '''#!/bin/sh
-echo "osascript $2" >> "$LOG"
-case "$2" in
+for last; do :; done
+echo "osascript $last" >> "$LOG"
+case "$last" in
   "clipboard info") echo "$CLIP_INFO" ;;
-  *frontmost*) echo Ghostty ;;
+  *frontmostApplication*) echo Ghostty ;;
 esac
 ''',
         "ps": '#!/bin/sh\necho "ps $*" >> "$LOG"\necho "999999 ttys001 ssh -p 2200 dev"\necho "999998 ?? ssh -N dev"\n',
@@ -453,13 +595,29 @@ esac
         with open(path) as f:
             return f.read()
 
+    # Loads the real script but replaces the Quartz call, so no key event is ever posted.
+    RUNNER = """
+import importlib.machinery, importlib.util, os, sys
+loader = importlib.machinery.SourceFileLoader("img_to_server", sys.argv[1])
+mod = importlib.util.module_from_spec(importlib.util.spec_from_loader("img_to_server", loader))
+loader.exec_module(mod)
+def fake_post():
+    with open(os.environ["LOG"], "a") as f:
+        f.write("post_cmd_v\\n")
+mod.post_cmd_v = fake_post
+sys.exit(mod.main(sys.argv[2:]))
+"""
+
     def run_script(self, clip, *args):
         env = {"PATH": self.tmp + ":/usr/bin:/bin", "LOG": self.log, "CLIP_INFO": clip,
                "TMPFILE_LOG": self.tmpfile_log, "HOME": self.tmp}
-        proc = subprocess.run([sys.executable, "-I", SCRIPT, *args], env=env, capture_output=True,
-                              text=True, timeout=60)
+        proc = subprocess.run([sys.executable, "-I", "-c", self.RUNNER, SCRIPT, *args], env=env,
+                              capture_output=True, text=True, timeout=60)
         log = self.read(self.log)
         return proc, log
+
+    def app_log(self):
+        return self.read(os.path.join(self.tmp, "Library", "Logs", "img-to-server.log"))
 
     def test_full_run(self):
         proc, log = self.run_script(IMAGE_INFO)
@@ -467,20 +625,28 @@ esac
         self.assertIn("scp -q -o BatchMode=yes", log)
         self.assertIn("-o Port=2200 -- ", log)
         self.assertRegex(log, r"pbcopy /tmp/claude-img/\d{8}-\d{6}-\d{3}\.png")
-        self.assertIn('keystroke "v" using command down', log)
+        self.assertEqual(log.count("post_cmd_v"), 1)
+        self.assertNotIn("System Events", log)
         self.assertFalse(os.path.exists(self.read(self.tmpfile_log).strip()))
+        app_log = self.app_log()
+        self.assertIn("front app: Ghostty", app_log)
+        self.assertIn("cmd: /", app_log)
+        self.assertIn("-> exit 0", app_log)
+        self.assertIn("paste: cgevent", app_log)
 
     def test_no_image(self):
         proc, log = self.run_script("«class utf8», 5, string, 5")
         self.assertEqual(proc.returncode, 0)
         self.assertNotIn("scp", log)
-        self.assertEqual(log.count('keystroke "v"'), 1)
+        self.assertEqual(log.count("post_cmd_v"), 1)
 
     def test_dry_run(self):
         proc, log = self.run_script(IMAGE_INFO, "--dry-run")
         self.assertEqual(proc.returncode, 0, proc.stderr)
         self.assertIn("target: dev (me@dev.example.com:2200)", proc.stdout)
-        self.assertNotIn("keystroke", log)
+        self.assertNotIn("post_cmd_v", log)
+        self.assertIn("would log:", proc.stdout)
+        self.assertEqual(self.app_log(), "")
         self.assertNotIn("scp ", log)
         self.assertNotIn("pngpaste", log)
 

@@ -6,6 +6,10 @@ image with scp to /tmp/claude-img/<timestamp>.<ext> on that server (files there 
 day are deleted), puts the remote path on the clipboard and sends Cmd-V. Without an image it
 only sends Cmd-V, so it is harmless to run anywhere. Works with any terminal.
 
+Cmd-V is posted as key events through Quartz (ctypes), so the process that runs this script
+needs only the Accessibility permission, never Automation or System Events. If the events
+cannot be posted, the path stays on the clipboard and a notification says to press Cmd-V.
+
 What counts as an image on the clipboard:
   1. One copied file with an image extension: uploaded as is, extension kept.
   2. Image data (PNG, TIFF, JPEG, ...), even with text or HTML types beside it: saved with pngpaste.
@@ -18,8 +22,12 @@ Finding the server, in order:
 
 Needs pngpaste (brew install pngpaste). Failures show a macOS notification and print to stderr.
 
+Each run appends one block to ~/Library/Logs/img-to-server.log: time, front app, clipboard kind,
+target or reason, every command with its exit code and stderr tail, paste method and result.
+Clipboard and file contents are never logged. The file is cut to its last 200 KB past 1 MB.
+
 Usage: img-to-server [--dry-run]
-  --dry-run  print the target and the commands; upload and paste nothing
+  --dry-run  print the target, the commands and the log block; upload, paste and log nothing
 """
 
 import ctypes
@@ -37,6 +45,14 @@ from collections import namedtuple
 REMOTE_DIR = "/tmp/claude-img"  # upload folder on the server
 UPLOAD_TIMEOUT = 60             # seconds for the whole upload
 TITLE = "Image to server"
+LOG_PATH = os.path.expanduser("~/Library/Logs/img-to-server.log")
+LOG_MAX_BYTES = 1_000_000       # past this size the log is cut
+LOG_KEEP_BYTES = 200_000        # what the cut keeps: the newest part
+LOG_ERR_TAIL = 200              # characters of stderr kept per command
+LOG_CMD_MAX = 300               # characters of a command line kept
+KEY_V = 9                       # virtual key code of "v"
+FLAG_COMMAND = 0x100000         # kCGEventFlagMaskCommand
+HID_EVENT_TAP = 0               # kCGHIDEventTap
 
 # ssh options without a value, and options that take one (OpenSSH `man ssh`).
 SSH_FLAGS = set("46AaCfGgKkMNnqsTtVvXxYy")
@@ -246,7 +262,28 @@ def find_tool(name):
     return shutil.which(name, path=path)
 
 
+LOG_LINES = []  # lines of the current run's log block
+
+
+def log(text):
+    """Adds a line to the current run's log block."""
+    LOG_LINES.append(text)
+
+
+def tail(text, size):
+    """Returns the last size characters of text, one line, whitespace trimmed."""
+    return " ".join(text.split())[-size:]
+
+
 def run(argv, timeout=10, data=None):
+    """Runs argv like spawn(), and logs the command with its exit code and stderr tail."""
+    code, out, err = spawn(argv, timeout, data)
+    line = f"cmd: {tail(shlex.join(argv), LOG_CMD_MAX)} -> exit {code}"
+    log(line + (f"; stderr: {tail(err, LOG_ERR_TAIL)}" if err.strip() else ""))
+    return code, out, err
+
+
+def spawn(argv, timeout=10, data=None):
     """Runs argv in its own process group; returns (exit code, stdout, stderr) as text.
 
     Exit code 124 on timeout (the whole group is killed), 127 when it cannot start.
@@ -280,6 +317,7 @@ def osascript(script, timeout=10, language=None):
 
 def notify(text):
     """Shows a macOS notification."""
+    log(f"notify: {text}")
     osascript(f"display notification {osa_quote(text)} with title {osa_quote(TITLE)}")
 
 
@@ -290,9 +328,51 @@ def fail(text):
     return 1
 
 
-def send_paste():
-    """Sends Cmd-V to the front app."""
-    return osascript('tell application "System Events" to keystroke "v" using command down')
+def post_cmd_v():
+    """Posts Cmd-V (key down, key up) to the HID event stream with Quartz.
+
+    Needs only Accessibility for this process (or the app that launched it). Raises OSError
+    when the CoreGraphics functions cannot be loaded.
+    """
+    frameworks = "/System/Library/Frameworks/"
+    try:
+        quartz = ctypes.CDLL(frameworks + "ApplicationServices.framework/ApplicationServices")
+        core = ctypes.CDLL(frameworks + "CoreFoundation.framework/CoreFoundation")
+        create = quartz.CGEventCreateKeyboardEvent
+        set_flags, post, release = quartz.CGEventSetFlags, quartz.CGEventPost, core.CFRelease
+    except (OSError, AttributeError) as error:
+        raise OSError(f"CoreGraphics is not available: {error}") from error
+    create.restype, create.argtypes = ctypes.c_void_p, [ctypes.c_void_p, ctypes.c_uint16, ctypes.c_bool]
+    set_flags.argtypes, post.argtypes = [ctypes.c_void_p, ctypes.c_uint64], [ctypes.c_uint32, ctypes.c_void_p]
+    release.argtypes = [ctypes.c_void_p]
+    for key_down in (True, False):
+        event = create(None, KEY_V, key_down)
+        if not event:
+            raise OSError("CGEventCreateKeyboardEvent returned no event")
+        try:
+            set_flags(event, FLAG_COMMAND)   # only Command, even while Ctrl is still held
+            post(HID_EVENT_TAP, event)
+        finally:
+            release(event)
+
+
+def send_paste(path=None):
+    """Sends Cmd-V to the front app. Returns (method, error text or None).
+
+    When the key events cannot be posted, the method is "clipboard": path (if given) is put
+    on the clipboard and a notification asks for Cmd-V.
+    """
+    try:
+        post_cmd_v()
+    except OSError as error:
+        log(f"paste: post_cmd_v failed: {error}")
+        if path:
+            code, _, err = run([find_tool("pbcopy") or "/usr/bin/pbcopy"], data=path.encode())
+            if code != 0:
+                return "clipboard", f"pbcopy failed: {err.strip()}"
+        notify("Path copied: press Cmd+V" if path else "Could not paste: press Cmd+V")
+        return "clipboard", None
+    return "cgevent", None
 
 
 def argv_of(pid, args_text):
@@ -312,17 +392,24 @@ def target_from(pid, args_text):
 
 
 def frontmost_app():
-    """Returns the name of the front app, or "" if it cannot be read."""
-    code, out, _ = osascript('tell application "System Events" to get name of '
-                             'first application process whose frontmost is true')
+    """Returns the name of the front app, or "" if it cannot be read. Needs no permission."""
+    code, out, _ = osascript('ObjC.import("AppKit");'
+                             '$.NSWorkspace.sharedWorkspace.frontmostApplication.localizedName.js',
+                             language="JavaScript")
     return out.strip() if code == 0 else ""
 
 
 def iterm_foreground_ssh():
-    """Returns the Target of the foreground ssh in iTerm2's current session, or None."""
-    code, out, _ = osascript('tell application "iTerm2" to tty of current session of current window')
+    """Returns the Target of the foreground ssh in iTerm2's current session, or None.
+
+    None also when iTerm2 refuses the Apple event (Automation not allowed) or has no window:
+    the caller then uses the process list.
+    """
+    code, out, err = osascript('tell application "iTerm2" to tty of current session of current window')
     tty = out.strip().replace("/dev/", "")
     if code != 0 or not tty:
+        log("iterm: no tty" + (" (not authorized to control iTerm2)" if "not authorized" in err.lower() else "")
+            + "; using the process list")
         return None
     code, out, _ = run([find_tool("ps") or "/bin/ps", "-t", tty, "-o", "pid=,stat=,args="])
     if code != 0:
@@ -390,9 +477,12 @@ def pick_host(labels):
     return choice if code == 0 and choice and choice != "false" else None
 
 
-def detect_candidates():
-    """Returns [(label, Target)]: the iTerm2 foreground ssh when it exists, else every ssh session."""
-    if frontmost_app() == "iTerm2":
+def detect_candidates(front):
+    """Returns [(label, Target)]: the iTerm2 foreground ssh when it exists, else every ssh session.
+
+    front is the name of the front app.
+    """
+    if front == "iTerm2":
         target = iterm_foreground_ssh()
         if target:
             return group_targets([target])
@@ -431,32 +521,72 @@ def upload(target, dry_run, source=None):
             shutil.rmtree(tmp, ignore_errors=True)
 
 
+def write_log(lines, path=LOG_PATH):
+    """Appends a block of lines to the log file, first cutting the file to its newest part if it is large."""
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        if os.path.exists(path) and os.path.getsize(path) > LOG_MAX_BYTES:
+            with open(path, "rb") as f:
+                f.seek(-LOG_KEEP_BYTES, os.SEEK_END)
+                kept = f.read().partition(b"\n")[2]        # drop the cut-off first line
+            with open(path, "wb") as f:
+                f.write(kept)
+        with open(path, "a") as f:
+            f.write("\n".join(lines) + "\n\n")
+    except OSError as error:
+        print(f"img-to-server: cannot write {path}: {error}", file=sys.stderr)
+
+
 def main(argv):
     if argv not in ([], ["--dry-run"]):
         print(__doc__, file=sys.stderr)
         return 2
     dry_run = bool(argv)
+    LOG_LINES.clear()
+    log(f"=== {datetime.datetime.now():%Y-%m-%d %H:%M:%S} ===" + (" (dry run)" if dry_run else ""))
+    status = 1
+    try:
+        status = handle(dry_run)
+        return status
+    finally:
+        log(f"result: exit {status}")
+        if dry_run:
+            print("would log:")
+            print("\n".join("  " + line for line in LOG_LINES))
+        else:
+            write_log(LOG_LINES, LOG_PATH)
 
+
+def handle(dry_run):
+    """Does one run for main(); returns the exit code."""
+    front = frontmost_app()
+    log(f"front app: {front or 'unknown'}")
     code, info, _ = osascript("clipboard info")
     kind = clipboard_kind(info) if code == 0 else None
     source = clipboard_image_file() if kind == "file" else None
     if kind == "file" and not source:
         kind = None
+    log(f"clipboard: {kind or 'no image'}")
     if not kind:
+        log("reason: no image, normal paste")
         if dry_run:
             print("clipboard: no image; would send Cmd-V")
             return 0
-        send_paste()
+        method, error = send_paste()
+        log(f"paste: {method}")
         return 0
     if dry_run:
         print(f"clipboard: {source or 'image data'}")
 
     if kind == "image" and not find_tool("pngpaste") and not dry_run:
-        send_paste()
+        log("reason: pngpaste not found")
+        method, _ = send_paste()
+        log(f"paste: {method}")
         return fail("pngpaste not found. Install it with: brew install pngpaste")
 
-    candidates = detect_candidates()
+    candidates = detect_candidates(front)
     if not candidates:
+        log("reason: no ssh session found")
         if dry_run:
             print("target: none; would show the notification 'No ssh session found'")
             return 0
@@ -470,12 +600,15 @@ def main(argv):
     else:
         choice = pick_host([label for label, _ in candidates])
         if choice is None:
+            log("reason: picker cancelled")
             return 0
         label, target = next(c for c in candidates if c[0] == choice)
     print(f"target: {label}")
+    log(f"target: {label}")
 
     remote, error = upload(target, dry_run, source)
     if error:
+        log(f"reason: upload failed: {error}")
         return fail(f"Upload to {label} failed. {error}")
     if dry_run:
         print(f"would paste: {remote}")
@@ -483,8 +616,9 @@ def main(argv):
     code, _, err = run([find_tool("pbcopy") or "/usr/bin/pbcopy"], data=remote.encode())
     if code != 0:
         return fail(f"pbcopy failed: {err.strip()}")
-    code, _, err = send_paste()
-    return 0 if code == 0 else fail(f"Could not paste: {err.strip()[-300:]}")
+    method, error = send_paste(remote)
+    log(f"paste: {method}")
+    return 0 if not error else fail(f"Could not paste: {error[-300:]}")
 
 
 if __name__ == "__main__":
