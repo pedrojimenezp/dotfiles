@@ -50,7 +50,7 @@ Keys from this config. The mouse is on: click a pane or window name, drag a bord
 | `prefix \|` / `prefix -` | Split left/right / top/bottom, in the current folder |
 | `prefix c` | New window, in the current folder |
 | `prefix H` / `J` / `K` / `L` | Resize the pane by 5 cells. Hold the key to repeat. |
-| `Ctrl+h` / `j` / `k` / `l` | Move between panes and nvim splits, no prefix (vim-tmux-navigator) |
+| `Ctrl+h` / `j` / `k` / `l` | Move between panes and nvim splits, no prefix (raw bindings in `tmux.conf`, same as vim-tmux-navigator) |
 | `prefix [` | Copy mode. Then `v` selects, `Ctrl+v` toggles a rectangle, `y` copies and leaves. |
 | `prefix f` | Project session picker |
 | `prefix t` | Toggle light/dark theme ([theme.md](theme.md)) |
@@ -172,7 +172,6 @@ Other TPM keys: `prefix U` updates plugins.
 | Plugin | What it does |
 | --- | --- |
 | `tmux-plugins/tpm` | The plugin manager |
-| `christoomey/vim-tmux-navigator` | `Ctrl+h/j/k/l` between tmux panes and nvim splits |
 | `Morantron/tmux-fingers` | Copy with hints |
 | `tmux-plugins/tmux-resurrect` | Save and restore sessions |
 | `tmux-plugins/tmux-continuum` | Auto-save every 15 minutes, auto-restore |
@@ -210,7 +209,9 @@ Saves hold sessions, windows, panes, their folders and the visible text of each 
 
 **Help popup.** `prefix ?` runs `dotfiles-help` (`bin/.local/bin/dotfiles-help`) in a popup of 80% of the window. It reads the repo at every open, so nothing is synced by hand. Where each row comes from (`bind -N` notes, `.zshrc` comments, script headers, [cheatsheet.tsv](cheatsheet.tsv)) is in [contributing.md](contributing.md#how-it-works).
 
-**Order of `prefix Ctrl+l`.** vim-tmux-navigator owns plain `Ctrl+l` (move right) and also sets `prefix Ctrl+l` to a plain clear. So `tmux.conf` defines `prefix Ctrl+l` again at the very end, after TPM runs. Bindings that must override a plugin key go there. The scrollback clears 0.3 seconds after the screen, because the shell redraw would otherwise push the old screen back into history. In vim or nvim the binding is skipped, because the `Ctrl+l` would reach the editor and move focus.
+**Pane keys and `prefix Ctrl+l`.** `Ctrl+h/j/k/l` are the plain bindings from the vim-tmux-navigator README, written in `tmux.conf` instead of loaded as a plugin, because the plugin spent over a second at every reload spawning `tmux` processes. Plain `Ctrl+l` moves right, and `prefix Ctrl+l` clears the screen and the scrollback. The scrollback clears 0.3 seconds after the screen, because the shell redraw would otherwise push the old screen back into history. In vim or nvim the binding is skipped, because the `Ctrl+l` would reach the editor and move focus.
+
+**Fast reloads.** TPM runs with `run -b`, so the plugins (tmux-fingers alone takes about 3 seconds) load in the background and `prefix r` returns at once. Plugin keys and the autosave in the status line appear a few seconds after a reload.
 
 **Escape sequences.** `set-clipboard on` uses [OSC 52](glossary.md#osc-52). `allow-passthrough on` lets programs, and the `theme` script, send escape sequences through tmux. Extended keys are on (CSI u format), and `xterm*` terminals are marked as supporting them. This lets `Shift+Enter` and `Ctrl+Enter` reach programs such as Claude Code. Colors are `tmux-256color` plus true color.
 

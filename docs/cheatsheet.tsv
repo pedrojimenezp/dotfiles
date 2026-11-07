@@ -1,7 +1,7 @@
 # Keys that dotfiles-help cannot read from the config: plugin, tool and terminal keys.
 # One per line: area<TAB>keys<TAB>description<TAB>doc. Lines starting with # are skipped.
 # tmux keys get bind -N in tmux.conf and zsh aliases/keys an end-of-line comment in .zshrc instead.
-tmux plugin	Ctrl+h/j/k/l	move between tmux panes and nvim splits, no prefix (vim-tmux-navigator)	docs/tmux.md
+tmux	Ctrl+h/j/k/l	move between tmux panes and nvim splits, no prefix	docs/tmux.md
 tmux plugin	prefix Ctrl+s	save sessions now (tmux-resurrect)	docs/tmux.md
 tmux plugin	prefix Ctrl+r	restore saved sessions (tmux-resurrect)	docs/tmux.md
 tmux plugin	prefix Space	copy with hints: press a letter to copy a URL, path or hash (tmux-fingers)	docs/tmux.md
