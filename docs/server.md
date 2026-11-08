@@ -263,8 +263,6 @@ cd ~/dotfiles && git pull && ./install.sh
 
 `install.sh` is safe to run again, but it never upgrades tools. To upgrade them and mise itself (`mise upgrade`, then `mise self-update`), follow [Update](install.md#update).
 
-If this server ran the older Brew-based install, see [migrate-to-mise.md](migrate-to-mise.md#linux) to remove Homebrew.
-
 ## Remove the dotfiles
 
 To put the server back as it was, run `./uninstall.sh` in the dotfiles clone. It removes the links, restores your old files from their backups, deletes the data the installer made and, last, the clone. Preview first with `./uninstall.sh --dry-run`. It never changes your login shell: if zsh is your login shell, it prints the `chsh -s /bin/bash` line to run afterwards. Details and flags: [install.md](install.md#undo-or-uninstall).
@@ -294,8 +292,6 @@ cd ~/dotfiles
 ./install.sh
 ```
 
-Moving a server that ran the old Homebrew install? Follow the [Existing server checklist](migrate-to-mise.md#existing-server).
-
 If a package is missing, `install.sh` stops and prints the `apt-get` line for the admin. It never uses sudo.
 
 **Upgrades.** Each user upgrades their own dotfiles, tools and mise as in [section 6](#6-updating-the-server-later). The admin upgrades the system packages with `sudo apt-get upgrade`.
@@ -322,7 +318,6 @@ If a package is missing, `install.sh` stops and prints the `apt-get` line for th
 ## Related pages
 
 - [install.md](install.md): what `install.sh` does, flags, and how to undo it.
-- [migrate-to-mise.md](migrate-to-mise.md): remove the old shared Homebrew.
 - [first-day.md](first-day.md): the keys you'll use most.
 - [tmux.md](tmux.md): every tmux key and the status bar.
 - [zsh.md](zsh.md#remote-tmux-tssh): the `tssh` function.

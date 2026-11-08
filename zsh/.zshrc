@@ -2,7 +2,7 @@
 # Secrets and machine-specific settings go in ~/.zshrc.local (sourced just before syntax highlighting, not tracked).
 
 # --- Homebrew (macOS; skipped where brew is absent) ---
-for brew_bin in /opt/homebrew/bin/brew /usr/local/bin/brew /home/linuxbrew/.linuxbrew/bin/brew; do
+for brew_bin in /opt/homebrew/bin/brew /usr/local/bin/brew; do
   if [[ -x $brew_bin ]]; then
     eval "$($brew_bin shellenv)"
     break

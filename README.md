@@ -43,7 +43,6 @@ Forgot a key? Press `prefix ?` in tmux (`Ctrl+Space`, then `?`) or run `dotfiles
 | | [nvim.md](docs/nvim.md) | Neovim keys, plugins, language servers |
 | | [git.md](docs/git.md) | Git settings, aliases, `~/.config/git/local` |
 | | [tools.md](docs/tools.md) | Every tool with an example, adding a tool, starship, mise |
-| | [migrate-to-mise.md](docs/migrate-to-mise.md) | Remove the Homebrew copies an older install left (macOS, Linux, existing servers) |
 | Reference | [terminals.md](docs/terminals.md) | Ghostty, iTerm2, font, terminal keys, pasting an image to a server (any terminal, iTerm2) |
 | | [theme.md](docs/theme.md) | The `theme` command and light/dark mode |
 | | [vim.md](docs/vim.md) | The small plugin-free `.vimrc` for servers |

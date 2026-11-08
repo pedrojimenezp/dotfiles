@@ -109,7 +109,6 @@ On Linux, install Ghostty with your distro's package if you want it; the font is
 
 - Add a line `name = "latest"  # what it does` under `[tools]` in `mise/.config/mise/config.toml`, then run `mise install` (or `./install.sh`). Find the name with `mise registry | grep <tool>`. A tool with no mise build for an OS can be limited with `{ version = "latest", os = ["linux"] }` and added to the `Brewfile` for the other.
 - Upgrade tools yourself with `mise upgrade`; `install.sh` never upgrades them. Upgrading mise itself and the Homebrew packages is in [Update](install.md#update).
-- Old Homebrew copies of tools that moved to mise: see [migrate-to-mise.md](migrate-to-mise.md).
 
 ## Prompt: starship
 

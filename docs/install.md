@@ -120,8 +120,6 @@ The installer is safe to run again. It refreshes links, installs what is missing
    ```
 3. Open a new shell. The tool cache refreshes by itself when a tool's version changes ([zsh.md](zsh.md#how-it-works)).
 
-Already ran the older Brew-based install? See [migrate-to-mise.md](migrate-to-mise.md) to remove the Homebrew copies of the tools that moved.
-
 ## Flags
 
 ```sh
