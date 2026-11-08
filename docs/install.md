@@ -238,17 +238,16 @@ Each top-level folder of the repo is a [package](glossary.md#package) whose cont
 1. Checks the system packages. `zsh` is always needed; Linux also needs `git`, `curl`, `unzip`, `stow` and `libatomic1` (and `xz` on a desktop). Anything missing stops the script, which prints the `apt-get` line for an admin.
 2. **macOS:** runs `brew bundle --no-upgrade` to install what is missing (`mise`, `stow`, `btop`, `pngpaste`, `chafa`, the apps and `skhd-zig`), then `chmod go-w` on Homebrew's zsh completion folders. `brew` is found in the standard prefixes even when it is not on `PATH`. Without it, the script prints the install command and stops. Linux skips this step.
 3. Picks the packages: the first ten above, plus `iterm` and `skhd` on macOS and `ghostty` when Ghostty is installed.
-4. Backs up an old standalone `~/.local/bin/mise` that would hide the Homebrew one (macOS).
-5. Backs up every real file a package would replace, as `<file>.backup-YYYYmmdd-HHMMSS`. Links that already point into the repo stay. `~/.gitconfig` is backed up too, because git reads it before `~/.config/git/config`.
-6. Links the packages with `stow --restow --no-folding`. Without `stow`, it makes plain links.
-7. Installs mise into `~/.local/bin` if it is missing (the official installer from `https://mise.run`), runs `mise install` for every tool in the config, and puts those tools on `PATH` for the rest of the script. A failure only prints a warning.
-8. Clones the zsh plugins (autosuggestions, syntax-highlighting, completions, fzf-tab) into `~/.local/share/zsh-plugins`, or fast-forwards the ones already there.
-9. Clones [TPM](glossary.md#tpm) into `~/.config/tmux/plugins/tpm` and installs the tmux plugins. TPM needs a tmux server that has loaded the config, so this runs on a private, throwaway tmux server. It never touches a tmux you already have running, and works even when the installer runs inside tmux.
-10. **Linux desktop:** installs the Monaspace Nerd Font into `~/.local/share/fonts`. A failure prints a warning, removes the partial folder and lets the install finish; rerun `./install.sh` to retry.
-11. Runs `theme sync` to write the Ghostty and iTerm color files. A failure only prints a warning.
-12. Runs the `--with-claude` step, if you asked for it.
-13. Asks for your git name and email if none is set. A piped or `--dry-run` run prints the two commands instead.
-14. Prints the next steps (it says so when the tmux plugin install failed) and, if zsh is not your login shell, the `chsh` command. When `/usr/bin/tmux` is also older than 3.5, it warns that logins start that system tmux until you switch (bash does not put mise's tools on `PATH`), and tells you to run `tmux kill-server` after switching.
+4. Backs up every real file a package would replace, as `<file>.backup-YYYYmmdd-HHMMSS`. Links that already point into the repo stay. `~/.gitconfig` is backed up too, because git reads it before `~/.config/git/config`.
+5. Links the packages with `stow --restow --no-folding`.
+6. Installs mise into `~/.local/bin` if it is missing (the official installer from `https://mise.run`), runs `mise install` for every tool in the config, and puts those tools on `PATH` for the rest of the script. A failure only prints a warning.
+7. Clones the zsh plugins (autosuggestions, syntax-highlighting, completions, fzf-tab) into `~/.local/share/zsh-plugins`, or fast-forwards the ones already there.
+8. Clones [TPM](glossary.md#tpm) into `~/.config/tmux/plugins/tpm` and installs the tmux plugins. TPM needs a tmux server that has loaded the config, so this runs on a private, throwaway tmux server. It never touches a tmux you already have running, and works even when the installer runs inside tmux.
+9. **Linux desktop:** installs the Monaspace Nerd Font into `~/.local/share/fonts`. A failure prints a warning, removes the partial folder and lets the install finish; rerun `./install.sh` to retry.
+10. Runs `theme sync` to write the Ghostty and iTerm color files. A failure only prints a warning.
+11. Runs the `--with-claude` step, if you asked for it.
+12. Asks for your git name and email if none is set. A piped or `--dry-run` run prints the two commands instead.
+13. Prints the next steps (it says so when the tmux plugin install failed) and, if zsh is not your login shell, the `chsh` command. When `/usr/bin/tmux` is also older than 3.5, it warns that logins start that system tmux until you switch (bash does not put mise's tools on `PATH`), and tells you to run `tmux kill-server` after switching.
 
 With `--dry-run`, a failed step 1 or 2 continues instead of stopping, so you see the whole plan.
 

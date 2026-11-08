@@ -157,13 +157,6 @@ backup() {
   fi
 }
 
-# Step 1b: an old standalone mise in ~/.local/bin shadows the Homebrew one on PATH.
-BREW_MISE="$(brew --prefix 2>/dev/null || true)/bin/mise" # Homebrew's copy; empty without brew
-if [[ -x "$BREW_MISE" && -f "$HOME/.local/bin/mise" && ! -L "$HOME/.local/bin/mise" ]]; then
-  echo "==> $HOME/.local/bin/mise shadows the Homebrew mise on PATH; backing it up"
-  backup "$HOME/.local/bin/mise"
-fi
-
 # Step 2: back up every file a package would link, so stow never conflicts.
 echo "==> Backing up existing files"
 for pkg in "${PACKAGES[@]}"; do
@@ -177,27 +170,14 @@ if [[ " ${PACKAGES[*]} " == *" git "* ]]; then
   backup "$HOME/.gitconfig"
 fi
 
-# Plain-symlink fallback used when stow is missing.
-link_package() {
-  local pkg="$1" file rel
-  while IFS= read -r -d '' file; do
-    rel="${file#"$REPO/$pkg/"}"
-    run mkdir -p "$(dirname "$HOME/$rel")"
-    run ln -sfn "$file" "$HOME/$rel"
-  done < <(find "$REPO/$pkg" -type f -print0)
-}
-
 # Step 3: link the packages.
 echo "==> Linking packages: ${PACKAGES[*]}"
-if command -v stow >/dev/null 2>&1; then
-  # --no-folding links files, never whole folders: generated files (Ghostty theme.conf) stay out of the repo
-  run stow --restow --no-folding --dir="$REPO" --target="$HOME" "${PACKAGES[@]}"
-else
-  echo "stow not found: falling back to plain symlinks"
-  for pkg in "${PACKAGES[@]}"; do
-    link_package "$pkg"
-  done
+if ! command -v stow >/dev/null 2>&1 && [[ $DRY -eq 0 ]]; then
+  echo "stow is required and was not found. Install it (brew install stow, or apt-get install stow) and run this script again." >&2
+  exit 1
 fi
+# --no-folding links files, never whole folders: generated files (Ghostty theme.conf) stay out of the repo
+run stow --restow --no-folding --dir="$REPO" --target="$HOME" "${PACKAGES[@]}"
 
 # Step 3b: install mise if missing (per user, no sudo), then every tool of its config.
 export PATH="$HOME/.local/bin:$PATH" # where the mise installer puts the binary
