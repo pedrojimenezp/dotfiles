@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Install these dotfiles: back up conflicting files, then link packages with GNU Stow.
 # Usage: ./install.sh [--dry-run] [--with-claude <git-url>]
-set -euo pipefail # stop on errors, unset variables and failed pipes
+set -euo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" # absolute path of this repo
 REPO_REAL="$(cd "$REPO" && pwd -P)"                  # physical path (no symlinks)

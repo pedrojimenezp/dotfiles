@@ -6,7 +6,7 @@
 #        tmux-popup rescue <client>   (move a normal client out of a popup session)
 #        tmux-popup next|prev <client>  (switch to the next/previous normal session, skipping popup sessions)
 # Env: TMUX_POPUP_CLAUDE_CMD replaces the command of the claude popup (e.g. for tests).
-set -euo pipefail # stop on errors, unset variables and failed pipes
+set -euo pipefail
 
 prefix="_popup_" # every popup session name starts with this; tmux.conf matches it too
 

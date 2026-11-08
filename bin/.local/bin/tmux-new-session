@@ -5,7 +5,7 @@
 # Candidates, deduplicated and existing only: the pane path, zoxide's folders, the tmux-sessionizer projects.
 # Typing a path that is not in the list uses it as typed (a leading ~ is expanded).
 # An empty name becomes the folder's basename. Esc leaves without creating anything.
-set -euo pipefail # stop on errors, unset variables and failed pipes
+set -euo pipefail
 
 # A popup may start without the Homebrew, user or mise paths.
 # Adds the existing folders that are not in PATH yet.

@@ -55,10 +55,6 @@ The four zsh plugins are git clones in `~/.local/share/zsh-plugins`; `install.sh
 | `tealdeer` (`tldr`) | Short command examples | `tldr tar` (first run: `tldr --update`) |
 | `hyperfine` | Benchmark commands | `hyperfine 'zsh -i -c exit'` |
 
-Optional, commented in the `Brewfile` (macOS: remove the `#` and run `brew bundle`; Linux: `sudo apt-get install -y mosh`):
-
-- `mosh`: SSH-like shell that survives sleep and roaming (`mosh myserver`).
-
 ## Git and containers
 
 | Tool | What it is for | Example |

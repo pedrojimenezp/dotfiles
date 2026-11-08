@@ -4,7 +4,7 @@
 # A folder with no .git of its own whose immediate subfolders have one lists those repos:
 # one repo opens directly, several are picked with fzf (Esc quits), no fzf prints them and waits.
 # Any other folder opens lazygit as is (git finds the repo above it).
-set -euo pipefail # stop on errors, unset variables and failed pipes
+set -euo pipefail
 
 [[ $# -eq 1 ]] || { echo "usage: tmux-lazygit <dir>" >&2; exit 2; }
 dir="$1"

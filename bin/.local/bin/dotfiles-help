@@ -5,7 +5,7 @@
 # Everything is read from the repo at every run: bind -N notes in tmux.conf, end-of-line comments in .zshrc,
 # line 2 and "# Usage:" lines of bin/.local/bin/*, and docs/cheatsheet.tsv for plugin and terminal keys.
 # tmux's own default keys are not listed: prefix + k shows them. Works with macOS bash 3.2.
-set -euo pipefail # stop on errors, unset variables and failed pipes
+set -euo pipefail
 
 ROOT="$("$(dirname "${BASH_SOURCE[0]}")/dotfiles-log" --root)" # repo root, through the stow link
 

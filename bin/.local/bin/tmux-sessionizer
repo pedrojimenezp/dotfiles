@@ -7,7 +7,7 @@
 # Roots: SESSIONIZER_DIRS (space separated) if set; otherwise ~/projects (deep search) plus the repos
 # directly in ~ (and their worktrees/). Repos deeper in ~ need SESSIONIZER_DIRS.
 # SESSIONIZER_TMUX_ARGS adds tmux options, e.g. "-L sock" for a separate server.
-set -euo pipefail # stop on errors, unset variables and failed pipes
+set -euo pipefail
 
 read -r -a tmux_args <<<"${SESSIONIZER_TMUX_ARGS:-}" # extra tmux options (empty by default)
 tm() { tmux ${tmux_args[@]+"${tmux_args[@]}"} "$@"; } # one place to add tmux options

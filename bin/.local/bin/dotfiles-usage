@@ -6,7 +6,7 @@
 # do not reach history: every script that calls dotfiles-log logs "<epoch> <tool>" to usage.log, and is counted from that log only.
 # Approximate: counts the first word of each command and of each part of a pipe or && chain, after env vars and sudo.
 # Env: DOTFILES_USAGE_HISTFILE reads that zsh history file instead.
-set -euo pipefail # stop on errors, unset variables and failed pipes
+set -euo pipefail
 
 ROOT="$("$(dirname "${BASH_SOURCE[0]}")/dotfiles-log" --root)" # repo root, through the stow link
 

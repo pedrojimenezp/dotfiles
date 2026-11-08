@@ -9,7 +9,7 @@
 # In tmux: one window per repo named review:<repo>, selected again when it already exists.
 # Outside tmux: one repo opens in nvim here, several print one command each.
 # --print only prints the plan and opens nothing. Repos without changes are listed and skipped.
-set -euo pipefail # stop on errors, unset variables and failed pipes
+set -euo pipefail
 
 print_only=0
 dir=.

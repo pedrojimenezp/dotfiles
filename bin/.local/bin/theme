@@ -3,7 +3,7 @@
 # The light/dark pair lives in ~/.config/theme/config (tracked); the mode (auto, light, dark)
 # is per machine in ~/.local/state/theme. Works with macOS bash 3.2.
 # Usage: see usage() below, or run `theme help`.
-set -euo pipefail                                   # stop on errors, unset variables and failed pipes
+set -euo pipefail
 
 # --- Paths and constants ---
 CONFIG_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/theme/config"   # tracked light/dark pair (a symlink into the repo)

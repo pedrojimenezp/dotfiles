@@ -55,7 +55,7 @@ Host *
   ServerAliveInterval 30
 ```
 
-For flaky networks, install `mosh` (`sudo apt-get install -y mosh` on the server, and on your Mac uncomment it in the `Brewfile`): `mosh myserver` survives sleep and IP changes. Run tmux inside it.
+For flaky networks, install `mosh` (`sudo apt-get install -y mosh` on the server, `brew install mosh` on your Mac): `mosh myserver` survives sleep and IP changes. Run tmux inside it.
 
 A shared connection also keeps what the server read at login. A new login shell (after `chsh`) or a new group membership does not apply to new `ssh` sessions while the connection is open. Run `ssh -O exit <user>@<host>` on your laptop (the same destination you ssh to; it closes every session to that host), then connect again.
 
