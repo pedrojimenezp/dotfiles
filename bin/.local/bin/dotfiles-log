@@ -2,9 +2,20 @@
 # Append one "<epoch> <tool>" line to the usage log that dotfiles-usage reads; never fails.
 # Usage: dotfiles-log <tool>   (append one line to the usage log)
 #        dotfiles-log --path   (print the log file)
+#        dotfiles-log --root   (print the repo root, following the stow link back into the repo)
 log="${XDG_STATE_HOME:-$HOME/.local/state}/dotfiles/usage.log" # the one place that names the log
 case "${1:-}" in
   --path) printf '%s\n' "$log"; exit 0 ;; # for dotfiles-usage
+  --root)
+    # A loop instead of readlink -f, which old macOS readlink lacks; stow links are relative to their folder.
+    src="${BASH_SOURCE[0]}"
+    while [[ -L "$src" ]]; do
+      dir="$(cd -P "$(dirname "$src")" && pwd)" # folder that holds the link
+      src="$(readlink "$src")"                  # one hop
+      [[ "$src" == /* ]] || src="$dir/$src"     # relative target: resolve from the link's folder
+    done
+    cd -P "$(dirname "$src")/../../.." && pwd   # bin/.local/bin -> repo root
+    exit 0 ;;
   "") exit 0 ;;                           # nothing to log
 esac
 { mkdir -p "${log%/*}" && printf '%s %s\n' "$(date +%s)" "$1" >>"$log"; } 2>/dev/null || true # a read-only disk must not break the caller

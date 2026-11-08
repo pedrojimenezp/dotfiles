@@ -31,6 +31,7 @@ if [[ "${1:-}" == "--list" ]]; then
   list_candidates "${2:-}"
   exit 0
 fi
+"$(dirname "$0")/dotfiles-log" tmux-new-session >/dev/null 2>&1 || true # count the run in the usage log
 
 pane_path="${1:-$PWD}" # starting folder, listed first
 name_raw="$(tmux show -gv @new_session_name 2>/dev/null || true)" # passed as an option, which avoids quoting the name

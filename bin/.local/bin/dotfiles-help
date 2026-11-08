@@ -7,15 +7,7 @@
 # tmux's own default keys are not listed: prefix + k shows them. Works with macOS bash 3.2.
 set -euo pipefail # stop on errors, unset variables and failed pipes
 
-# Repo root: follow the stow symlink (~/.local/bin/dotfiles-help) back into the repo.
-# A loop instead of readlink -f, which old macOS readlink lacks; stow links are relative to their folder.
-src="${BASH_SOURCE[0]}" # path this script was started as
-while [[ -L "$src" ]]; do
-  dir="$(cd -P "$(dirname "$src")" && pwd)" # folder that holds the link
-  src="$(readlink "$src")"                  # one hop
-  [[ "$src" == /* ]] || src="$dir/$src"     # relative target: resolve from the link's folder
-done
-ROOT="$(cd -P "$(dirname "$src")/../../.." && pwd)" # bin/.local/bin -> repo root
+ROOT="$("$(dirname "${BASH_SOURCE[0]}")/dotfiles-log" --root)" # repo root, through the stow link
 
 # tmux rows from the bind -N lines of tmux.conf; key names made readable (C-l -> Ctrl+l, A -> Shift+A).
 tmux_rows() {

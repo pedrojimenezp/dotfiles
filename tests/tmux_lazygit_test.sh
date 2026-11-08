@@ -8,7 +8,8 @@ PASS=0
 FAIL=0
 ROOT="$(mktemp -d)"
 trap 'rm -rf "$ROOT"' EXIT
-export GIT_CONFIG_NOSYSTEM=1 GIT_TERMINAL_PROMPT=0
+export GIT_CONFIG_NOSYSTEM=1 GIT_TERMINAL_PROMPT=0 HOME="$ROOT/home" # the run logs to ~/.local/state
+mkdir -p "$HOME"
 
 ok() { PASS=$((PASS + 1)); echo "  ok   $1"; }
 bad() { FAIL=$((FAIL + 1)); echo "  FAIL $1"; }

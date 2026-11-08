@@ -9,6 +9,7 @@ set -euo pipefail # stop on errors, unset variables and failed pipes
 [[ $# -eq 1 ]] || { echo "usage: tmux-lazygit <dir>" >&2; exit 2; }
 dir="$1"
 [[ -d "$dir" ]] || { echo "tmux-lazygit: not a folder: $dir" >&2; exit 2; }
+"$(dirname "$0")/dotfiles-log" tmux-lazygit >/dev/null 2>&1 || true # count the run in the usage log
 
 repos=() # names of the subfolders that have their own .git (a file for worktrees, a folder otherwise)
 if [[ ! -e "$dir/.git" ]]; then

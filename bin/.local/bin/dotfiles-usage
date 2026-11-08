@@ -8,14 +8,7 @@
 # Env: DOTFILES_USAGE_HISTFILE reads that zsh history file instead.
 set -euo pipefail # stop on errors, unset variables and failed pipes
 
-# Repo root: follow the stow symlink back into the repo (a loop, as old macOS readlink lacks -f).
-src="${BASH_SOURCE[0]}" # path this script was started as
-while [[ -L "$src" ]]; do
-  dir="$(cd -P "$(dirname "$src")" && pwd)" # folder that holds the link
-  src="$(readlink "$src")"                  # one hop
-  [[ "$src" == /* ]] || src="$dir/$src"     # relative target: resolve from the link's folder
-done
-ROOT="$(cd -P "$(dirname "$src")/../../.." && pwd)" # bin/.local/bin -> repo root
+ROOT="$("$(dirname "${BASH_SOURCE[0]}")/dotfiles-log" --root)" # repo root, through the stow link
 
 case "${1:-week}" in
   week) days=7 ;; 2weeks) days=14 ;; month) days=30 ;;
