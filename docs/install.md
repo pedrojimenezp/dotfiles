@@ -127,15 +127,11 @@ Already ran the older Brew-based install? See [migrate-to-mise.md](migrate-to-mi
 ```sh
 ./install.sh --dry-run                # print what would happen, change nothing
 ./install.sh --with-claude <git-url>  # also clone and install your own Claude config repo
-./install.sh --with-claude <git-url> --claude-accounts personal,work  # only these Claude accounts
 ./install.sh --help                   # usage
 ```
 
 - **`--dry-run`** prints every action with a `[dry-run]` prefix. Use it first on a new machine.
-- **`--with-claude <git-url>`** clones your own Claude Code config repo to `~/.config/claude-shared` and runs its `install.sh`. Set `CLAUDE_SHARED_DIR` to use another folder. A private GitHub repo needs SSH access. What the repo does is in its own README.
-- **`--claude-accounts <a,b>`** passes account names (comma-separated, no spaces) to that `install.sh`. It needs `--with-claude`.
-
-`--with-claude=<git-url>` and `--claude-accounts=<a,b>` work too.
+- **`--with-claude <git-url>`** clones your own Claude Code config repo to `~/.config/claude-shared` and runs its `install.sh`. Set `CLAUDE_SHARED_DIR` to use another folder. A private GitHub repo needs SSH access. What the repo does is in its own README. `--with-claude=<git-url>` works too.
 
 ## Undo or uninstall
 
@@ -266,7 +262,6 @@ By default, stow links a whole folder when it can. `--no-folding` links each fil
 - Before cloning, the installer tests GitHub SSH access. Without access, it skips this step, finishes the rest, and exits with an error at the end.
 - If the folder exists but is not a git repo, the step is skipped the same way.
 - In `--dry-run`, it only prints that it would check access and clone or pull.
-- `--claude-accounts` is passed on as arguments to the clone's `install.sh`, both after a fresh clone and after a pull.
 - `.zshrc` loads `~/.config/claude-shared/claude.sh` only if that file exists, so the dotfiles work without it.
 
 ## Related pages

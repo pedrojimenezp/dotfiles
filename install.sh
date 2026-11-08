@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Install these dotfiles: back up conflicting files, then link packages with GNU Stow.
-# Usage: ./install.sh [--dry-run] [--with-claude <git-url> [--claude-accounts <a,b>]]
+# Usage: ./install.sh [--dry-run] [--with-claude <git-url>]
 set -euo pipefail # stop on errors, unset variables and failed pipes
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" # absolute path of this repo
@@ -9,13 +9,11 @@ STAMP="$(date +%Y%m%d-%H%M%S)"                       # suffix for backup files
 DRY=0                                                # 1 = print actions, change nothing
 WITH_CLAUDE=0                                        # 1 = also set up your own Claude config repo
 CLAUDE_REPO_URL=""                                   # git URL given to --with-claude (a private repo needs your SSH key)
-CLAUDE_ACCOUNTS=""                                   # comma-separated account names given to --claude-accounts
-CLAUDE_ACCOUNTS_SET=0                                # 1 = --claude-accounts was given
 CLAUDE_DIR="${CLAUDE_SHARED_DIR:-$HOME/.config/claude-shared}"   # where the Claude config repo lives
 NERD_FONT="Monaspace"                                # Nerd Fonts release archive name; change to switch fonts
 NERD_FONT_FAMILY="Monaspice"                         # family prefix fc-list reports (Nerd Fonts renames Monaspace)
 
-usage() { echo "Usage: $0 [--dry-run] [--with-claude <git-url> [--claude-accounts <a,b>]]"; } # one place for the usage text
+usage() { echo "Usage: $0 [--dry-run] [--with-claude <git-url>]"; } # one place for the usage text
 
 while [[ $# -gt 0 ]]; do # parse command-line flags
   case "$1" in
@@ -28,15 +26,6 @@ while [[ $# -gt 0 ]]; do # parse command-line flags
       WITH_CLAUDE=1
       CLAUDE_REPO_URL="${2:-}" # empty when the URL is missing
       [[ $# -gt 1 ]] && shift   # also consume the URL
-      ;;
-    --claude-accounts=*)
-      CLAUDE_ACCOUNTS_SET=1
-      CLAUDE_ACCOUNTS="${1#--claude-accounts=}"
-      ;;
-    --claude-accounts)
-      CLAUDE_ACCOUNTS_SET=1
-      CLAUDE_ACCOUNTS="${2:-}" # empty when the names are missing
-      [[ $# -gt 1 ]] && shift   # also consume the names
       ;;
     -h | --help)
       usage
@@ -53,26 +42,6 @@ if [[ $WITH_CLAUDE -eq 1 && ( -z "$CLAUDE_REPO_URL" || "$CLAUDE_REPO_URL" == -* 
   echo "--with-claude needs the git URL of your Claude config repo." >&2
   usage >&2
   exit 1
-fi
-if [[ $CLAUDE_ACCOUNTS_SET -eq 1 ]]; then
-  if [[ $WITH_CLAUDE -ne 1 ]]; then # the names only make sense for the Claude step
-    echo "--claude-accounts only works together with --with-claude <git-url>." >&2
-    usage >&2
-    exit 1
-  fi
-  if [[ -z "$CLAUDE_ACCOUNTS" || "$CLAUDE_ACCOUNTS" == -* || "$CLAUDE_ACCOUNTS" == *[!a-z0-9_,-]* ]]; then # a flag or a stray character is not a name list
-    echo "--claude-accounts needs account names separated by commas, such as personal,work." >&2
-    usage >&2
-    exit 1
-  fi
-  if [[ "$CLAUDE_ACCOUNTS" == ,* || "$CLAUDE_ACCOUNTS" == *, || "$CLAUDE_ACCOUNTS" == *,,* ]]; then # an empty name
-    echo "--claude-accounts has an empty name in '$CLAUDE_ACCOUNTS'." >&2
-    usage >&2
-    exit 1
-  fi
-  IFS=',' read -r -a CLAUDE_ACCOUNT_ARGS <<<"$CLAUDE_ACCOUNTS" # one installer argument per name
-else
-  CLAUDE_ACCOUNT_ARGS=() # no names: the Claude installer picks its own default accounts
 fi
 
 # Prerequisites. zsh must exist (the configs are zsh-only). Linux also needs git and curl (mise and the zsh plugins),
@@ -363,7 +332,7 @@ ERR
   fi
   # run its own installer once it is there (in dry-run the clone is only printed)
   if [[ $CLAUDE_SKIPPED -eq 0 && ( -x "$CLAUDE_DIR/install.sh" || $DRY -eq 1 ) ]]; then # not after a skipped clone
-    run "$CLAUDE_DIR/install.sh" ${CLAUDE_ACCOUNT_ARGS[@]+"${CLAUDE_ACCOUNT_ARGS[@]}"}
+    run "$CLAUDE_DIR/install.sh"
   fi
 fi
 

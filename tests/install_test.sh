@@ -29,38 +29,14 @@ run_install() {
 # True when the last run failed with exit 1 and its output contains $1.
 failed_with() { [[ $RC -eq 1 ]] && grep -qF -- "$1" <<<"$OUT"; }
 
-echo "== --claude-accounts needs --with-claude"
-run_install --claude-accounts personal
-check "alone: error" failed_with "only works together with --with-claude"
-run_install --dry-run --claude-accounts=personal
-check "alone, = form: error" failed_with "only works together with --with-claude"
-
-echo "== --claude-accounts rejects bad values"
-run_install --with-claude url --claude-accounts
-check "missing value" failed_with "needs account names"
-run_install --with-claude url --claude-accounts --dry-run
-check "flag as value" failed_with "needs account names"
-run_install --with-claude url --claude-accounts=
-check "empty value, = form" failed_with "needs account names"
-run_install --with-claude url --claude-accounts "a b"
-check "space in value" failed_with "needs account names"
-run_install --with-claude url --claude-accounts "a,,b"
-check "empty name between commas" failed_with "empty name"
-run_install --with-claude url --claude-accounts "a,"
-check "trailing comma" failed_with "empty name"
-
-echo "== dry run passes the names on"
-run_install --dry-run --with-claude "$ROOT/none.git" --claude-accounts personal,niche
-check "clone not yet there: installer gets both names" grep -qF "claude-shared/install.sh personal niche" <<<"$OUT"
-run_install --dry-run --with-claude "$ROOT/none.git" --claude-accounts=personal
-check "= form: installer gets one name" grep -qE "claude-shared/install.sh personal$" <<<"$OUT"
+echo "== dry run calls the Claude installer with no arguments"
 run_install --dry-run --with-claude "$ROOT/none.git"
-check "without the flag: installer gets no arguments" grep -qE "claude-shared/install.sh$" <<<"$OUT"
+check "clone not yet there" grep -qE "claude-shared/install.sh$" <<<"$OUT"
 
 mkdir -p "$ROOT/existing"
 git -C "$ROOT/existing" init -q
-CLAUDE_SHARED_DIR="$ROOT/existing" run_install --dry-run --with-claude "$ROOT/none.git" --claude-accounts personal
-check "clone already there: installer still gets the name" grep -qE "existing/install.sh personal$" <<<"$OUT"
+CLAUDE_SHARED_DIR="$ROOT/existing" run_install --dry-run --with-claude "$ROOT/none.git"
+check "clone already there" grep -qE "existing/install.sh$" <<<"$OUT"
 
 echo "== font install failure"
 # install_font only runs on a Linux desktop, so run the function alone with stub tools on PATH.
