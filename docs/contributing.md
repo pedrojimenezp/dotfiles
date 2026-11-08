@@ -97,6 +97,8 @@ dotfiles-help --list | grep -i "your words"
 
 Your new row appears with its area, keys, description and doc page. For tmux keys, reload first with `prefix r` (`prefix` is `Ctrl+Space`, pressed and released before the next key).
 
+Run the tests with `tests/run.sh`. It runs every `tests/*_test.*` file against temporary folders and exits non-zero if one fails.
+
 ## Comments
 
 Every config line here has a short comment, so the repo also works as a reference. When you add one:
