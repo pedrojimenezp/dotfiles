@@ -22,6 +22,10 @@ Machine-only options go in `~/.config/tmux/local.conf`. It is sourced after the 
 
 continuum saves every 15 minutes and restores on server start: just run `tmux`. Saves hold layouts, folders and pane text; only `ssh` is restarted. Files are in `~/.local/share/tmux/resurrect/` (`last` points to the newest).
 
+## One session in two terminals
+
+`tmux new-session -t '=<session>' -s <session>-view` opens a grouped session: it shares the windows but each terminal keeps its own current window. Add `\; set destroy-unattached on` and the view disappears on detach. Reattach to a kept view with `tmux attach -t '=<session>-view'`.
+
 ## Project sessions (`prefix f`)
 
 `tmux-sessionizer` lists folders and switches to a session for the one you pick, creating it if needed. Outside tmux it attaches; `tmux-sessionizer <dir>` skips the list.
@@ -39,6 +43,7 @@ Project missing? `tmux-sessionizer --list` prints `label<TAB>path` for every can
 `bin/.local/bin/tmux-popup` runs them. The scratch shell (`` prefix ` ``) and Claude Code (`prefix A`) keep running: the same key hides them. Each is a hidden session `_popup_shell_<session>` / `_popup_claude_<session>`.
 
 - `prefix s`, `prefix (` and `prefix )` skip `_popup_*` sessions; `tmux ls` still shows them.
+- `prefix s` lists grouped sessions too (`choose-tree -G`); without it tmux 3.7 shows an empty list while a session group exists.
 - A `client-session-changed` hook moves you off a popup session you land in after a kill.
 - They store their parent's session id (`@popup_parent`). `session-closed` and resurrect's post-restore hook run `tmux-popup cleanup` to kill orphans.
 - Claude runs as `$SHELL -ic claude`, so your `claude` function applies.
