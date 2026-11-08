@@ -9,7 +9,7 @@ STAMP="$(date +%Y%m%d-%H%M%S)"                       # suffix for backup files
 DRY=0                                                # 1 = print actions, change nothing
 WITH_CLAUDE=0                                        # 1 = also set up your own Claude config repo
 CLAUDE_REPO_URL=""                                   # git URL given to --with-claude (a private repo needs your SSH key)
-CLAUDE_DIR="${CLAUDE_SHARED_DIR:-$HOME/.config/claude-shared}"   # where the Claude config repo lives
+CLAUDE_DIR="$HOME/.config/claude-shared"                         # where the Claude config repo lives
 NERD_FONT="Monaspace"                                # Nerd Fonts release archive name; change to switch fonts
 NERD_FONT_FAMILY="Monaspice"                         # family prefix fc-list reports (Nerd Fonts renames Monaspace)
 
@@ -79,13 +79,6 @@ run() {
   else
     "$@"
   fi
-}
-
-# Succeeds when this machine can authenticate to GitHub over SSH (read-only: nothing is written but known_hosts).
-github_ssh_ok() {
-  local out                                                                       # ssh banner
-  out="$(ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=5 -T git@github.com 2>&1 || true)" # exit 1 means authenticated, 255 means failed; offline times out
-  [[ "$out" == *"successfully authenticated"* ]]                                  # match the text, not the exit code
 }
 
 # Packages to link.
@@ -282,37 +275,21 @@ echo "==> Generating terminal theme files (theme sync)"
 run "$REPO/bin/.local/bin/theme" sync || echo "Warning: theme sync failed; run 'theme sync' later" >&2
 
 CLAUDE_SKIPPED=0 # 1 = the Claude step was skipped, so the script exits non-zero
-# Step 6: optional private Claude config (opt-in).
+# Step 6: optional private Claude config (opt-in). Its own pull.sh pulls and installs it.
 if [[ $WITH_CLAUDE -eq 1 ]]; then
   echo "==> Setting up Claude config in $CLAUDE_DIR"
-  if [[ ! -e "$CLAUDE_DIR" && $DRY -eq 1 ]]; then # dry-run stays offline and leaves known_hosts alone
-    echo "[dry-run] would check GitHub SSH access"
-    run git clone "$CLAUDE_REPO_URL" "$CLAUDE_DIR"
-  elif [[ ! -e "$CLAUDE_DIR" ]] && ! github_ssh_ok; then # the private repo needs your GitHub key
-    CLAUDE_SKIPPED=1 # reported at the end, with a non-zero exit
-    cat >&2 <<'ERR'
-Warning: skipping the Claude config: no GitHub SSH access on this machine.
-  On your Mac, add "ForwardAgent yes" to this host in ~/.ssh/config and check that
-  "ssh-add -l" lists your GitHub key. Reconnect, then run: ./install.sh --with-claude <git-url>
-  (see docs/server.md)
-ERR
-  elif [[ ! -e "$CLAUDE_DIR" ]]; then
-    run git clone "$CLAUDE_REPO_URL" "$CLAUDE_DIR" # access was checked above
-  elif git -C "$CLAUDE_DIR" rev-parse --git-dir >/dev/null 2>&1; then
-    echo "Claude config already there: $CLAUDE_DIR (pulling)"
-    # a failed pull (offline, conflicts) keeps the clone as it is; its installer still runs
-    if [[ $DRY -eq 0 ]] && ! github_ssh_ok; then # the pull needs your GitHub key like the clone
-      echo "Warning: no GitHub SSH access, not pulling $CLAUDE_DIR (see docs/server.md)" >&2
-    else
-      run git -C "$CLAUDE_DIR" pull --rebase --autostash || echo "Warning: could not pull $CLAUDE_DIR; keeping it as it is" >&2
-    fi
-  else
-    CLAUDE_SKIPPED=1 # its installer must not run from an unknown folder; reported at the end
+  if [[ ! -e "$CLAUDE_DIR" ]]; then
+    run git clone "$CLAUDE_REPO_URL" "$CLAUDE_DIR" || {
+      CLAUDE_SKIPPED=1 # reported at the end, with a non-zero exit
+      echo "Warning: could not clone $CLAUDE_REPO_URL. A private repo needs your GitHub SSH key (see docs/server.md)." >&2
+    }
+  elif ! git -C "$CLAUDE_DIR" rev-parse --git-dir >/dev/null 2>&1; then
+    CLAUDE_SKIPPED=1 # its scripts must not run from an unknown folder
     echo "Warning: $CLAUDE_DIR exists but is not a git repo: skipping" >&2
   fi
-  # run its own installer once it is there (in dry-run the clone is only printed)
-  if [[ $CLAUDE_SKIPPED -eq 0 && ( -x "$CLAUDE_DIR/install.sh" || $DRY -eq 1 ) ]]; then # not after a skipped clone
-    run "$CLAUDE_DIR/install.sh"
+  if [[ $CLAUDE_SKIPPED -eq 0 ]]; then
+    # a failed pull keeps the clone as it is; pull.sh still installs it
+    run "$CLAUDE_DIR/pull.sh" --install || echo "Warning: the Claude config pull or install failed (see above)" >&2
   fi
 fi
 

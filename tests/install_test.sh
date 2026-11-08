@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2016
 # Tests install.sh's Claude flags against a temp HOME. Offline: errors exit before any step, and the
 # dry runs only print. Run: bash tests/install_test.sh
 set -euo pipefail
@@ -23,20 +24,45 @@ check() { # check "<description>" <test command...>
 # Runs install.sh with the given flags; sets OUT (stdout and stderr) and RC (exit code).
 run_install() {
   RC=0
-  OUT="$(env HOME="$HOME" CLAUDE_SHARED_DIR="${CLAUDE_SHARED_DIR:-$ROOT/claude-shared}" bash "$SRC/install.sh" "$@" 2>&1)" || RC=$?
+  OUT="$(env HOME="$HOME" bash "$SRC/install.sh" "$@" 2>&1)" || RC=$?
 }
 
 # True when the last run failed with exit 1 and its output contains $1.
 failed_with() { [[ $RC -eq 1 ]] && grep -qF -- "$1" <<<"$OUT"; }
 
-echo "== dry run calls the Claude installer with no arguments"
+echo "== dry run clones, then runs pull.sh --install"
 run_install --dry-run --with-claude "$ROOT/none.git"
-check "clone not yet there" grep -qE "claude-shared/install.sh$" <<<"$OUT"
+check "clone not yet there" grep -qE "git clone .*none.git .*claude-shared$" <<<"$OUT"
+check "pull.sh --install is called" grep -qE "claude-shared/pull.sh --install$" <<<"$OUT"
 
-mkdir -p "$ROOT/existing"
-git -C "$ROOT/existing" init -q
-CLAUDE_SHARED_DIR="$ROOT/existing" run_install --dry-run --with-claude "$ROOT/none.git"
-check "clone already there" grep -qE "existing/install.sh$" <<<"$OUT"
+echo "== a real clone: pull.sh --install runs once"
+origin="$ROOT/claude-origin.git"
+stub="$ROOT/claude-stub"
+mkdir -p "$stub"
+printf '#!/bin/bash\necho "$*" >> "$HOME/pull-calls"\n' >"$stub/pull.sh"
+chmod +x "$stub/pull.sh"
+git -C "$stub" init -q -b main
+git -C "$stub" add pull.sh
+git -C "$stub" -c user.name=t -c user.email=t@example.com commit -q -m init
+git init -q -b main --bare "$origin"
+git -C "$stub" push -q "$origin" main
+claude_dir="$HOME/.config/claude-shared"
+run_install --with-claude "$origin"
+check "missing: it is cloned" test -f "$claude_dir/pull.sh"
+check "missing: pull.sh ran once with --install" bash -c '[[ "$(cat "$1")" == "--install" ]]' _ "$HOME/pull-calls"
+rm -f "$HOME/pull-calls"
+run_install --with-claude "$origin"
+check "existing: pull.sh ran once with --install" bash -c '[[ "$(cat "$1")" == "--install" ]]' _ "$HOME/pull-calls"
+
+echo "== a clone that fails is reported"
+rm -rf "$claude_dir"
+run_install --with-claude "$ROOT/missing.git"
+check "exit 1 and a warning" failed_with "could not clone"
+
+echo "== a folder that is not a git repo is skipped"
+mkdir -p "$claude_dir"
+run_install --with-claude "$origin"
+check "exit 1 and a warning" failed_with "is not a git repo"
 
 echo "== font install failure"
 # install_font only runs on a Linux desktop, so run the function alone with stub tools on PATH.
