@@ -217,18 +217,16 @@ make_machine "$B" plain
 h="$B/home"
 c="$h/.config/claude-shared"
 make_clone "$B/claude-origin.git" "$c"
-mkdir -p "$c/skills/foo" "$c/accounts/niche/agents" "$c/accounts/personal/rules" "$h/.claude/skills" \
-  "$h/.claude-niche/skills" "$h/.claude-personal" "$h/.pi/agent"
+mkdir -p "$c/skills/foo" "$c/accounts/niche/agents" "$c/accounts/personal/rules" \
+  "$h/.claude-niche/skills" "$h/.claude-personal"
 git -C "$c" add -A
 git -C "$c" commit -q --allow-empty -m skills
 git -C "$c" push -q origin HEAD:main
-ln -s "$c/skills/foo" "$h/.claude/skills/foo"                      # legacy folder
 ln -s "$c/skills/foo" "$h/.claude-niche/skills/foo"
 ln -s "$c/accounts/niche/agents" "$h/.claude-niche/agents"
 ln -s "$c/accounts/personal/rules" "$h/.claude-personal/rules"
 echo bak >"$h/.claude-personal/CLAUDE.md.bak-20260101000000"
 ln -s "$c/CLAUDE.md" "$h/.claude-personal/CLAUDE.md"
-ln -s "$c/CLAUDE.md" "$h/.pi/agent/CLAUDE.md"
 echo '{}' >"$h/.claude-personal/settings.json"
 echo '{}' >"$h/.claude-niche/settings.json"
 ln -s "$h/real.txt" "$h/.claude-niche/keep-link"                    # a link elsewhere stays
@@ -239,11 +237,9 @@ run_un "$B" --yes --keep-repo >"$ROOT/claude0.out" 2>&1 || { cat "$ROOT/claude0.
 check "without --with-claude the clone is kept" test -d "$c"
 check "without --with-claude its links are kept" is_link "$h/.claude-niche/skills/foo"
 (cd "$h/dotfiles" && env HOME="$h" /bin/bash ./uninstall.sh --yes --keep-repo --with-claude >"$ROOT/claude1.out" 2>&1) || { cat "$ROOT/claude1.out"; bad "exit 0"; }
-check "legacy ~/.claude link removed" gone "$h/.claude/skills/foo"
 check "~/.claude-niche skill link removed" gone "$h/.claude-niche/skills/foo"
 check "agents link removed" gone "$h/.claude-niche/agents"
 check "rules link removed" gone "$h/.claude-personal/rules"
-check "pi link removed" gone "$h/.pi/agent/CLAUDE.md"
 check "Claude backup restored" has_text "$h/.claude-personal/CLAUDE.md" bak
 check "link to somewhere else kept" is_link "$h/.claude-niche/keep-link"
 check "settings.json copies kept" test -f "$h/.claude-niche/settings.json" -a -f "$h/.claude-personal/settings.json"

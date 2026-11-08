@@ -12,7 +12,6 @@ ASSUME_YES=0                                         # 1 = skip the confirmation
 WITH_CLAUDE=0                                        # 1 = also undo and remove the Claude config clone
 KEEP_REPO=0                                          # 1 = keep this clone
 CLAUDE_DIR="${CLAUDE_SHARED_DIR:-$HOME/.config/claude-shared}" # same default as install.sh
-PI_DIR="${PI_CODING_AGENT_DIR:-$HOME/.pi/agent}"     # pi agent folder the Claude installer links into
 NERD_FONT="Monaspace"                                # same value as install.sh
 CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}"           # XDG base dirs, as the tools read them
 DATA="${XDG_DATA_HOME:-$HOME/.local/share}"
@@ -264,22 +263,21 @@ prune_up() {
   done
 }
 
-# Print the Claude config folders: every ~/.claude-<name> plus the legacy ~/.claude.
+# Print the Claude config folders: every ~/.claude-<name>.
 claude_account_dirs() {
   local d
-  for d in "$HOME"/.claude "$HOME"/.claude-*; do
+  for d in "$HOME"/.claude-*; do
     [[ -d "$d" && ! -L "$d" ]] && echo "$d"
   done
 }
 
-# Remove the links the Claude installer made in the Claude and pi account folders, restoring its .bak-* files.
+# Remove the links the Claude installer made in the Claude account folders, restoring its .bak-* files.
 undo_claude_links() {
   local root file n=0 dest claude_real
   local -a found=() roots=()
   claude_real="$(cd "$CLAUDE_DIR" && pwd -P)"
   while IFS= read -r root; do roots+=("$root"); done < <(claude_account_dirs)
-  roots+=("$PI_DIR")
-  for root in "${roots[@]}"; do
+  for root in ${roots[@]+"${roots[@]}"}; do
     [[ -d "$root" ]] || continue
     while IFS= read -r -d '' file; do
       if link_points_into "$file" "$claude_real"; then found+=("$file"); fi
@@ -383,7 +381,7 @@ print_plan() {
   while IFS= read -r p; do echo "    $p"; done < <(existing_data)
   [[ ! -f "$HOME/.local/bin/mise" ]] || echo "    $HOME/.local/bin/mise (the mise binary)"
   if [[ $WITH_CLAUDE -eq 1 && -d "$CLAUDE_DIR" ]]; then
-    echo "  the Claude config: its links in every ~/.claude-<name> folder (and a legacy ~/.claude) and in $PI_DIR,"
+    echo "  the Claude config: its links in every ~/.claude-<name> folder,"
     echo "    its line in ~/.zshrc.local, ~/.zshrc (not a symlink) and ~/.bashrc, then the clone $CLAUDE_DIR"
     echo "    (the clone's untracked local files, such as coaching logs, go with it)"
   fi
