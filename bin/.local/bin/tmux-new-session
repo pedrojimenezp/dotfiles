@@ -19,7 +19,7 @@ clean() { printf '%s' "$1" | tr -c 'A-Za-z0-9_\n-' '-' | tr -s '-'; } # tmux rej
 # Print the existing candidate folders, deduplicated, in order of priority.
 list_candidates() {
   {
-    [[ -n "${1:-}" ]] && printf '%s\n' "$1" # the pane path first
+    [[ -n "${1:-}" ]] && printf '%s\n' "$1"
     if command -v zoxide >/dev/null 2>&1; then zoxide query -l 2>/dev/null || true; fi
     if command -v tmux-sessionizer >/dev/null 2>&1; then
       tmux-sessionizer --list 2>/dev/null | awk -F'\t' '{ print $2 }' || true # 2nd field is the path
@@ -31,11 +31,11 @@ if [[ "${1:-}" == "--list" ]]; then
   list_candidates "${2:-}"
   exit 0
 fi
-"$(dirname "$0")/dotfiles-log" tmux-new-session >/dev/null 2>&1 || true # count the run in the usage log
+"$(dirname "$0")/dotfiles-log" tmux-new-session >/dev/null 2>&1 || true
 
-pane_path="${1:-$PWD}" # starting folder, listed first
+pane_path="${1:-$PWD}"
 name_raw="$(tmux show -gv @new_session_name 2>/dev/null || true)" # passed as an option, which avoids quoting the name
-tmux set -gu @new_session_name 2>/dev/null || true # do not leave the name behind
+tmux set -gu @new_session_name 2>/dev/null || true
 
 # Show $HOME as ~ in the list.
 display="$(list_candidates "$pane_path" | sed "s|^$HOME|~|")"
@@ -49,7 +49,7 @@ out="$(printf '%s\n' "$display" | fzf --print-query --prompt='folder> ' \
 # fzf --print-query prints the typed query first, then the selected line (if any).
 query="$(printf '%s\n' "$out" | sed -n 1p)"
 match="$(printf '%s\n' "$out" | sed -n 2p)"
-chosen="${match:-$query}" # a match wins; otherwise the typed text
+chosen="${match:-$query}"
 [[ -n "$chosen" ]] || exit 0
 tilde='~' # a typed ~ is not expanded by the shell, so do it here
 if [[ "$chosen" == "$tilde" ]]; then
@@ -63,12 +63,11 @@ if [[ ! -d "$chosen" ]]; then
   tmux display-message "no such folder: $chosen"
   exit 0
 fi
-dir="$(CDPATH='' cd -- "$chosen" && pwd -P)" # absolute and symlink-free
+dir="$(CDPATH='' cd -- "$chosen" && pwd -P)"
 
 name="$(clean "$name_raw")"
-[[ -n "$name" ]] || name="$(clean "$(basename "$dir")")" # empty name: use the folder
+[[ -n "$name" ]] || name="$(clean "$(basename "$dir")")"
 [[ -n "$name" ]] || name="session"
 
 tmux has-session -t "=$name" 2>/dev/null || tmux new-session -d -s "$name" -c "$dir" # existing session: just switch
-# Switch the client to the session.
 tmux switch-client -t "=$name"

@@ -27,7 +27,7 @@ done < <({
   sed -n 's/^brew "\([^"]*\)".*/\1/p' "$ROOT/Brewfile"
   sed -n '/^\[tools\]/,/^\[/s/^\([A-Za-z0-9_-]*\) *=.*/\1/p' "$ROOT/mise/.config/mise/config.toml" # plain keys only: "github:..." backends are libraries or helpers
 })
-for f in "$ROOT"/bin/.local/bin/*; do [[ ${f##*/} == dotfiles-log ]] || tools="$tools ${f##*/}"; done # our own scripts; the log helper is only called by others
+for f in "$ROOT"/bin/.local/bin/*; do [[ ${f##*/} == dotfiles-log ]] || tools="$tools ${f##*/}"; done # the log helper itself is not a tool
 logged="$(grep -lE '^[^#]*dotfiles-log" +[a-z]' "$ROOT"/bin/.local/bin/* | sed 's|.*/||' | tr '\n' ' ' || true)" # scripts that call dotfiles-log (key-launched): counted from the log only
 aliases="z=zoxide zi=zoxide $(grep -oE "alias [^= ]+='[^ ']+" "$ROOT/zsh/.zshrc" | sed "s/alias \(.*\)='\(.*\)/\1=\2/" | tr '\n' ' ')" # name=first word
 

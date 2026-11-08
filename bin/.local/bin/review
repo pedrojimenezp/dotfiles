@@ -23,7 +23,7 @@ while [[ $# -gt 0 ]]; do
   shift
 done
 [[ -d "$dir" ]] || { echo "review: not a folder: $dir" >&2; exit 2; }
-"$(dirname "$0")/dotfiles-log" review >/dev/null 2>&1 || true # count the run in the usage log
+"$(dirname "$0")/dotfiles-log" review >/dev/null 2>&1 || true
 dir="$(cd "$dir" && pwd)"
 
 # toplevel_of <folder>: the physical top level of the repo containing <folder>, or nothing.
@@ -31,7 +31,7 @@ toplevel_of() { (cd "$1" && git rev-parse --show-toplevel 2>/dev/null) || true; 
 # is_toplevel <folder>: true when <folder> is itself the top level of a repo.
 is_toplevel() { [[ "$(toplevel_of "$1")" == "$(cd "$1" && pwd -P)" ]]; }
 
-repos=() # absolute paths of the repo roots
+repos=()
 dir="$(cd "$dir" && pwd -P)"
 if is_toplevel "$dir"; then
   repos+=("$dir")

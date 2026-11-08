@@ -9,15 +9,15 @@
 # SESSIONIZER_TMUX_ARGS adds tmux options, e.g. "-L sock" for a separate server.
 set -euo pipefail
 
-read -r -a tmux_args <<<"${SESSIONIZER_TMUX_ARGS:-}" # extra tmux options (empty by default)
-tm() { tmux ${tmux_args[@]+"${tmux_args[@]}"} "$@"; } # one place to add tmux options
+read -r -a tmux_args <<<"${SESSIONIZER_TMUX_ARGS:-}"
+tm() { tmux ${tmux_args[@]+"${tmux_args[@]}"} "$@"; }
 clean() { printf '%s' "$1" | tr './: ' '----' | tr -s '-'; } # tmux rejects dots and colons
 
-roots=() # only roots that exist
+roots=()
 home_repos=1 # also list the repos directly in $HOME (default roots only)
 if [[ -n "${SESSIONIZER_DIRS:-}" ]]; then
   home_repos=0
-  for d in $SESSIONIZER_DIRS; do [[ -d "$d" ]] && roots+=("$d"); done # missing roots are skipped silently
+  for d in $SESSIONIZER_DIRS; do [[ -d "$d" ]] && roots+=("$d"); done
 elif [[ -d "$HOME/projects" ]]; then
   roots=("$HOME/projects")
 fi
@@ -58,11 +58,11 @@ if [[ "${1:-}" == "--list" ]]; then
 elif [[ $# -eq 1 ]]; then
   selected="$(CDPATH='' cd -- "$1" && pwd -P)" # absolute and symlink-free, so '.' is not named '-'
 else
-  line="$(list_candidates | fzf --prompt='project> ' --delimiter=$'\t' --with-nth=1 || true)" # show only the label
-  [[ -n "$line" ]] || exit 0 # nothing chosen (Esc)
+  line="$(list_candidates | fzf --prompt='project> ' --delimiter=$'\t' --with-nth=1 || true)"
+  [[ -n "$line" ]] || exit 0
   selected="$(CDPATH='' cd -- "${line#*$'\t'}" && pwd -P)"
 fi
-"$(dirname "$0")/dotfiles-log" tmux-sessionizer >/dev/null 2>&1 || true # count the run for dotfiles-usage
+"$(dirname "$0")/dotfiles-log" tmux-sessionizer >/dev/null 2>&1 || true
 
 parent="$(dirname "$selected")"
 name="$(clean "$(basename "$selected")")"

@@ -5,7 +5,7 @@
 #        dotfiles-log --root   (print the repo root, following the stow link back into the repo)
 log="${XDG_STATE_HOME:-$HOME/.local/state}/dotfiles/usage.log" # the one place that names the log
 case "${1:-}" in
-  --path) printf '%s\n' "$log"; exit 0 ;; # for dotfiles-usage
+  --path) printf '%s\n' "$log"; exit 0 ;;
   --root)
     # A loop instead of readlink -f, which old macOS readlink lacks; stow links are relative to their folder.
     src="${BASH_SOURCE[0]}"
@@ -16,7 +16,7 @@ case "${1:-}" in
     done
     cd -P "$(dirname "$src")/../../.." && pwd   # bin/.local/bin -> repo root
     exit 0 ;;
-  "") exit 0 ;;                           # nothing to log
+  "") exit 0 ;;
 esac
 { mkdir -p "${log%/*}" && printf '%s %s\n' "$(date +%s)" "$1" >>"$log"; } 2>/dev/null || true # a read-only disk must not break the caller
 exit 0

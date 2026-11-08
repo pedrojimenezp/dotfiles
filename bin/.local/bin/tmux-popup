@@ -8,19 +8,19 @@
 # Env: TMUX_POPUP_CLAUDE_CMD replaces the command of the claude popup (e.g. for tests).
 set -euo pipefail
 
-prefix="_popup_" # every popup session name starts with this; tmux.conf matches it too
+prefix="_popup_" # every popup session name starts with this
 
 # Print "name<TAB>parent id<TAB>kind" for every popup session (none: no output).
 popup_sessions() {
   tmux list-sessions -F "#{session_name}"$'\t'"#{@popup_parent}"$'\t'"#{@popup_kind}" 2>/dev/null |
-    awk -F'\t' -v p="$prefix" 'index($1, p) == 1' || true # only names with the prefix
+    awk -F'\t' -v p="$prefix" 'index($1, p) == 1' || true
 }
 
 # Create the popup session if missing, then show it in a popup on the client.
 open_popup() {
   local kind="$1" client="$2" parent="$3" dir="$4" cmd=() name parent_name socket
   case "$kind" in
-    shell) ;; # no command: the default shell
+    shell) ;;
     claude) cmd=("${TMUX_POPUP_CLAUDE_CMD:-${SHELL:-sh} -ic claude}") ;; # interactive shell so a claude alias or function applies
     *) echo "tmux-popup: unknown popup kind '$kind'" >&2; exit 2 ;;
   esac
@@ -47,11 +47,11 @@ open_popup() {
 # Kill popup sessions whose parent is gone; restored ones (resurrect) have no parent mark at all.
 cleanup() {
   local name parent _kind live
-  live="$(tmux list-sessions -F '#{session_id}' 2>/dev/null || true)" # ids of all sessions
+  live="$(tmux list-sessions -F '#{session_id}' 2>/dev/null || true)"
   while IFS=$'\t' read -r name parent _kind; do
-    [[ -n "$name" ]] || continue # no popup sessions
+    [[ -n "$name" ]] || continue
     if [[ -z "$parent" ]] || ! grep -qxF -- "$parent" <<<"$live"; then
-      tmux kill-session -t "=$name" 2>/dev/null || true # may already be gone
+      tmux kill-session -t "=$name" 2>/dev/null || true
     fi
   done < <(popup_sessions)
 }
@@ -81,12 +81,12 @@ rescue() {
   pid="$(tmux display-message -p -c "$client" '#{client_pid}')" server="$(tmux display-message -p '#{pid}')"
   while [[ -n "$pid" && "$pid" -gt 1 ]]; do
     if [[ "$pid" == "$server" ]]; then return 0; fi
-    pid="$(ps -o ppid= -p "$pid" 2>/dev/null | tr -d ' ' || true)" # walk up to the parent process
+    pid="$(ps -o ppid= -p "$pid" 2>/dev/null | tr -d ' ' || true)"
   done
   step 1 "$client" || tmux detach-client -t "$client" # only popup sessions are left
 }
 
-[[ "${1:-}" == open ]] && { "$(dirname "$0")/dotfiles-log" tmux-popup >/dev/null 2>&1 || true; } # count the run for dotfiles-usage
+[[ "${1:-}" == open ]] && { "$(dirname "$0")/dotfiles-log" tmux-popup >/dev/null 2>&1 || true; }
 case "${1:-}" in
   open) [[ $# -eq 5 ]] || { echo "usage: tmux-popup open <shell|claude> <client> <parent id> <dir>" >&2; exit 2; }; open_popup "$2" "$3" "$4" "$5" ;;
   cleanup) cleanup ;;
