@@ -34,7 +34,7 @@ make_clone() {
   git -C "$work" init -q -b main
   git -C "$work" add -A
   git -C "$work" commit -q -m init
-  git init -q --bare "$origin"
+  git init -q -b main --bare "$origin"
   git -C "$work" push -q "$origin" main
   git clone -q "$origin" "$clone"
   rm -rf "$work"
