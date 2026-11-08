@@ -3,19 +3,19 @@
 # Usage: ./install.sh [--dry-run] [--with-claude <git-url>]
 set -euo pipefail
 
-REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" # absolute path of this repo
-REPO_REAL="$(cd "$REPO" && pwd -P)"                  # physical path (no symlinks)
-STAMP="$(date +%Y%m%d-%H%M%S)"                       # suffix for backup files
-DRY=0                                                # 1 = print actions, change nothing
-WITH_CLAUDE=0                                        # 1 = also set up your own Claude config repo
-CLAUDE_REPO_URL=""                                   # git URL given to --with-claude (a private repo needs your SSH key)
-CLAUDE_DIR="$HOME/.config/claude-shared"                         # where the Claude config repo lives
-NERD_FONT="Monaspace"                                # Nerd Fonts release archive name; change to switch fonts
-NERD_FONT_FAMILY="Monaspice"                         # family prefix fc-list reports (Nerd Fonts renames Monaspace)
+REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_REAL="$(cd "$REPO" && pwd -P)"
+STAMP="$(date +%Y%m%d-%H%M%S)"
+DRY=0
+WITH_CLAUDE=0
+CLAUDE_REPO_URL=""
+CLAUDE_DIR="$HOME/.config/claude-shared"
+NERD_FONT="Monaspace" # Nerd Fonts release archive name
+NERD_FONT_FAMILY="Monaspice" # family prefix fc-list reports (Nerd Fonts renames Monaspace)
 
-usage() { echo "Usage: $0 [--dry-run] [--with-claude <git-url>]"; } # one place for the usage text
+usage() { echo "Usage: $0 [--dry-run] [--with-claude <git-url>]"; }
 
-while [[ $# -gt 0 ]]; do # parse command-line flags
+while [[ $# -gt 0 ]]; do
   case "$1" in
     --dry-run) DRY=1 ;;
     --with-claude=*)
@@ -24,8 +24,8 @@ while [[ $# -gt 0 ]]; do # parse command-line flags
       ;;
     --with-claude)
       WITH_CLAUDE=1
-      CLAUDE_REPO_URL="${2:-}" # empty when the URL is missing
-      [[ $# -gt 1 ]] && shift   # also consume the URL
+      CLAUDE_REPO_URL="${2:-}"
+      [[ $# -gt 1 ]] && shift
       ;;
     -h | --help)
       usage
@@ -44,35 +44,33 @@ if [[ $WITH_CLAUDE -eq 1 && ( -z "$CLAUDE_REPO_URL" || "$CLAUDE_REPO_URL" == -* 
   exit 1
 fi
 
-# Prerequisites. zsh must exist (the configs are zsh-only). Linux also needs git and curl (mise and the zsh plugins),
-# unzip (mise unpacks zip archives), stow, and libatomic1 (a library node needs). A desktop also needs xz for the font.
-# This script never uses sudo, so it only prints the command.
-NEEDED=(zsh)                                                              # commands that must exist
-MISSING=()                                                                # commands and libraries not found
+# Linux also needs git, curl, unzip (mise), stow and libatomic1 (node); a desktop needs xz for the font.
+# Never sudo: only print the command.
+NEEDED=(zsh)
+MISSING=()
 if [[ "$OSTYPE" == linux* ]]; then
-  NEEDED+=(git curl unzip stow)                                           # macOS ships git, curl and unzip; brew installs stow
-  [[ -n "${DISPLAY:-}${WAYLAND_DISPLAY:-}" ]] && NEEDED+=(xz)             # the Nerd Font archive is .tar.xz
+  NEEDED+=(git curl unzip stow) # macOS ships git, curl and unzip; brew installs stow
+  [[ -n "${DISPLAY:-}${WAYLAND_DISPLAY:-}" ]] && NEEDED+=(xz)
   { /sbin/ldconfig -p 2>/dev/null || ldconfig -p 2>/dev/null || true; } | grep -q 'libatomic\.so\.1' || MISSING+=(libatomic1)
 fi
 for cmd in "${NEEDED[@]}"; do
-  command -v "$cmd" >/dev/null 2>&1 || MISSING+=("$cmd")                  # collect every gap, so one run reports them all
+  command -v "$cmd" >/dev/null 2>&1 || MISSING+=("$cmd") # collect every gap, so one run reports them all
 done
 if [[ ${#MISSING[@]} -gt 0 ]]; then
-  if [[ "$OSTYPE" == linux* ]] && command -v apt-get >/dev/null 2>&1; then # Debian/Ubuntu
-    PKGS=("${MISSING[@]/xz/xz-utils}")                                    # the xz command comes from the xz-utils package
-    echo "Missing: ${MISSING[*]}. An admin installs them once (this script never uses sudo):" >&2 # tell the user what to run
-    echo "  sudo apt-get update && sudo apt-get install -y ${PKGS[*]}" >&2       # exact command
+  if [[ "$OSTYPE" == linux* ]] && command -v apt-get >/dev/null 2>&1; then
+    PKGS=("${MISSING[@]/xz/xz-utils}") # the xz command comes from xz-utils
+    echo "Missing: ${MISSING[*]}. An admin installs them once (this script never uses sudo):" >&2
+    echo "  sudo apt-get update && sudo apt-get install -y ${PKGS[*]}" >&2
   else
-    echo "Missing: ${MISSING[*]}. Install them with your package manager, then run this script again." >&2 # no known installer
+    echo "Missing: ${MISSING[*]}. Install them with your package manager, then run this script again." >&2
   fi
-  if [[ $DRY -eq 1 ]]; then # a preview should still show the rest of the plan
-    echo "[dry-run] continuing without ${MISSING[*]}" >&2 # make the skipped exit visible
+  if [[ $DRY -eq 1 ]]; then # a preview still shows the rest of the plan
+    echo "[dry-run] continuing without ${MISSING[*]}" >&2
   else
-    exit 1 # stop before any change
+    exit 1
   fi
 fi
 
-# Run a command, or only print it in dry-run mode.
 run() {
   if [[ $DRY -eq 1 ]]; then
     echo "[dry-run] $*"
@@ -81,21 +79,19 @@ run() {
   fi
 }
 
-# Packages to link.
 PACKAGES=(zsh nvim tmux vim git lazygit starship mise bin theme)
 
-# iTerm Dynamic Profile template (theme sync builds the real profile) and skhd hotkeys: macOS only.
 if [[ "$OSTYPE" == darwin* ]]; then
   PACKAGES+=(iterm skhd)
 fi
 
-# Step 1: Homebrew packages (macOS only: Linux installs its tools with mise, per user).
+# Step 1: Homebrew (macOS only; Linux gets its tools from mise).
 if [[ "$OSTYPE" == darwin* ]]; then
-  # A fresh SSH login (bash) has no brew on PATH: look in the standard prefixes and load it for this script.
+  # A fresh SSH login (bash) has no brew on PATH.
   if ! command -v brew >/dev/null 2>&1; then
     for brew_bin in /opt/homebrew/bin/brew /usr/local/bin/brew; do
-      if [[ -x $brew_bin ]]; then # first existing install wins
-        eval "$("$brew_bin" shellenv)" # sets HOMEBREW_PREFIX and updates PATH
+      if [[ -x $brew_bin ]]; then
+        eval "$("$brew_bin" shellenv)"
         break
       fi
     done
@@ -104,11 +100,11 @@ if [[ "$OSTYPE" == darwin* ]]; then
     echo "==> Installing Homebrew packages"
     # Upgrades are a separate, deliberate `brew upgrade`.
     run brew bundle --no-upgrade --file="$REPO/Brewfile"
-    # zsh's compinit prompts about completion dirs that group or others can write (brew can recreate them that way).
+    # compinit prompts about group/other-writable completion dirs, which brew can recreate.
     echo "==> Removing group/other write from Homebrew's zsh completion dirs (chmod go-w)"
-    BREW_SHARE="$(brew --prefix)/share"                                              # parent of the completion dirs
+    BREW_SHARE="$(brew --prefix)/share"
     for d in "$BREW_SHARE" "$BREW_SHARE/zsh" "$BREW_SHARE/zsh/site-functions"; do
-      [[ -d $d && -O $d ]] && run chmod go-w "$d"                                    # only dirs this user owns
+      [[ -d $d && -O $d ]] && run chmod go-w "$d"
     done
   else
     cat <<'MSG'
@@ -116,22 +112,22 @@ Homebrew was not found. Install it first (this script never uses sudo):
   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 Then follow the "Next steps" it prints to add brew to your PATH, and run this script again.
 MSG
-    if [[ $DRY -eq 1 ]]; then # a preview should still show the rest of the plan
-      echo "[dry-run] continuing without Homebrew" >&2 # make the skipped exit visible
+    if [[ $DRY -eq 1 ]]; then # a preview still shows the rest of the plan
+      echo "[dry-run] continuing without Homebrew" >&2
     else
-      exit 1 # stop before any change
+      exit 1
     fi
   fi
 fi
 
 # Ghostty is optional: link its config only if the app or binary exists.
-HAS_GHOSTTY=0                                                      # 1 once Ghostty is found
-for app in "$HOME/Applications/Ghostty.app" /Applications/Ghostty.app; do # Brewfile appdir first, then the old path
-  [[ -d $app ]] && HAS_GHOSTTY=1                                   # app bundle present
+HAS_GHOSTTY=0
+for app in "$HOME/Applications/Ghostty.app" /Applications/Ghostty.app; do # Brewfile appdir first
+  [[ -d $app ]] && HAS_GHOSTTY=1
 done
-command -v ghostty >/dev/null 2>&1 && HAS_GHOSTTY=1                # Linux package on PATH
+command -v ghostty >/dev/null 2>&1 && HAS_GHOSTTY=1 # Linux package on PATH
 if [[ $HAS_GHOSTTY -eq 1 ]]; then
-  PACKAGES+=(ghostty)                                              # stow the Ghostty config
+  PACKAGES+=(ghostty)
 fi
 
 # True if $1 resolves (through any symlinks) to a file inside this repo.
@@ -154,7 +150,7 @@ backup() {
 echo "==> Backing up existing files"
 for pkg in "${PACKAGES[@]}"; do
   while IFS= read -r -d '' file; do
-    rel="${file#"$REPO/$pkg/"}" # path relative to the package root
+    rel="${file#"$REPO/$pkg/"}"
     backup "$HOME/$rel"
   done < <(find "$REPO/$pkg" -type f -print0)
 done
@@ -169,61 +165,61 @@ if ! command -v stow >/dev/null 2>&1 && [[ $DRY -eq 0 ]]; then
   echo "stow is required and was not found. Install it (brew install stow, or apt-get install stow) and run this script again." >&2
   exit 1
 fi
-# --no-folding links files, never whole folders: generated files (Ghostty theme.conf) stay out of the repo
+# --no-folding: generated files (Ghostty theme.conf) stay out of the repo
 run stow --restow --no-folding --dir="$REPO" --target="$HOME" "${PACKAGES[@]}"
 
 # Step 3b: install mise if missing (per user, no sudo), then every tool of its config.
-export PATH="$HOME/.local/bin:$PATH" # where the mise installer puts the binary
+export PATH="$HOME/.local/bin:$PATH"
 if ! command -v mise >/dev/null 2>&1; then
   echo "==> Installing mise into ~/.local/bin"
-  run sh -c 'curl -fsSL https://mise.run | sh' || echo "Warning: could not install mise; run it again later" >&2 # the official installer
+  run sh -c 'curl -fsSL https://mise.run | sh' || echo "Warning: could not install mise; run it again later" >&2
 fi
 if command -v mise >/dev/null 2>&1; then
   echo "==> Installing tools with mise"
-  run mise install || echo "Warning: some mise tools failed; run 'mise install' later" >&2 # reads ~/.config/mise/config.toml
-  # Later steps (tmux plugins) need the mise tools on PATH; a new shell gets them from `mise activate` in .zshrc.
+  run mise install || echo "Warning: some mise tools failed; run 'mise install' later" >&2
+  # Later steps (tmux plugins) need the mise tools on PATH.
   [[ $DRY -eq 1 ]] || eval "$(mise env -s bash)" || true
 else
   echo "==> Skipping mise install: mise not found"
 fi
 
-# Step 3b1: zsh plugins as git clones, the same on every OS (.zshrc sources them from here).
-ZSH_PLUGIN_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/zsh-plugins" # one folder per plugin
-clone_plugin() { # clone, or fast-forward an existing clone: $1 = folder name, $2 = repo path on GitHub
+# Step 3b1: zsh plugins as git clones, the same on every OS.
+ZSH_PLUGIN_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/zsh-plugins"
+clone_plugin() { # $1 = folder name, $2 = GitHub repo path
   local dir="$ZSH_PLUGIN_DIR/$1"
   if [[ -d "$dir/.git" ]]; then
     run git -C "$dir" pull --ff-only --quiet || echo "Warning: could not update $1; keeping it as it is" >&2 # offline or local edits
   else
-    run git clone --depth 1 --quiet "https://github.com/$2" "$dir" || echo "Warning: could not clone $1" >&2 # public repos: https, no key
+    run git clone --depth 1 --quiet "https://github.com/$2" "$dir" || echo "Warning: could not clone $1" >&2
   fi
 }
 echo "==> Installing zsh plugins in $ZSH_PLUGIN_DIR"
 run mkdir -p "$ZSH_PLUGIN_DIR"
-clone_plugin zsh-autosuggestions zsh-users/zsh-autosuggestions     # fish-style suggestions from history
-clone_plugin zsh-syntax-highlighting zsh-users/zsh-syntax-highlighting # colors commands as you type
-clone_plugin zsh-completions zsh-users/zsh-completions             # extra tab-completion definitions
-clone_plugin fzf-tab Aloxaf/fzf-tab                                # Tab completion through fzf
+clone_plugin zsh-autosuggestions zsh-users/zsh-autosuggestions
+clone_plugin zsh-syntax-highlighting zsh-users/zsh-syntax-highlighting
+clone_plugin zsh-completions zsh-users/zsh-completions
+clone_plugin fzf-tab Aloxaf/fzf-tab
 
 # Step 4: tmux plugin manager.
 TPM="$HOME/.config/tmux/plugins/tpm"
 if [[ ! -d "$TPM" ]] && command -v git >/dev/null 2>&1; then
   echo "==> Cloning TPM"
-  run git clone --depth 1 https://github.com/tmux-plugins/tpm "$TPM" # public repo over https, no key needed
+  run git clone --depth 1 https://github.com/tmux-plugins/tpm "$TPM"
 fi
 # TPM reads TMUX_PLUGIN_MANAGER_PATH from a tmux server (set-environment in tmux.conf). A server that is already
 # running (or the one we are inside) started before the config was linked, so it lacks the variable. Run the
 # whole install on a private server instead: its own TMUX_TMPDIR socket, TMUX unset, killed at the end.
 install_tmux_plugins() {
-  local tmp rc=0 # tmp: socket directory of the private server
+  local tmp rc=0
   if [[ $DRY -eq 1 ]]; then tmp="<temp dir>"; else tmp="$(mktemp -d)" || return 1; fi
-  local -a priv=(env -u TMUX TMUX_TMPDIR="$tmp") # every tmux call, TPM's included, inherits this and hits the private server
-  run "${priv[@]}" tmux new-session -d -s dotfiles-tpm || rc=1 # starts the server and sources tmux.conf
-  [[ $rc -eq 0 ]] && { run "${priv[@]}" "$TPM/bin/install_plugins" || rc=1; } # public repos: https, no SSH key
+  local -a priv=(env -u TMUX TMUX_TMPDIR="$tmp") # TPM's tmux calls inherit this and hit the private server
+  run "${priv[@]}" tmux new-session -d -s dotfiles-tpm || rc=1
+  [[ $rc -eq 0 ]] && { run "${priv[@]}" "$TPM/bin/install_plugins" || rc=1; }
   run "${priv[@]}" tmux -S "$tmp/tmux-$(id -u)/default" kill-server || true # by socket path: only the private server dies
   [[ $DRY -eq 1 ]] || rm -rf "$tmp"
   return "$rc"
 }
-TMUX_PLUGINS_OK=0 # 1 = plugins were installed, so the final message can say so
+TMUX_PLUGINS_OK=0
 if [[ ( -x "$TPM/bin/install_plugins" || $DRY -eq 1 ) ]] && { command -v tmux >/dev/null 2>&1 || [[ $DRY -eq 1 ]]; }; then
   echo "==> Installing tmux plugins"
   if install_tmux_plugins; then
@@ -237,14 +233,13 @@ fi
 
 # Step 5: Nerd Font for Linux desktop terminals (Ghostty and macOS need nothing).
 install_font() {
-  local dir="$HOME/.local/share/fonts/${NERD_FONT}NerdFont" tmp # per-user dir, no sudo
-  # fc-list shows Monaspice families as "MonaspiceNe Nerd Font", so match the family prefix
-  # grep -c reads all input, so fc-list never gets SIGPIPE (which fails the pipe under pipefail)
+  local dir="$HOME/.local/share/fonts/${NERD_FONT}NerdFont" tmp
+  # grep -c reads all input, so fc-list never gets SIGPIPE under pipefail
   if [[ "$(fc-list | grep -ci "${NERD_FONT_FAMILY}.* Nerd Font")" -gt 0 ]] || [[ -n "$(ls -A "$dir" 2>/dev/null)" ]]; then
-    return 0 # already installed
+    return 0
   fi
   echo "==> Installing ${NERD_FONT} Nerd Font"
-  if [[ $DRY -eq 1 ]]; then tmp="<tmpdir>"; else tmp="$(mktemp -d)" || return 0; fi # nothing is downloaded in dry-run
+  if [[ $DRY -eq 1 ]]; then tmp="<tmpdir>"; else tmp="$(mktemp -d)" || return 0; fi
   # A failure must not stop the install: drop the partial folder so the next run retries.
   if ! {
     run curl -fsSL -o "$tmp/font.tar.xz" "https://github.com/ryanoasis/nerd-fonts/releases/latest/download/${NERD_FONT}.tar.xz" &&
@@ -262,25 +257,25 @@ install_font() {
 if [[ "$OSTYPE" == linux* ]]; then
   if [[ -z "${DISPLAY:-}${WAYLAND_DISPLAY:-}" ]]; then # headless: the local terminal renders fonts
     echo "==> Skipping Nerd Font: no graphical session (headless server)"
-  elif command -v fc-cache >/dev/null 2>&1 && command -v fc-list >/dev/null 2>&1; then # needs fontconfig
+  elif command -v fc-cache >/dev/null 2>&1 && command -v fc-list >/dev/null 2>&1; then
     install_font
   else
     echo "==> Skipping Nerd Font: fontconfig (fc-cache, fc-list) not found"
   fi
 fi
 
-# Step 5b: generate the Ghostty and iTerm theme files from ~/.config/theme/config.
+# Step 5b: Ghostty and iTerm theme files.
 echo "==> Generating terminal theme files (theme sync)"
-# a failed sync (offline, unknown theme name) must not stop the install
+# offline or unknown theme: must not stop the install
 run "$REPO/bin/.local/bin/theme" sync || echo "Warning: theme sync failed; run 'theme sync' later" >&2
 
-CLAUDE_SKIPPED=0 # 1 = the Claude step was skipped, so the script exits non-zero
-# Step 6: optional private Claude config (opt-in). Its own pull.sh pulls and installs it.
+CLAUDE_SKIPPED=0 # 1 = exit non-zero at the end
+# Step 6: optional Claude config; its pull.sh pulls and installs it.
 if [[ $WITH_CLAUDE -eq 1 ]]; then
   echo "==> Setting up Claude config in $CLAUDE_DIR"
   if [[ ! -e "$CLAUDE_DIR" ]]; then
     run git clone "$CLAUDE_REPO_URL" "$CLAUDE_DIR" || {
-      CLAUDE_SKIPPED=1 # reported at the end, with a non-zero exit
+      CLAUDE_SKIPPED=1
       echo "Warning: could not clone $CLAUDE_REPO_URL. A private repo needs your GitHub SSH key (see docs/server.md)." >&2
     }
   elif ! git -C "$CLAUDE_DIR" rev-parse --git-dir >/dev/null 2>&1; then
@@ -294,12 +289,11 @@ if [[ $WITH_CLAUDE -eq 1 ]]; then
 fi
 
 # Make sure git has a commit identity (name and email from any config).
-# GitHub offers a private noreply address (Settings > Emails) if you prefer not to share your email.
 ensure_git_identity() {
-  local name email local_file="$HOME/.config/git/local" # identity lives in the untracked local file
-  name="$(git config --global --includes user.name 2>/dev/null || true)"   # empty when unset
-  email="$(git config --global --includes user.email 2>/dev/null || true)" # empty when unset
-  [[ -n "$name" && -n "$email" ]] && return 0 # already set: stay silent
+  local name email local_file="$HOME/.config/git/local"
+  name="$(git config --global --includes user.name 2>/dev/null || true)"
+  email="$(git config --global --includes user.email 2>/dev/null || true)"
+  [[ -n "$name" && -n "$email" ]] && return 0
   if [[ -t 0 && $DRY -eq 0 ]]; then # only ask a person, never a pipe or a preview
     echo
     if [[ -z "$name" ]]; then
@@ -320,7 +314,7 @@ ensure_git_identity() {
 }
 ensure_git_identity
 
-if [[ $TMUX_PLUGINS_OK -eq 1 ]]; then # the first step depends on how the plugin install went
+if [[ $TMUX_PLUGINS_OK -eq 1 ]]; then
   TMUX_STEP="Open tmux; the plugins are installed already (if one is missing: Ctrl+Space, then Shift+i)."
 else
   TMUX_STEP="Open tmux and press Ctrl+Space, then Shift+i, to install the plugins (the install above did not finish)."
@@ -338,30 +332,30 @@ MSG
 
 # Print the command that makes zsh the login shell; prints nothing if it already is.
 suggest_login_shell() {
-  local current zsh_path=""                                                     # current login shell, zsh to recommend
-  if [[ "$OSTYPE" == darwin* ]]; then                                           # macOS keeps users in Directory Services
-    current="$(dscl . -read "/Users/$(id -un)" UserShell 2>/dev/null | awk '{print $2}')"       # $SHELL can be stale
-    zsh_path="/bin/zsh"                                                         # always shipped with macOS
+  local current zsh_path=""
+  if [[ "$OSTYPE" == darwin* ]]; then
+    current="$(dscl . -read "/Users/$(id -un)" UserShell 2>/dev/null | awk '{print $2}')" # $SHELL can be stale
+    zsh_path="/bin/zsh"
   else
-    current="$(getent passwd "${USER:-$(id -un)}" 2>/dev/null | cut -d: -f7)"   # passwd entry, not the current process
+    current="$(getent passwd "${USER:-$(id -un)}" 2>/dev/null | cut -d: -f7)" # passwd entry, not the current process
     if [[ -x /usr/bin/zsh ]] && grep -qx /usr/bin/zsh /etc/shells 2>/dev/null; then # chsh only accepts listed shells
-      zsh_path="/usr/bin/zsh"                                                   # the system zsh
+      zsh_path="/usr/bin/zsh"
     else
-      zsh_path="$(grep -m1 '/zsh$' /etc/shells 2>/dev/null || true)"            # first listed zsh (empty if none)
+      zsh_path="$(grep -m1 '/zsh$' /etc/shells 2>/dev/null || true)"
     fi
   fi
-  current="${current:-${SHELL:-unknown}}"                                       # fall back when the lookup failed
-  [[ "$(basename "$current")" == zsh ]] && return 0                             # already zsh: say nothing
-  [[ -n "$zsh_path" ]] || return 0                                              # no usable zsh to suggest
+  current="${current:-${SHELL:-unknown}}"
+  [[ "$(basename "$current")" == zsh ]] && return 0
+  [[ -n "$zsh_path" ]] || return 0
   echo
   echo "Your login shell is $current. Make zsh the default (then log out and back in):"
-  if [[ "$OSTYPE" == darwin* ]]; then                                           # no sudo needed on macOS
-    echo "  chsh -s $zsh_path"                                                  # changes the current user
+  if [[ "$OSTYPE" == darwin* ]]; then
+    echo "  chsh -s $zsh_path"
   else
-    echo "  sudo chsh -s $zsh_path \"\$USER\""                                    # EC2-style users have no password
+    echo "  sudo chsh -s $zsh_path \"\$USER\"" # EC2-style users have no password
   fi
   echo "With SSH connection sharing (ControlMaster), also run 'ssh -O exit <user>@<host>' (the same destination you ssh to) on your laptop, or reconnecting keeps the old shell."
-  local sys_ver                                                                 # /usr/bin/tmux version, e.g. 3.4 (empty if none)
+  local sys_ver
   sys_ver="$(/usr/bin/tmux -V 2>/dev/null | sed -n 's/^tmux \([0-9]*\.[0-9]*\).*/\1/p')"
   if [[ -n "$sys_ver" ]] && (( ${sys_ver%%.*} < 3 || ( ${sys_ver%%.*} == 3 && ${sys_ver#*.} < 5 ) )); then # tmux.conf needs 3.5+
     echo "Until then, bash does not put mise's tools on PATH, so logins start the system tmux $sys_ver and tmux.conf shows errors."
@@ -373,5 +367,5 @@ suggest_login_shell
 if [[ $CLAUDE_SKIPPED -eq 1 ]]; then # a skipped step must not look like success
   echo >&2
   echo "The Claude config was NOT installed (see the warning above). Fix that and run ./install.sh --with-claude <git-url> again." >&2
-  exit 1 # visible to scripts and to the eye, after everything else finished
+  exit 1
 fi

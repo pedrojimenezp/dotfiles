@@ -4,13 +4,13 @@
 # Usage: ./uninstall.sh [--dry-run] [--yes] [--with-claude]
 set -euo pipefail
 
-REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" # absolute path of this repo
-HOME_REAL="$(cd "$HOME" && pwd -P)"                  # physical path of $HOME
-DRY=0                                                # 1 = print actions, change nothing
-ASSUME_YES=0                                         # 1 = skip the confirmation prompt
-WITH_CLAUDE=0                                        # 1 = also undo and remove the Claude config clone
+REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+HOME_REAL="$(cd "$HOME" && pwd -P)"
+DRY=0
+ASSUME_YES=0
+WITH_CLAUDE=0
 CLAUDE_DIR="$HOME/.config/claude-shared"            # same path as install.sh
-CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}"           # XDG base dirs, as the tools read them
+CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}"
 DATA="${XDG_DATA_HOME:-$HOME/.local/share}"
 STATE="${XDG_STATE_HOME:-$HOME/.local/state}"
 CACHE="${XDG_CACHE_HOME:-$HOME/.cache}"
@@ -18,15 +18,13 @@ CACHE="${XDG_CACHE_HOME:-$HOME/.cache}"
 # Same packages as install.sh, plus the macOS and Ghostty ones: a package with no links does nothing.
 PACKAGES=(zsh nvim tmux vim git lazygit starship mise bin theme iterm skhd ghostty)
 
-# What happened, for the summary.
 REMOVED=()
 RESTORED=()
 SKIPPED=()
 LEFT_BACKUPS=()
 
-usage() { echo "Usage: $0 [--dry-run] [--yes] [--with-claude]"; } # one place for the usage text
+usage() { echo "Usage: $0 [--dry-run] [--yes] [--with-claude]"; }
 
-# Run a command, or only print it in dry-run mode.
 run() {
   if [[ $DRY -eq 1 ]]; then
     echo "[dry-run] $*"
@@ -35,8 +33,8 @@ run() {
   fi
 }
 
-step() { echo "==> $*"; } # a step starts
-finish() { echo "$*"; echo; } # one result line, then a blank line
+step() { echo "==> $*"; }
+finish() { echo "$*"; echo; }
 
 # True if $1 is a path this script may delete: under $HOME, never $HOME itself, no ".." parts.
 path_ok() {
@@ -145,7 +143,7 @@ package_files() {
 
 main() {
   local arg answer rel reason b REPO_REAL
-  REPO_REAL="$(cd "$REPO" && pwd -P)" # physical path (no symlinks)
+  REPO_REAL="$(cd "$REPO" && pwd -P)"
   for arg in "$@"; do
     case "$arg" in
       --dry-run) DRY=1 ;;
