@@ -1,55 +1,32 @@
-# ~/.config/ghostty/config: Ghostty terminal (https://ghostty.org/docs/config).
+# https://ghostty.org/docs/config
 
-# Font: Monaspace (GitHub Next) Nerd Font, installed by the Brewfile cask or install.sh.
-# Neon for code
 font-family = MonaspiceNe Nerd Font
-# Radon (handwriting style) for italics and comments
 font-family-italic = MonaspiceRn Nerd Font
-# Ghostty still falls back to its built-in Nerd Font symbols for icons.
-# Monaspace texture healing relies on the `calt` font feature: on by default, do not disable it.
-# text size in points
+# Monaspace texture healing needs the `calt` feature: don't disable it.
 font-size = 14
-# Colors: `theme sync` writes theme.conf next to this file (theme = light:<name>,dark:<name>, from
-# ~/.config/theme/config). The path is relative to this file's link; ? = no error if it is missing yet.
+# Written by `theme sync`; ? = no error while it is missing
 config-file = ?theme.conf
-# fully opaque window
 background-opacity = 1
-# horizontal padding in pixels
 window-padding-x = 8
-# vertical padding in pixels
 window-padding-y = 6
-# block cursor
 cursor-style = block
-# hide pointer while typing
 mouse-hide-while-typing = true
-# selecting text copies it to the system clipboard
 copy-on-select = clipboard
-# no prompt when closing a finished shell
 confirm-close-surface = false
 
-# macOS: treat Option as Alt so Alt-j/Alt-k and tmux/nvim Alt maps work.
-# Option sends Alt/Esc+ instead of special characters
 macos-option-as-alt = true
-# native tabs in the titlebar
 macos-titlebar-style = tabs
 
-# Shell integration: cwd tracking, prompt jumping, and SSH helpers.
-# Features: cursor shape at prompt, sudo keeps terminfo, title updates. The ssh features are
-# off: Ghostty's ssh wrapper left ssh ControlMaster processes attached to tabs; install terminfo on servers instead.
-# force zsh integration
 shell-integration = zsh
+# No ssh features: Ghostty's ssh wrapper left ControlMaster processes attached to tabs;
+# install the terminfo on servers instead.
 shell-integration-features = cursor,sudo,title,no-ssh-env,no-ssh-terminfo
 
-# Keybinds (cmd on macOS).
-# Cmd-D: split right
 keybind = cmd+d=new_split:right
-# Cmd-Shift-D: split down
 keybind = cmd+shift+d=new_split:down
-# Cmd-Shift-Enter: zoom the current split
 keybind = cmd+shift+enter=toggle_split_zoom
-# Cmd-Shift-R: reload this config
 keybind = cmd+shift+r=reload_config
-# Cmd-K: clear the tmux pane. Sends Ctrl-Space (tmux prefix, \x00) then Ctrl-L (\x0c)
+# Clear the tmux pane: Ctrl-Space (prefix, \x00) then Ctrl-L (\x0c)
 keybind = cmd+k=text:\x00\x0c
-# Ctrl-Shift-K: same on Linux, where there is no Cmd
+# Same on Linux, which has no Cmd
 keybind = ctrl+shift+k=text:\x00\x0c
