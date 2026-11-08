@@ -1,7 +1,5 @@
-# skhd.zig hotkeys (macOS only). Syntax: <modifiers> - <key> : <command>.
-# skhd runs each command as `$SHELL -c` (default /bin/bash) with a minimal environment,
-# so $HOME expands and commands use absolute paths. Needs the Accessibility permission for skhd.
-# Changes are picked up without a restart; errors go to ~/Library/Logs/skhd.log.
+# skhd runs commands with `$SHELL -c` and a minimal environment: use absolute paths.
+# Reloads on change; errors go to ~/Library/Logs/skhd.log.
 
 # Upload the clipboard image to the ssh server and paste its path (normal paste otherwise).
 ctrl + cmd - v : "$HOME/.local/bin/img-to-server"
