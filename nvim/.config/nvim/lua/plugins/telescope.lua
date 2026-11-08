@@ -1,12 +1,11 @@
--- Telescope: fuzzy finder for files, text, buffers, help and more.
 return {
   "nvim-telescope/telescope.nvim",
-  branch = "master", -- tracks the current development branch
+  branch = "master",
   dependencies = {
-    "nvim-lua/plenary.nvim", -- Lua helper library required by telescope
-    { "nvim-telescope/telescope-fzf-native.nvim", build = "make" }, -- native fzf sorter (faster, better ranking)
+    "nvim-lua/plenary.nvim",
+    { "nvim-telescope/telescope-fzf-native.nvim", build = "make" },
   },
-  cmd = "Telescope", -- load on :Telescope
+  cmd = "Telescope",
   keys = {
     { "<leader><leader>", function() require("telescope.builtin").buffers() end, desc = "Find open buffers" },
     { "<leader>sf", function() require("telescope.builtin").find_files() end, desc = "Search files" },
@@ -23,8 +22,8 @@ return {
   },
   config = function()
     require("telescope").setup({
-      defaults = { file_ignore_patterns = { "^.git/", "node_modules/" } }, -- hide noise from results
+      defaults = { file_ignore_patterns = { "^.git/", "node_modules/" } },
     })
-    pcall(require("telescope").load_extension, "fzf") -- enable the native sorter if it built
+    pcall(require("telescope").load_extension, "fzf") -- only if fzf-native built
   end,
 }

@@ -1,27 +1,25 @@
--- Colors that follow the dotfiles theme pair (~/.config/theme/config, edited by `theme pick`/`theme set`).
--- vim.o.background picks the slot (light or dark); the slot's name picks the colorscheme:
---   TokyoNight ... -> tokyonight.nvim, GitHub ... -> github-nvim-theme, anything else -> mini.base16
---   built from the theme file that `theme file <name>` prints. A 'background' change reloads it.
--- g:colors_name is cleared after loading: otherwise Neovim reloads that scheme itself when 'background'
--- changes, and a scheme for one slot would fight the other slot. g:dotfiles_theme holds the name instead.
+-- Colors that follow the dotfiles theme pair (~/.config/theme/config).
+-- 'background' picks the slot; the slot's name picks the scheme: TokyoNight -> tokyonight.nvim,
+-- GitHub -> github-nvim-theme, anything else -> mini.base16 from the theme file.
+-- g:colors_name is cleared after loading, or Neovim would reload that scheme itself on a
+-- 'background' change and fight the other slot. g:dotfiles_theme holds the name instead.
 local M = {}
 
 local defaults = { light = "GitHub Light Default", dark = "TokyoNight Night" } -- same fallbacks as the script
-local loading = false -- guard: a scheme that sets 'background' would reload us while we load
-M.applied = nil -- theme name shown now, to notice changes made in the shell
-M.applied_bg = nil -- background of the last load, set by M.load
-local appearance = { at = nil, value = nil } -- last macOS appearance read; `defaults` is a process per call
-local appearance_ttl = 5000 -- ms; a quick focus switch reuses the answer
+local loading = false -- a scheme that sets 'background' would reload us mid-load
+M.applied = nil -- to notice changes made in the shell
+M.applied_bg = nil
+local appearance = { at = nil, value = nil } -- cache: each `defaults` read is a process
+local appearance_ttl = 5000 -- ms
 
--- Read the light/dark names from ~/.config/theme/config.
 function M.read_config()
   local dir = vim.env.XDG_CONFIG_HOME or (vim.env.HOME .. "/.config") -- same path as the script
-  local names = vim.deepcopy(defaults) -- start from the defaults
-  local ok, lines = pcall(vim.fn.readfile, dir .. "/theme/config") -- missing file: keep defaults
+  local names = vim.deepcopy(defaults)
+  local ok, lines = pcall(vim.fn.readfile, dir .. "/theme/config")
   if not ok then return names end
-  local seen = {} -- the first line of each slot wins, like in the script
+  local seen = {} -- first line of each slot wins, like the script
   for _, line in ipairs(lines) do
-    local slot, name = line:match("^%s*(%a+)%s*=%s*(.-)%s*$") -- "slot = name"
+    local slot, name = line:match("^%s*(%a+)%s*=%s*(.-)%s*$")
     if (slot == "light" or slot == "dark") and name ~= "" and not seen[slot] then
       names[slot] = name
       seen[slot] = true
@@ -30,29 +28,29 @@ function M.read_config()
   return names
 end
 
--- The saved mode as a background value; nil in auto mode off macOS (keep nvim's own detection).
+-- The saved mode as a background value; nil in auto mode off macOS (nvim detects it).
 function M.mode()
-  local dir = vim.env.XDG_STATE_HOME or (vim.env.HOME .. "/.local/state") -- same path as the script
-  local ok, lines = pcall(vim.fn.readfile, dir .. "/theme", "", 1) -- first line of the state file
+  local dir = vim.env.XDG_STATE_HOME or (vim.env.HOME .. "/.local/state")
+  local ok, lines = pcall(vim.fn.readfile, dir .. "/theme", "", 1)
   local state = ok and lines[1] or "auto" -- missing file means auto
-  if state == "dark" or state == "light" then return state end -- explicit choice
+  if state == "dark" or state == "light" then return state end
   if vim.fn.has("mac") == 1 then
-    local now = vim.uv.now() -- ms, monotonic
-    if appearance.at and now - appearance.at < appearance_ttl then return appearance.value end -- recent answer
+    local now = vim.uv.now()
+    if appearance.at and now - appearance.at < appearance_ttl then return appearance.value end
     local res = vim.system({ "defaults", "read", "-g", "AppleInterfaceStyle" }, { text = true }):wait() -- fails in light mode
-    appearance.at = now -- remember when we asked
-    appearance.value = vim.trim(res.stdout or "") == "Dark" and "dark" or "light" -- follow macOS
+    appearance.at = now
+    appearance.value = vim.trim(res.stdout or "") == "Dark" and "dark" or "light"
     return appearance.value
   end
-  return nil -- auto elsewhere: the terminal background decides
+  return nil
 end
 
--- Path of a theme file: Ghostty bundles, then the download cache (never downloads, so startup cannot wait on curl).
--- Mirrors theme_file() in bin/.local/bin/theme (same folders and order) without spawning it.
+-- Path of a theme file. Mirrors theme_file() in bin/.local/bin/theme (same folders and order)
+-- without spawning it, and never downloads, so startup can't wait on curl.
 local function theme_file(name)
   if name == "" or name:find("/", 1, true) or name:sub(1, 1) == "." then return nil end -- the script refuses paths
   local home = vim.env.HOME or ""
-  local dirs = vim.uv.os_getenv("THEME_GHOSTTY_DIRS") -- the script's test override; set (even empty) replaces the list
+  local dirs = vim.uv.os_getenv("THEME_GHOSTTY_DIRS") -- set, even empty, replaces the list
   if dirs == nil then
     dirs = table.concat({
       home .. "/Applications/Ghostty.app/Contents/Resources/ghostty/themes",
@@ -62,29 +60,29 @@ local function theme_file(name)
     }, ":")
   end
   local data = vim.env.XDG_DATA_HOME
-  if data == nil or data == "" then data = home .. "/.local/share" end -- bash ${VAR:-default}
+  if data == nil or data == "" then data = home .. "/.local/share" end -- like bash ${VAR:-default}
   local candidates = vim.split(dirs, ":", { plain = true })
-  candidates[#candidates + 1] = data .. "/theme/themes" -- cached downloads
+  candidates[#candidates + 1] = data .. "/theme/themes"
   for _, dir in ipairs(candidates) do
     if dir ~= "" then
       local stat = vim.uv.fs_stat(dir .. "/" .. name)
       if stat and stat.type == "file" then return dir .. "/" .. name end
     end
   end
-  return nil -- unknown or not cached yet
+  return nil
 end
 
 -- Parse a Ghostty theme file into { palette = { [0..15] = "#rrggbb" }, bg = ..., fg = ... }.
 local function parse(path)
-  local t = { palette = {} } -- result
+  local t = { palette = {} }
   for _, line in ipairs(vim.fn.readfile(path)) do
-    local idx, color = line:match("^%s*palette%s*=%s*(%d+)%s*=%s*#?(%x%x%x%x%x%x)") -- palette = N=#hex
+    local idx, color = line:match("^%s*palette%s*=%s*(%d+)%s*=%s*#?(%x%x%x%x%x%x)")
     if idx then
-      t.palette[tonumber(idx)] = "#" .. color:lower() -- palette entry
+      t.palette[tonumber(idx)] = "#" .. color:lower()
     else
-      local key, value = line:match("^%s*([%a-]+)%s*=%s*#?(%x%x%x%x%x%x)") -- key = #hex
-      if key == "background" then t.bg = "#" .. value:lower() end -- window background
-      if key == "foreground" then t.fg = "#" .. value:lower() end -- default text
+      local key, value = line:match("^%s*([%a-]+)%s*=%s*#?(%x%x%x%x%x%x)")
+      if key == "background" then t.bg = "#" .. value:lower() end
+      if key == "foreground" then t.fg = "#" .. value:lower() end
     end
   end
   return t
@@ -92,20 +90,20 @@ end
 
 -- Mix two "#rrggbb" colors: t = 0 gives a, t = 1 gives b.
 local function blend(a, b, t)
-  local out = "#" -- result
-  for i = 2, 6, 2 do -- the r, g and b pairs
-    local x, y = tonumber(a:sub(i, i + 1), 16), tonumber(b:sub(i, i + 1), 16) -- channel values
-    out = out .. string.format("%02x", math.floor(x + (y - x) * t + 0.5)) -- rounded mix
+  local out = "#"
+  for i = 2, 6, 2 do
+    local x, y = tonumber(a:sub(i, i + 1), 16), tonumber(b:sub(i, i + 1), 16)
+    out = out .. string.format("%02x", math.floor(x + (y - x) * t + 0.5))
   end
   return out
 end
 
 -- Apply mini.base16 with a palette derived from a Ghostty theme file.
 local function base16(path)
-  local t = parse(path) -- colors from the file
-  if not (t.bg and t.fg) then return false end -- not a usable theme
-  local p = t.palette -- shortcut
-  local function c(i) return p[i] or t.fg end -- palette entry or fg
+  local t = parse(path)
+  if not (t.bg and t.fg) then return false end
+  local p = t.palette
+  local function c(i) return p[i] or t.fg end
   require("mini.base16").setup({
     palette = {
       base00 = t.bg, -- default background
@@ -131,65 +129,63 @@ end
 
 -- Colorscheme for a "TokyoNight ..." or "GitHub ..." name, or nil.
 local function plugin_scheme(name)
-  local tokyo = name:match("^TokyoNight%s*(%a*)$") -- "" for plain TokyoNight, else the variant
+  local tokyo = name:match("^TokyoNight%s*(%a*)$")
   if tokyo then
-    local style = ({ Night = "night", Storm = "storm", Moon = "moon", Day = "day" })[tokyo] or "night" -- variant
+    local style = ({ Night = "night", Storm = "storm", Moon = "moon", Day = "day" })[tokyo] or "night"
     require("tokyonight").setup({ style = style, light_style = style, transparent = false }) -- both slots
-    return "tokyonight-" .. style -- e.g. tokyonight-night
+    return "tokyonight-" .. style
   end
-  if name == "GitHub" then return "github_light" end -- the plain Ghostty "GitHub" theme is light
+  if name == "GitHub" then return "github_light" end -- Ghostty's plain "GitHub" theme is light
   if name:match("^GitHub ") then return (name:lower():gsub("%s+", "_")) end -- GitHub Light Default -> github_light_default
-  return nil -- no plugin for this theme
+  return nil
 end
 
--- Load the theme for the current background.
 function M.load()
-  if loading then return end -- re-entered through a 'background' change: ignore
-  loading = true -- start the guard
-  local bg = vim.o.background -- "light" or "dark"
-  local name = M.read_config()[bg] -- the slot's theme
-  local ok = false -- true once something applied
-  vim.cmd("highlight clear") -- start clean (schemes skip this when g:colors_name is unset)
-  local found, scheme = pcall(plugin_scheme, name) -- dedicated plugin, if any (may be missing)
-  if found and scheme then ok = pcall(vim.cmd.colorscheme, scheme) end -- plugin may fail to load
+  if loading then return end -- re-entered through a 'background' change
+  loading = true
+  local bg = vim.o.background
+  local name = M.read_config()[bg]
+  local ok = false
+  vim.cmd("highlight clear") -- schemes skip this when g:colors_name is unset
+  local found, scheme = pcall(plugin_scheme, name) -- the plugin may be missing
+  if found and scheme then ok = pcall(vim.cmd.colorscheme, scheme) end
   if not ok then
-    local path = theme_file(name) -- Ghostty theme file
+    local path = theme_file(name)
     if path then
-      local called, applied = pcall(base16, path) -- generic palette
-      ok = called and applied -- both must succeed
+      local called, applied = pcall(base16, path)
+      ok = called and applied
     end
   end
   if not ok then pcall(vim.cmd.colorscheme, bg == "light" and "tokyonight-day" or "tokyonight-night") end -- last resort
-  M.applied = name -- remember what is shown
-  M.applied_bg = bg -- the mode loaded for; a plugin scheme may force vim.o.background to the other value
-  vim.g.dotfiles_theme = name -- for statuslines or :echo
-  vim.g.colors_name = nil -- no native reload on 'background' changes (the autocmd below does it)
-  loading = false -- end the guard
+  M.applied = name
+  M.applied_bg = bg -- a plugin scheme may force 'background' to the other value
+  vim.g.dotfiles_theme = name
+  vim.g.colors_name = nil -- see the header
+  loading = false
 end
 
--- Startup: take the background from the saved mode, load the colors, and reload them on changes.
 function M.setup()
   local want = M.mode() -- nil = keep nvim's detected background
-  if want then vim.o.background = want end -- match the terminal
-  M.load() -- colors for that background
+  if want then vim.o.background = want end
+  M.load()
   vim.api.nvim_create_autocmd("OptionSet", {
-    group = vim.api.nvim_create_augroup("dotfiles_theme", { clear = true }), -- no duplicates on re-source
+    group = vim.api.nvim_create_augroup("dotfiles_theme", { clear = true }),
     pattern = "background", -- <leader>ut, FocusGained or the terminal's own detection
     desc = "Load the dotfiles theme for the new background",
-    callback = function() M.load() end, -- the other slot's theme
+    callback = function() M.load() end,
   })
 end
 
--- Focus regained: follow a mode or theme change made in the shell (`theme pick`, `tt`, macOS).
+-- Follow a mode or theme change made outside nvim.
 function M.sync()
   -- Compare with the mode we last loaded, not vim.o.background: a plugin colorscheme can force
   -- 'background' to its own brightness, which would otherwise look like a change on every focus.
-  local want = M.mode() or M.applied_bg or vim.o.background -- desired background
+  local want = M.mode() or M.applied_bg or vim.o.background
   if M.applied_bg ~= want then
-    vim.o.background = want -- the OptionSet autocmd loads the other slot
+    vim.o.background = want -- OptionSet loads the other slot
     if M.applied_bg ~= want then M.load() end -- no event fired: 'background' already had that value
   elseif M.read_config()[want] ~= M.applied then
-    M.load() -- same slot, new theme name
+    M.load()
   end
 end
 

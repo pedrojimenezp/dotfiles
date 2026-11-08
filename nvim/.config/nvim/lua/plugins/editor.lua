@@ -1,13 +1,12 @@
--- Editing helpers: git signs, key hints, file explorer, mini.nvim, tmux navigation.
 return {
   {
     "lewis6991/gitsigns.nvim",
-    event = { "BufReadPre", "BufNewFile" }, -- load when opening files
+    event = { "BufReadPre", "BufNewFile" },
     opts = {
       on_attach = function(bufnr)
         local gs = require("gitsigns")
         local function map(mode, lhs, rhs, desc)
-          vim.keymap.set(mode, lhs, rhs, { buffer = bufnr, desc = "Git: " .. desc }) -- buffer-local map
+          vim.keymap.set(mode, lhs, rhs, { buffer = bufnr, desc = "Git: " .. desc })
         end
         map("n", "]c", function() -- in diff mode keep the built-in jump
           if vim.wo.diff then vim.cmd.normal({ "]c", bang = true }) else gs.nav_hunk("next") end
@@ -24,62 +23,62 @@ return {
   },
   {
     "folke/which-key.nvim",
-    event = "VeryLazy", -- load after startup
+    event = "VeryLazy",
     opts = {
       spec = {
-        { "<leader>s", group = "Search" }, -- label for the telescope group
-        { "<leader>f", group = "Files" }, -- label for the file explorer group
-        { "<leader>g", group = "Git" }, -- label for the git group
-        { "<leader>h", group = "Hunks" }, -- label for the gitsigns group
-        { "<leader>d", group = "Diagnostics/symbols" }, -- label for the d group
-        { "<leader>u", group = "UI" }, -- label for the ui group (theme toggle)
+        { "<leader>s", group = "Search" },
+        { "<leader>f", group = "Files" },
+        { "<leader>g", group = "Git" },
+        { "<leader>h", group = "Hunks" },
+        { "<leader>d", group = "Diagnostics/symbols" },
+        { "<leader>u", group = "UI" },
       },
     },
   },
   {
     "stevearc/oil.nvim",
-    lazy = false, -- load at startup so `nvim <dir>` opens oil
-    dependencies = { "nvim-tree/nvim-web-devicons" }, -- file icons
-    opts = { view_options = { show_hidden = true } }, -- show dotfiles
+    lazy = false, -- so `nvim <dir>` opens oil
+    dependencies = { "nvim-tree/nvim-web-devicons" },
+    opts = { view_options = { show_hidden = true } },
     keys = { { "-", "<cmd>Oil<CR>", desc = "Open parent directory (oil)" } },
   },
   {
     "nvim-neo-tree/neo-tree.nvim",
     branch = "v3.x",
-    cmd = "Neotree", -- load on first use
+    cmd = "Neotree",
     dependencies = {
-      "nvim-lua/plenary.nvim", -- helpers
-      "nvim-tree/nvim-web-devicons", -- file icons
-      "MunifTanjim/nui.nvim", -- UI components
+      "nvim-lua/plenary.nvim",
+      "nvim-tree/nvim-web-devicons",
+      "MunifTanjim/nui.nvim",
     },
     keys = { { "<leader>fe", "<cmd>Neotree toggle reveal left<CR>", desc = "File explorer (neo-tree)" } },
     opts = {
-      window = { mappings = { ["<space>"] = "none" } }, -- keep Space as the leader inside the tree
+      window = { mappings = { ["<space>"] = "none" } }, -- keep Space as the leader in the tree
       filesystem = {
-        follow_current_file = { enabled = true }, -- highlight the file being edited
-        hijack_netrw_behavior = "disabled", -- leave directory buffers to oil
+        follow_current_file = { enabled = true },
+        hijack_netrw_behavior = "disabled", -- directories open in oil
         filtered_items = {
-          visible = true, -- show hidden entries, dimmed
-          hide_dotfiles = false, -- show dotfiles
-          never_show = { ".git", ".zig-cache", "zig-out" }, -- noise
+          visible = true,
+          hide_dotfiles = false,
+          never_show = { ".git", ".zig-cache", "zig-out" },
         },
       },
     },
   },
   {
     "nvim-mini/mini.nvim",
-    event = "VeryLazy", -- load after startup
+    event = "VeryLazy",
     config = function()
-      require("mini.surround").setup() -- sa/sd/sr: add, delete, replace surroundings
-      require("mini.ai").setup({ n_lines = 500 }) -- better a/i text objects (function, argument, quote)
+      require("mini.surround").setup()
+      require("mini.ai").setup({ n_lines = 500 })
       local statusline = require("mini.statusline")
-      statusline.setup({ use_icons = vim.g.have_nerd_font }) -- compact statusline
-      statusline.section_location = function() return "%2l:%-2v" end -- show only line:column
+      statusline.setup({ use_icons = vim.g.have_nerd_font })
+      statusline.section_location = function() return "%2l:%-2v" end
     end,
   },
   {
     "christoomey/vim-tmux-navigator",
-    cmd = { "TmuxNavigateLeft", "TmuxNavigateDown", "TmuxNavigateUp", "TmuxNavigateRight" }, -- load on first use
+    cmd = { "TmuxNavigateLeft", "TmuxNavigateDown", "TmuxNavigateUp", "TmuxNavigateRight" },
     keys = {
       { "<C-h>", "<cmd>TmuxNavigateLeft<CR>", desc = "Move to left split/pane" },
       { "<C-j>", "<cmd>TmuxNavigateDown<CR>", desc = "Move to lower split/pane" },

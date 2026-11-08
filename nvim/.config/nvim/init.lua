@@ -1,10 +1,9 @@
--- init.lua: entry point. Each require loads lua/<name>.lua.
-vim.g.mapleader = " " -- Space is the leader key (must be set before plugins load)
-vim.g.maplocalleader = " " -- same key for filetype-local maps
-vim.g.have_nerd_font = true -- the terminal uses a Nerd Font (see Brewfile)
+vim.g.mapleader = " " -- before plugins load
+vim.g.maplocalleader = " "
+vim.g.have_nerd_font = true
 
-require("config.options") -- editor options
-require("config.keymaps") -- general keymaps
-require("config.autocmds") -- autocommands
-require("config.lazy") -- bootstrap lazy.nvim and load lua/plugins/*
-require("config.theme").setup() -- colors from the dotfiles theme pair (needs the plugins above)
+require("config.options")
+require("config.keymaps")
+require("config.autocmds")
+require("config.lazy")
+require("config.theme").setup() -- needs the plugins above
