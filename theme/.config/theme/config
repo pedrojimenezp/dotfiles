@@ -1,7 +1,3 @@
-# ~/.config/theme/config: the light/dark theme pair (tracked in the dotfiles repo).
-# Names come from Ghostty's theme collection: run `theme list`, or pick with `theme pick`.
-# `theme pick` / `theme set` edit this file; commit it afterwards to keep the choice.
-# Theme used in light mode
+# Names from Ghostty's collection (`theme list`). `theme pick` / `theme set` edit this file: commit it.
 light = One Half Light
-# Theme used in dark mode
 dark = Rose Pine Moon
