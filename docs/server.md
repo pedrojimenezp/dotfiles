@@ -179,7 +179,7 @@ Then finish the setup:
    chmod 600 ~/.zshrc.local
    ```
 4. On the server, name this machine and set its time zone (both optional), as in [section 4](#4-name-this-server).
-5. On the server, run `claude` once and log in.
+5. On the server, run `<account> claude` once (for example `personal claude`) and log in.
 6. On the server, inside a project that pins other tool versions, run:
    ```sh
    mise install
