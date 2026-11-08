@@ -1,82 +1,80 @@
-# ~/.config/starship.toml: prompt config (https://starship.rs/config/).
+# Icons are \uXXXX escapes so editors cannot strip them.
+"$schema" = 'https://starship.rs/config-schema.json'
 
-"$schema" = 'https://starship.rs/config-schema.json' # editor autocompletion for this file
+add_newline = true
+command_timeout = 500  # ms; slower modules are skipped
 
-add_newline = true            # blank line between prompts
-command_timeout = 500         # ms to wait for a module before skipping it
-
-# Order and content of the left prompt.
 format = """
 [╭─ ](dimmed)$os$username${env_var.PROMPT_HOST} in $directory$git_branch$git_status$golang$nodejs$zig$python$cmd_duration$fill$status$time
 [╰─](dimmed)$character"""
 
 [character]
-success_symbol = "[❯](bold green)"   # prompt symbol after success
-error_symbol = "[❯](bold red)"       # prompt symbol after a failed command
+success_symbol = "[❯](bold green)"
+error_symbol = "[❯](bold red)"
 
 [os]
-disabled = false              # OS icon only, no name
-format = "[$symbol]($style) " # icon in its style, then a space
-style = "bold cyan"           # palette color, follows the theme
+disabled = false
+format = "[$symbol]($style) "
+style = "bold cyan"
 
 [os.symbols]
-Macos = "\uf179 "                  # Apple icon (needs a Nerd Font)
-Ubuntu = "\uf31b "                 # Ubuntu icon
-Linux = "\uf17c "                  # generic Linux fallback
+Macos = "\uf179 "
+Ubuntu = "\uf31b "
+Linux = "\uf17c "
 
 [fill]
-symbol = "·"                  # dotted line between left and right parts
-style = "dimmed"              # subtle on light and dark (bright-black is too faint on light)
+symbol = "·"
+style = "dimmed"  # bright-black is too faint on light themes
 
 [status]
-disabled = false              # show the last exit status
-success_symbol = "✔"          # shown after a successful command
-symbol = "✘ $status"          # ✘ and exit code after a failed command
-format = "[$symbol]($style) "   # ✔ or ✘ with code, then a space
-success_style = "green"       # ✔ in green
-failure_style = "bold red"    # ✘ and code in red
-style = "bold red"            # fallback style for failures
+disabled = false
+success_symbol = "✔"
+symbol = "✘ $status"
+format = "[$symbol]($style) "
+success_style = "green"
+failure_style = "bold red"
+style = "bold red"
 
 [time]
-disabled = false              # show the clock
-time_format = "%H:%M:%S"      # 24h with seconds
-format = "at [$time]($style)" # plain "at " connector, then the time
-style = "dimmed"              # subtle on light and dark
+disabled = false
+time_format = "%H:%M:%S"
+format = "at [$time]($style)"
+style = "dimmed"
 
 [username]
-show_always = true            # show the user locally too, not only over SSH or as root
-format = "[$user]($style)"    # user in its style; the "@host" and " in " parts come from the format string and PROMPT_HOST
-style_user = "bold purple"    # same purple as the host, readable in light and dark themes
-style_root = "bold red"       # root stands out in red
+show_always = true  # locally too, not only over SSH or as root
+format = "[$user]($style)"
+style_user = "bold purple"
+style_root = "bold red"
 
 [env_var.PROMPT_HOST]
-variable = "PROMPT_HOST"      # exported by zsh/.zshrc over SSH only: HOST_LABEL, else the short hostname
-format = "[@$env_value]($style)" # "@host" right after the user (absent locally)
-style = "bold purple"         # readable in light and dark themes
+variable = "PROMPT_HOST"  # exported by .zshrc over SSH only
+format = "[@$env_value]($style)"
+style = "bold purple"
 
 [directory]
-truncation_length = 3         # show at most 3 path segments
-truncate_to_repo = true       # truncate relative to the git repo root
+truncation_length = 3
+truncate_to_repo = true  # relative to the git repo root
 
 [git_branch]
-symbol = "\ue0a0 "                 # branch icon (needs a Nerd Font)
-format = "on [$symbol$branch]($style) "  # plain "on " connector, icon, branch name, trailing space
+symbol = "\ue0a0 "
+format = "on [$symbol$branch]($style) "
 
 [git_status]
-format = '([$all_status$ahead_behind]($style) )' # compact status like !1?2⇡, no brackets
-untracked = "?${count}"       # ?N untracked files
-modified = "!${count}"        # !N modified files
-staged = "+${count}"          # +N staged files
+format = '([$all_status$ahead_behind]($style) )'
+untracked = "?${count}"
+modified = "!${count}"
+staged = "+${count}"
 
 [cmd_duration]
-min_time = 2000               # only show commands slower than 2s
-format = "[$duration]($style) " # duration text
+min_time = 2000
+format = "[$duration]($style) "
 
 [golang]
-symbol = "\ue627 "                 # Go icon
+symbol = "\ue627 "
 [nodejs]
-symbol = "\ue718 "                 # Node icon
+symbol = "\ue718 "
 [zig]
-symbol = "\ue6a9 "                 # Zig icon
+symbol = "\ue6a9 "
 [python]
-symbol = "\ue73c "                 # Python icon
+symbol = "\ue73c "
