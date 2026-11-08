@@ -1,45 +1,44 @@
-# Global mise config. `mise use -g <tool>@<version>` edits this file through the symlink, so commit the change.
-# Same tools on macOS and Linux, installed per user (no sudo). Upgrade them with `mise upgrade`.
+# `mise use -g` edits this file through the link: commit the change.
 
 [tools]
-node = "lts"    # global default; projects pin their own in mise.toml
-go = "latest"   # global default; projects pin their own in mise.toml
+node = "lts"
+go = "latest"
 
 # --- Editor and terminal ---
-neovim = "latest"         # main editor (Lua config in nvim/)
-tmux = "latest"           # terminal multiplexer; tmux.conf needs 3.5+, newer than apt ships
-starship = "latest"       # fast, customizable shell prompt
+neovim = "latest"
+tmux = "latest"  # tmux.conf needs 3.5+, newer than apt ships
+starship = "latest"
 
 # --- Shell productivity ---
-fzf = "latest"            # fuzzy finder: Ctrl-R history, Ctrl-T files, Alt-C dirs
-zoxide = "latest"         # smarter cd: `z foo` jumps to a frequent directory
-eza = "latest"            # modern ls with colors and git status
-bat = "latest"            # cat with syntax highlighting
-ripgrep = "latest"        # very fast recursive grep (`rg`)
-fd = "latest"             # simple, fast find alternative
-jq = "latest"             # JSON processor for the command line
-yq = "latest"             # jq-like processor for YAML/TOML/XML
-btop = { version = "latest", os = ["linux"] }  # resource monitor (CPU, memory, disks, network); no macOS build, the Brewfile has it
-tealdeer = "latest"       # fast tldr client: short command examples (`tldr tar`)
-hyperfine = "latest"      # command-line benchmarking
+fzf = "latest"
+zoxide = "latest"
+eza = "latest"
+bat = "latest"
+ripgrep = "latest"
+fd = "latest"
+jq = "latest"
+yq = "latest"
+btop = { version = "latest", os = ["linux"] }  # no macOS build; the Brewfile has it
+tealdeer = "latest"
+hyperfine = "latest"
 
 # --- Git and containers ---
-delta = "latest"          # syntax-highlighting pager for git diff/log (git-delta)
-lazygit = "latest"        # terminal UI for git
-lazydocker = "latest"     # terminal UI for Docker
-gh = "latest"             # GitHub CLI
-git-lfs = "latest"        # large file storage for git (referenced in the git config filter)
+delta = "latest"
+lazygit = "latest"
+lazydocker = "latest"
+gh = "latest"
+git-lfs = "latest"  # the git config requires it
 
 # --- Languages and dev tools ---
-zig = "0.17.0"            # Zig compiler
-zls = "0.17.0"            # Zig language server: keep the same version as zig
-shellcheck = "latest"     # linter for shell scripts
-shfmt = "latest"          # formatter for shell scripts
-tree-sitter = "latest"    # CLI that nvim-treesitter (main branch) needs to compile parsers
-golangci-lint = "latest"  # Go linter aggregator
+zig = "0.17.0"
+zls = "0.17.0"  # must match zig
+shellcheck = "latest"
+shfmt = "latest"
+tree-sitter = "latest"  # nvim-treesitter (main) compiles parsers with it
+golangci-lint = "latest"
 
 # --- Markdown ---
-mermaid-ascii = "latest"  # renders Mermaid diagrams as ASCII text (`mermaid-ascii -f diagram.mmd`)
+mermaid-ascii = "latest"
 
 [settings]
-idiomatic_version_file_enable_tools = ["node"]  # also read .nvmrc and .node-version
+idiomatic_version_file_enable_tools = ["node"]  # also .nvmrc, .node-version
