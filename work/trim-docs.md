@@ -9,12 +9,13 @@ Cut docs from ~139 KB to ~55 KB and config comments to the why only. The repo is
 3. Tests, syntax checks, link check.
 
 ## Done
+- Docs rewritten for the owner: 139 KB -> 37 KB; glossary, first-day, vim, tmux-sessionizer removed (sessionizer merged into tmux.md). Link check clean.
 
 ## Where we stopped
-Worktree created.
+Docs committed.
 
 ## Next step
-Docs.
+Config comments, one commit per package.
 
 ## How to test
 `bash tests/run.sh`; `zsh -n zsh/.zshrc`; tmux on a private socket with `-f tmux/.config/tmux/tmux.conf`; nvim headless with temp XDG dirs; relative link check over README and docs/.

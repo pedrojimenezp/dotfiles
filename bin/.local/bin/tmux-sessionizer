@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Pick a project folder or feature worktree with fzf and open (or switch to) a tmux session for it.
-# Usage: tmux-sessionizer [dir]   (without an argument, pick from the roots; see docs/tmux-sessionizer.md)
+# Usage: tmux-sessionizer [dir]   (without an argument, pick from the roots; see docs/tmux.md)
 #        tmux-sessionizer --list  (print "label<TAB>path" for each candidate and exit)
 # Folder convention: <repo>/worktrees/<branch> or <parent>/worktrees/<feature>/<project>;
 # any <x>/worktrees/<feature> is a feature session. No git calls.

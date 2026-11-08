@@ -1,225 +1,63 @@
 # zsh
 
-The [shell](glossary.md#shell) config: `zsh/.zshrc`, linked to `~/.zshrc`. It is plain zsh with no framework, so the shell starts fast. Every line in the file has a comment.
+Config: `zsh/.zshrc`, plain zsh with no framework. Aliases, keys and functions: `dotfiles-help` (from the `.zshrc` comments) or `alias`. Aliases for a missing tool aren't defined; `command vim` / `command cat` reach the real ones.
 
-You'll use it for: aliases, fuzzy history and Tab completion, jumping between folders, and a bell when a long command ends.
+## Per-machine settings
 
-- [Quick start](#quick-start)
-- [What it sets up](#what-it-sets-up)
-- [Aliases](#aliases)
-- [Key bindings](#key-bindings)
-- [Tab completion with fzf-tab](#tab-completion-with-fzf-tab)
-- [Completions for mise tools](#completions-for-mise-tools)
-- [History search](#history-search)
-- [Jump to folders with zoxide](#jump-to-folders-with-zoxide)
-- [Bell after long commands](#bell-after-long-commands)
-- [Remote tmux: `tssh`](#remote-tmux-tssh)
-- [Per-machine settings](#per-machine-settings-zshrclocal)
-- [Troubleshooting](#troubleshooting)
-- [How it works](#how-it-works)
+`~/.zshrc.local` loads near the end, untracked and globally git-ignored: secrets, machine paths and aliases, `TZ` and `HOST_LABEL` on a server. `~/.zshenv` loads before `.zshrc`, for things needed early (`PATH`, `HISTFILE`). `~/.config/claude-shared/claude.sh` loads only if present.
 
-## Quick start
-
-Open a new terminal, then try:
-
-- `Ctrl+r` or `Up`: search your whole command history.
-- `Tab`: pick a completion from a fuzzy list.
-- `Right`: accept the grey suggestion shown while you type.
-- `z dotfiles`: jump to a folder you visited before.
-- `Ctrl+t`: pick a file and paste its path.
-- `dotfiles-help`: list every alias and key (`prefix ?` inside tmux).
-
-## What it sets up
-
-- **Homebrew** (macOS): finds `brew` and adds it to `PATH`. Skipped where brew is absent.
-- **PATH**: `~/.local/bin` first (the scripts of `bin/`, and the mise binary on Linux), then `~/go/bin`. mise is activated right after, so its tools come before any Homebrew copy.
-- **Editor**: `EDITOR` and `VISUAL` are `nvim` if installed, else `vim`. `PAGER` is `less`.
-- **History**: 100000 entries in `~/.zsh_history`, shared between open shells, no duplicates. A command that starts with a space is not saved, which helps with secrets. History is locked with `fcntl` (`HIST_FCNTL_LOCK`), so a new shell never waits on a stale `.zsh_history.LOCK` file.
-- **Options**:
-  - `AUTO_CD`: type a folder name on its own, such as `projects`, and the shell enters it. No `cd` needed.
-  - Comments are allowed at the prompt.
-  - No terminal beep: the shell stays silent on errors like a failed completion. The long-command bell below is separate and on purpose.
-  - Emacs key style: `Ctrl+a` goes to the start of the line, `Ctrl+e` to the end, `Ctrl+w` deletes a word. This is the zsh default. The other style is vi mode.
-- **Completion**: case-insensitive matching, colored like `ls`, grouped with headers. With fzf-tab installed, Tab opens an fzf list.
-- **Tools**: [fzf](glossary.md#fzf), [zoxide](glossary.md#zoxide), [mise](glossary.md#mise) and [starship](glossary.md#starship) start only when installed. A missing tool never gives an error.
-- **Plugins** (git clones in `~/.local/share/zsh-plugins`, made by `install.sh`): fzf-tab, autosuggestions, syntax highlighting and extra completions.
-- **OS parts**: **macOS:** `o` is `open`, `ls -G`, and the Ghostty command is added to `PATH`. **Linux:** `o` is `xdg-open` and `ls --color=auto`.
-
-## Aliases
-
-Some aliases exist only if the tool is installed. `dotfiles-help` lists every alias, key and shell function with its description, see [Find any key](first-day.md#find-any-key). Keys of tools that bind their own (fzf, fzf-tab, zoxide, autosuggestions) are in [cheatsheet.tsv](cheatsheet.tsv).
-
-| Alias | Runs | Notes |
-| --- | --- | --- |
-| `vim`, `vi` | `nvim` | Only where Neovim exists. Use `command vim` for the real Vim. |
-| `ls` | `eza --icons --group-directories-first` | Needs eza. Without it, plain `ls` with colors. |
-| `ll` | `eza -l ... --git` | Long list with git status. Without eza: `ls -lh`. |
-| `la` | `eza -la ... --git` | Also hidden files. Without eza: `ls -lah`. |
-| `lt` | `eza --tree --level=2` | Tree, two levels. Needs eza. |
-| `cat` | `bat --paging=never` | Highlighted output. Needs bat. Use `command cat` for the real one. |
-| `lg` | `lazygit` | Git UI. (Git has its own alias `git lg`, see [git.md](git.md).) |
-| `lzd` | `lazydocker` | Docker UI. |
-| `dcu` | `docker compose up` | Needs docker. |
-| `dcd` | `docker compose down` | Needs docker. |
-| `..` | `cd ..` | Go up one folder. |
-| `gs` | `git status -sb` | Short status. |
-| `gd` | `git diff` | Unstaged changes. |
-| `gl` | `git log --oneline --graph -20` | Last 20 commits as a graph. |
-| `gp` | `git pull` | Rebases, because of the git config. |
-| `o` | `open` (macOS) / `xdg-open` (Linux) | Open a file or URL with the default app. |
-| `tt` | `theme toggle` | Light/dark switch, see [theme.md](theme.md). |
-
-Run `alias` to list what is active on this machine.
-
-## Key bindings
-
-| Keys | What it does | Source |
-| --- | --- | --- |
-| `Up` | Commands that start with what you typed, going back | This config |
-| `Down` | Commands that start with what you typed, going forward | This config |
-| `Ctrl+r` | Fuzzy search the whole history | fzf |
-| `Ctrl+t` | Fuzzy pick files and paste the path | fzf |
-| `Alt+c` | Fuzzy pick a folder and `cd` into it | fzf |
-| `Tab` | Fuzzy completion list (`Enter` accepts, `,` / `.` switch group) | fzf-tab |
-| `**` then `Tab` | Fuzzy completion, for example `vim **<Tab>` | fzf |
-| `Ctrl+x Ctrl+e` | Edit the current command line in `$VISUAL` (nvim if installed) | This config |
-| `Ctrl+l` | Clear the screen **and** the [scrollback](glossary.md#scrollback) | This config |
-| `Right` | Accept the grey suggestion (`End` also works) | zsh-autosuggestions |
-| `Ctrl+a` / `Ctrl+e` | Start / end of line | Default (emacs style) |
-| `Ctrl+w` / `Ctrl+u` | Delete the last word / the whole line before the cursor | Default (emacs style) |
-
-Notes:
-
-- **macOS:** `Alt` is the `Option` key. Ghostty and the iTerm profile make `Option` work as `Alt`, see [terminals.md](terminals.md).
-- Inside tmux, `Ctrl+l` moves to the [pane](glossary.md#pane) on the right, unless the pane runs vim, nvim or fzf. To clear a tmux pane, press the [prefix](glossary.md#prefix) (`Ctrl+Space`), then `Ctrl+l`, or press `Cmd+K` in Ghostty or iTerm. See [tmux.md](tmux.md).
-- To change a binding, edit the `bindkey` lines in `zsh/.zshrc`, then run `exec zsh`.
-
-## Tab completion with fzf-tab
-
-[fzf-tab](https://github.com/Aloxaf/fzf-tab) replaces the completion menu with an fzf list. Without it, Tab still works as a plain list.
-
-- `cd <Tab>` previews the folder with `eza` (only if eza is installed).
-- Group headers like `[file]` are on. Press `,` or `.` to jump between groups.
-- Matching stays case-insensitive.
-
-To open the list as a tmux [popup](glossary.md#popup) (needs tmux 3.2+), add this line to `~/.zshrc.local`. It is off by default.
+Optional settings:
 
 ```sh
-zstyle ':fzf-tab:*' fzf-command ftb-tmux-popup
+export LONG_CMD_BELL_SECONDS=10                      # default 30
+export LONG_CMD_BELL_IGNORE="nvim vim less man ssh"  # replaces the default list
+zstyle ':fzf-tab:*' fzf-command ftb-tmux-popup       # fzf-tab list as a tmux popup
 ```
 
 ## Completions for mise tools
 
-Tools installed by mise bring no zsh completions. For the ones you want, load the tool's own completion script in `~/.zshrc.local`, which runs after `compinit`:
+mise tools bring no zsh completions. Load the ones you use in `~/.zshrc.local` (it runs after `compinit`); each costs one tool run per shell start:
 
 ```sh
-# ~/.zshrc.local
-(( $+commands[gh] )) && source <(gh completion -s zsh)   # Tab completion for gh
-```
-
-Open a new shell, then try `gh <Tab>`. Each line runs the tool once per shell start, so add only the ones you use.
-
-## History search
-
-zsh keeps one shared history in `~/.zsh_history` (all shells and tabs).
-
-- `Up` / `Down`: type the first letters of a command, then press `Up` to go back through earlier commands that start with them. `Down` goes forward.
-- `Ctrl+r`: fuzzy search the whole history with [fzf](glossary.md#fzf). `Enter` pastes the command on the prompt.
-
-## Jump to folders with zoxide
-
-zoxide learns the folders you use. After a few visits:
-
-```sh
-z dotfiles               # jump to the most used folder that matches "dotfiles"
-z proj api               # several words: all must match
-zi                       # pick from the list with fzf
-z dotfiles<Space><Tab>   # type "z", a word, Space, then Tab: pick a match with fzf
+(( $+commands[gh] )) && source <(gh completion -s zsh)
 ```
 
 ## Bell after long commands
 
-When a command takes 30 seconds or more, the prompt rings the terminal bell. tmux then marks the window with a bell icon, so you can switch away while a build or test runs.
+A command of 30 s or more rings the bell, so tmux marks the window. Interactive programs (editors, pagers, `ssh`, `tmux`, `claude`, `top`) never ring. The program name is the first word after `VAR=value` prefixes and wrappers (`sudo`, `env`, `time`, `nohup`, ...) and their options. It rings only when stdout is a terminal.
 
-Commands that are long by nature never ring: editors, pagers, `ssh`, `tmux`, `claude`, `top` and similar. Change either setting in `~/.zshrc.local`:
+## `tssh`
 
-```sh
-export LONG_CMD_BELL_SECONDS=10
-export LONG_CMD_BELL_IGNORE="nvim vim less man ssh"
-```
+`tssh <ssh args>` runs `ssh -t` and attaches to (or creates) the tmux session `main` on the server. tmux is the connection's only command, so detaching ends the connection. See [server.md](server.md#3-daily-use).
 
-The default ignore list is `nvim vim vi less man lazygit lg lzd tmux ssh tssh claude top btop htop fzf`. Open a new shell to apply the change.
+## `Ctrl+l`
 
-## Remote tmux: `tssh`
+Outside tmux it clears the screen and the scrollback. Inside tmux it moves to the right pane (vim-tmux-navigator); use `prefix Ctrl+l` or `Cmd+K` to clear.
 
-```sh
-tssh my-server          # any ssh arguments work: host alias, user@host, -i key, -p port
-```
+## Load order
 
-It runs `ssh -t` and starts (or attaches to) the tmux session named `main` on the server. Tab completion works like `ssh`. Rules and setup are in [server.md](server.md#5-daily-use).
+The order in `.zshrc` matters:
 
-tmux is the only command of the connection, so detaching (`prefix d`) or quitting tmux also ends the SSH connection. For a shell on the server without tmux, for example to run `tmux kill-server`, use plain `ssh my-server`.
+1. Homebrew, `PATH` (`~/.local/bin` first), mise, options, key bindings. mise comes early so its tools beat Homebrew copies.
+2. Extra completions on `fpath`, `compinit`, then fzf, zoxide, starship.
+3. fzf-tab (after `compinit` and fzf), then autosuggestions: both wrap widgets.
+4. `claude.sh`, then `~/.zshrc.local`.
+5. Syntax highlighting, last: it must see every widget.
 
-## Per-machine settings: `~/.zshrc.local`
+## Caches
 
-`.zshrc` reads `~/.zshrc.local` if it exists. That file is **not** in the repo, and the global git ignore also skips it. Put here:
+- **Tool init.** `fzf --zsh`, `zoxide init zsh` and `starship init zsh` are cached in `~/.cache/zsh` (about 30 ms each otherwise). Each file's first line records the tool's resolved path (with its mise version), so it refreshes on an upgrade, a newer binary or a changed `.zshrc`. `mise activate` isn't cached: its PATH snapshot would overwrite earlier entries.
+- **compinit.** `compinit -C` skips the security scan while the dump is under 24 h old, then a full scan runs once. If `compaudit` lists only paths owned by you or root, it runs `compinit -u` without prompting.
+- **History** uses `HIST_FCNTL_LOCK`, so a new shell never waits on a stale `.zsh_history.LOCK`. A command starting with a space isn't saved.
 
-- secrets and API keys (`export TOKEN=...`)
-- machine paths (`export PATH="$HOME/tools/bin:$PATH"`)
-- aliases only for this machine
-- the time zone on a server (`export TZ=America/Bogota`), see [server.md](server.md#set-the-time-zone)
+## Theme at start
 
-```sh
-# ~/.zshrc.local
-export WORK_API_URL="https://example.invalid"
-alias kprod='kubectl --context prod'
-```
-
-Open a new shell or run `exec zsh` to load it.
-
-Two more optional files:
-
-- `~/.config/claude-shared/claude.sh` is read only if it exists (private Claude Code helpers). See [install.md](install.md).
-- `~/.zshenv` is read before `.zshrc`. Use it for settings that must exist early, such as `PATH` entries or a `HISTFILE` override.
+In a new local, non-tmux shell with a saved `dark` or `light`, `.zshrc` runs `theme apply`. Over SSH or in tmux it does nothing, so a server never changes local colors. `BAT_THEME=ansi` follows any terminal theme.
 
 ## Troubleshooting
 
-- **No icons in `ls`**: the terminal font is not a [Nerd Font](glossary.md#nerd-font), see [terminals.md](terminals.md).
-- **Command not found for a tool**: open a new shell, then run `mise ls` to see if it is installed and `mise install` if not.
-- **No autosuggestions or highlighting**: check that `~/.local/share/zsh-plugins/<name>` exists; `./install.sh` clones it.
-- **A tool's init looks stale** (after a tool was added, removed or moved): run `rm -rf ~/.cache/zsh && exec zsh`.
-- **Slow start**: run `time zsh -i -c exit`.
-
-## How it works
-
-**Load order.** `.zshrc` runs top to bottom, and the order matters:
-
-1. Homebrew, `PATH`, mise, options and your key bindings.
-2. The extra completions on `fpath`, `compinit` (the completion system), then fzf, zoxide and starship.
-3. fzf-tab, after `compinit` and fzf, then autosuggestions. Both wrap widgets, so they come after the tools.
-4. `claude.sh`, then `~/.zshrc.local`.
-5. Syntax highlighting, last. It must load after everything that defines widgets.
-
-**Tool init cache.** Starting each tool on every shell would cost about 30 ms each. `.zshrc` saves the output of `fzf --zsh`, `zoxide init zsh` and `starship init zsh` in `~/.cache/zsh`. The first line of each file records the tool's resolved path, which includes its mise version folder. A file refreshes when that path changes (an upgrade), the tool's binary is newer than the file, or `.zshrc` changes. `mise activate zsh` is not cached: its output holds a PATH snapshot that would overwrite entries added earlier in startup.
-
-**Completion cache.** `compinit -C` skips the security scan while the dump file is under 24 hours old. When it is older, a full `compinit` runs and the shell touches the dump, so the full scan happens once a day. If `compaudit` lists only paths owned by you or root, the scan runs `compinit -u` and does not prompt; a path owned by someone else still prompts (see [install.md](install.md#troubleshooting)). The config sets `menu no`, which fzf-tab requires.
-
-**Bell hooks.** Two zsh hooks drive the bell. `preexec` records the start time and the program name. `precmd` runs before the next prompt: it rings `\a` if the command took `LONG_CMD_BELL_SECONDS` or more, stdout is a terminal and the program is not in `LONG_CMD_BELL_IGNORE`.
-
-The program name is the first word of the line, after skipping:
-
-- leading `VAR=value` assignments,
-- the wrappers `sudo`, `command`, `env`, `nocorrect`, `noglob`, `time` and `nohup`,
-- the options of those wrappers, such as `-E` or `-u USER`.
-
-**Theme at start.** In a new local terminal, if you saved `dark` or `light`, `.zshrc` runs `theme apply`. It does nothing over SSH or inside tmux, so a server never changes your local colors. `bat` uses `BAT_THEME=ansi`, so it follows any terminal theme.
-
-**Help list.** `dotfiles-help` reads `.zshrc` comments; a line without one is left out. The comment format is in [contributing.md](contributing.md#add-a-zsh-alias-key-or-function).
-
-## Related
-
-- [tmux.md](tmux.md): the bell icon, panes and the help popup.
-- [terminals.md](terminals.md): fonts and the `Option` key.
-- [tools.md](tools.md): the tools this config starts.
-- [git.md](git.md): the git aliases.
-- [server.md](server.md): `tssh` and working on a remote server.
+- **A tool's init looks stale** (after adding, removing or moving a tool): `rm -rf ~/.cache/zsh && exec zsh`.
+- **Command not found:** `mise ls`, then `mise install`.
+- **No autosuggestions or highlighting:** check `~/.local/share/zsh-plugins/<name>`; `./install.sh` clones it.
+- **Slow start:** `time zsh -i -c exit`.
+- **`compinit: insecure directories`:** see [install.md](install.md#troubleshooting).
