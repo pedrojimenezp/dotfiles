@@ -9,7 +9,7 @@ HOME_REAL="$(cd "$HOME" && pwd -P)"                  # physical path of $HOME
 DRY=0                                                # 1 = print actions, change nothing
 ASSUME_YES=0                                         # 1 = skip the confirmation prompt
 WITH_CLAUDE=0                                        # 1 = also undo and remove the Claude config clone
-CLAUDE_DIR="${CLAUDE_SHARED_DIR:-$HOME/.config/claude-shared}" # same default as install.sh
+CLAUDE_DIR="$HOME/.config/claude-shared"            # same path as install.sh
 CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}"           # XDG base dirs, as the tools read them
 DATA="${XDG_DATA_HOME:-$HOME/.local/share}"
 STATE="${XDG_STATE_HOME:-$HOME/.local/state}"
@@ -76,10 +76,10 @@ link_points_into() {
   [[ "$target" == "$2"/* ]]
 }
 
-# Print the newest "<path>.<kind>-*" backup (kind: backup or bak), or nothing. Names sort by timestamp.
+# Print the newest "<path>.backup-*" backup, or nothing. Names sort by timestamp.
 newest_backup() {
-  local path="$1" kind="$2" b newest=""
-  for b in "$path.$kind-"*; do
+  local path="$1" b newest=""
+  for b in "$path.backup-"*; do
     if [[ -e "$b" || -L "$b" ]]; then newest="$b"; fi # an unmatched glob stays literal and fails the test
   done
   [[ -z "$newest" ]] || echo "$newest"
@@ -108,8 +108,8 @@ path_is_free() {
 
 # Move the newest backup of $1 back when the path is free. Older backups are listed at the end.
 restore_backup() {
-  local path="$1" kind="${2:-backup}" newest b
-  newest="$(newest_backup "$path" "$kind")"
+  local path="$1" newest b
+  newest="$(newest_backup "$path")"
   [[ -n "$newest" ]] || return 0
   if ! path_is_free "$path"; then
     SKIPPED+=("$newest (kept: $path exists)")
@@ -117,7 +117,7 @@ restore_backup() {
   fi
   run mv "$newest" "$path"
   RESTORED+=("$newest -> $path")
-  for b in "$path.$kind-"*; do
+  for b in "$path.backup-"*; do
     if [[ "$b" != "$newest" && ( -e "$b" || -L "$b" ) ]]; then LEFT_BACKUPS+=("$b"); fi
   done
 }
@@ -131,57 +131,6 @@ prune_up() {
     path_ok "$d" || return 0
     rmdir "$d" 2>/dev/null || return 0 # not empty or already gone
     d="$(dirname "$d")"
-  done
-}
-
-# Print the Claude config folders: every ~/.claude-<name>.
-claude_account_dirs() {
-  local d
-  for d in "$HOME"/.claude-*; do
-    [[ -d "$d" && ! -L "$d" ]] && echo "$d"
-  done
-}
-
-# Remove the links the Claude installer made in the Claude account folders, restoring its .bak-* files.
-undo_claude_links() {
-  local root file n=0 dest claude_real
-  local -a found=() roots=()
-  claude_real="$(cd "$CLAUDE_DIR" && pwd -P)"
-  while IFS= read -r root; do roots+=("$root"); done < <(claude_account_dirs)
-  for root in ${roots[@]+"${roots[@]}"}; do
-    [[ -d "$root" ]] || continue
-    while IFS= read -r -d '' file; do
-      if link_points_into "$file" "$claude_real"; then found+=("$file"); fi
-    done < <(find "$root" -maxdepth 4 -type l -print0)
-  done
-  if [[ ${#found[@]} -gt 0 ]]; then
-    for dest in "${found[@]}"; do
-      run rm -f "$dest"
-      REMOVED+=("$dest")
-      restore_backup "$dest" bak
-      prune_up "$(dirname "$dest")"
-      n=$((n + 1))
-    done
-  fi
-  echo "Claude links removed: $n"
-}
-
-# Delete the lines the Claude installer appended to a shell rc file: the claude.sh line, an old claude.zsh
-# line and the "# Claude Code accounts" comment. A symlinked rc file belongs to a repo and is left alone.
-undo_claude_shell_line() {
-  local rc tmp
-  for rc in "$HOME/.zshrc.local" "$HOME/.zshrc" "$HOME/.bashrc"; do
-    [[ -f "$rc" && ! -L "$rc" ]] || continue
-    grep -qE 'claude-shared/(zsh/claude\.zsh|claude\.sh)' "$rc" || continue
-    tmp="$rc.uninstall.$$"
-    if [[ $DRY -eq 1 ]]; then
-      echo "[dry-run] remove the claude.sh lines from $rc"
-    else
-      grep -vE -e 'claude-shared/(zsh/claude\.zsh|claude\.sh)' -e '^# Claude Code accounts$' "$rc" >"$tmp" || true # exit 1 = nothing left
-      cat "$tmp" >"$rc" # keeps the file's owner and mode
-      rm -f "$tmp"
-    fi
-    REMOVED+=("claude.sh lines in $rc")
   done
 }
 
@@ -228,17 +177,20 @@ main() {
   step "Restoring backups"
   while IFS= read -r rel; do
     link_points_into "$HOME/$rel" "$REPO_REAL" && REMOVED+=("$HOME/$rel") # a dry run still sees the link
-    restore_backup "$HOME/$rel" backup
+    restore_backup "$HOME/$rel"
     prune_up "$(dirname "$HOME/$rel")"
   done < <(package_files)
-  restore_backup "$HOME/.gitconfig" backup
+  restore_backup "$HOME/.gitconfig"
   finish "Restored ${#RESTORED[@]} files"
 
   if [[ $WITH_CLAUDE -eq 1 ]]; then
     step "Undoing the Claude config in $CLAUDE_DIR"
     if [[ -d "$CLAUDE_DIR" ]]; then
-      undo_claude_links
-      undo_claude_shell_line
+      if [[ $DRY -eq 1 ]]; then
+        echo "[dry-run] $CLAUDE_DIR/install.sh --uninstall"
+      elif [[ -x "$CLAUDE_DIR/install.sh" ]]; then
+        "$CLAUDE_DIR/install.sh" --uninstall
+      fi
       SKIPPED+=("settings.json in each ~/.claude-<name> folder (copies that Claude Code also writes; delete them yourself if you want)")
       if reason="$(clone_unsafe_reason "$CLAUDE_DIR")"; then
         SKIPPED+=("$CLAUDE_DIR (kept: $reason)")

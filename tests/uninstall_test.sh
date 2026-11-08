@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2016
 # Tests uninstall.sh against a temp HOME that holds a clone of this repo. Run: bash tests/uninstall_test.sh
 # Needs git and stow.
 set -euo pipefail
@@ -102,53 +103,31 @@ make_machine "$B"
 run_un "$B" --yes >"$ROOT/yes.out" 2>&1 || { cat "$ROOT/yes.out"; bad "exit 0"; }
 assert_uninstalled "$B"
 
-echo "== --with-claude undoes the Claude links and removes a clean clone"
+echo "== --with-claude runs the Claude installer's --uninstall and removes a clean clone"
 B="$ROOT/claude"
 make_machine "$B"
 h="$B/home"
 c="$h/.config/claude-shared"
-make_clone "$B/claude-origin.git" "$c"
-mkdir -p "$c/skills/foo" "$c/accounts/niche/agents" "$c/accounts/personal/rules" \
-  "$h/.claude-niche/skills" "$h/.claude-personal"
-git -C "$c" add -A
-git -C "$c" commit -q --allow-empty -m skills
-git -C "$c" push -q origin HEAD:main
-ln -s "$c/skills/foo" "$h/.claude-niche/skills/foo"
-ln -s "$c/accounts/niche/agents" "$h/.claude-niche/agents"
-ln -s "$c/accounts/personal/rules" "$h/.claude-personal/rules"
-echo bak >"$h/.claude-personal/CLAUDE.md.bak-20260101000000"
-ln -s "$c/CLAUDE.md" "$h/.claude-personal/CLAUDE.md"
-echo '{}' >"$h/.claude-personal/settings.json"
-echo '{}' >"$h/.claude-niche/settings.json"
-ln -s "$h/real.txt" "$h/.claude-niche/keep-link"                    # a link elsewhere stays
-echo real >"$h/real.txt"
-printf 'export A=1\n\n# Claude Code accounts\nsource "%s/.config/claude-shared/claude.sh"\n' "$h" >"$h/.zshrc.local"
-printf 'export B=1\nsource "%s/.config/claude-shared/zsh/claude.zsh"\n' "$h" >"$h/.bashrc"
+stub="$ROOT/claude-stub"
+mkdir -p "$stub"
+printf '#!/bin/bash\necho "$*" >> "$HOME/claude-calls"\n' >"$stub/install.sh"
+chmod +x "$stub/install.sh"
+git -C "$stub" init -q -b main
+git -C "$stub" add install.sh
+git -C "$stub" commit -q -m init
+git init -q -b main --bare "$B/claude-origin.git"
+git -C "$stub" push -q "$B/claude-origin.git" main
+git clone -q "$B/claude-origin.git" "$c"
 run_un "$B" --yes >"$ROOT/claude0.out" 2>&1 || { cat "$ROOT/claude0.out"; bad "exit 0"; }
 check "without --with-claude the clone is kept" test -d "$c"
-check "without --with-claude its links are kept" is_link "$h/.claude-niche/skills/foo"
+check "without --with-claude its installer is not called" gone "$h/claude-calls"
+run_un "$B" --dry-run --with-claude >"$ROOT/claude3.out" 2>&1 || { cat "$ROOT/claude3.out"; bad "exit 0"; }
+check "dry run prints the call and keeps the clone" bash -c 'grep -q "\[dry-run\].*install.sh --uninstall" "$1" && [[ -d "$2" ]]' _ "$ROOT/claude3.out" "$c"
+check "dry run does not call it" gone "$h/claude-calls"
 (cd "$h/dotfiles" && env HOME="$h" /bin/bash ./uninstall.sh --yes --with-claude >"$ROOT/claude1.out" 2>&1) || { cat "$ROOT/claude1.out"; bad "exit 0"; }
-check "~/.claude-niche skill link removed" gone "$h/.claude-niche/skills/foo"
-check "agents link removed" gone "$h/.claude-niche/agents"
-check "rules link removed" gone "$h/.claude-personal/rules"
-check "Claude backup restored" has_text "$h/.claude-personal/CLAUDE.md" bak
-check "link to somewhere else kept" is_link "$h/.claude-niche/keep-link"
-check "settings.json copies kept" test -f "$h/.claude-niche/settings.json" -a -f "$h/.claude-personal/settings.json"
+check "its installer ran once with --uninstall" has_text "$h/claude-calls" "--uninstall"
 check "settings.json copies reported" grep -q "settings.json in each" "$ROOT/claude1.out"
-check "claude.sh line removed, other lines kept" has_text "$h/.zshrc.local" "export A=1"
-check "claude.zsh line removed from ~/.bashrc" has_text "$h/.bashrc" "export B=1"
 check "Claude clone removed" gone "$c"
-
-echo "== a symlinked ~/.zshrc is not edited"
-B="$ROOT/claudelink"
-make_machine "$B"
-h="$B/home"
-make_clone "$B/claude-origin.git" "$h/.config/claude-shared"
-printf 'source "%s/.config/claude-shared/claude.sh"\n' "$h" >"$h/dotfiles/zsh/.zshrc.extra"
-rm -f "$h/.zshrc"
-ln -s "$h/dotfiles/zsh/.zshrc.extra" "$h/.zshrc"
-(cd "$h/dotfiles" && env HOME="$h" /bin/bash ./uninstall.sh --yes --with-claude >"$ROOT/claude2.out" 2>&1) || { cat "$ROOT/claude2.out"; bad "exit 0"; }
-check "file behind the symlink keeps its line" grep -q "claude.sh" "$h/dotfiles/zsh/.zshrc.extra"
 
 echo
 echo "passed: $PASS, failed: $FAIL"
