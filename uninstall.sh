@@ -1,18 +1,15 @@
 #!/usr/bin/env bash
-# Undo install.sh: remove the links, restore the backups it made, delete the data it generated.
-# Works on macOS (bash 3.2), Linux desktops and Linux servers. Never uses sudo and never touches tmux.
-# Usage: ./uninstall.sh [--dry-run] [--yes] [--with-claude] [--keep-repo]
-set -euo pipefail # stop on errors, unset variables and failed pipes
+# Undo install.sh: unlink the packages with stow, then put back the newest backup of each file it moved aside.
+# Never uses sudo and never touches tmux, generated data, Homebrew or this clone.
+# Usage: ./uninstall.sh [--dry-run] [--yes] [--with-claude]
+set -euo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" # absolute path of this repo
-REPO_REAL="$(cd "$REPO" && pwd -P)"                  # physical path (no symlinks)
 HOME_REAL="$(cd "$HOME" && pwd -P)"                  # physical path of $HOME
 DRY=0                                                # 1 = print actions, change nothing
 ASSUME_YES=0                                         # 1 = skip the confirmation prompt
 WITH_CLAUDE=0                                        # 1 = also undo and remove the Claude config clone
-KEEP_REPO=0                                          # 1 = keep this clone
 CLAUDE_DIR="${CLAUDE_SHARED_DIR:-$HOME/.config/claude-shared}" # same default as install.sh
-NERD_FONT="Monaspace"                                # same value as install.sh
 CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}"           # XDG base dirs, as the tools read them
 DATA="${XDG_DATA_HOME:-$HOME/.local/share}"
 STATE="${XDG_STATE_HOME:-$HOME/.local/state}"
@@ -26,12 +23,8 @@ REMOVED=()
 RESTORED=()
 SKIPPED=()
 LEFT_BACKUPS=()
-LINKS=()      # links into this repo found by the scan
-LINK_SET=$'\n' # same paths, newline separated, for duplicate checks
-PKG_RELS=()   # path under $HOME of every file a package would link, read before the clone is deleted
-SWEPT=0       # broken links removed by the final sweep
 
-usage() { echo "Usage: $0 [--dry-run] [--yes] [--with-claude] [--keep-repo]"; } # one place for the usage text
+usage() { echo "Usage: $0 [--dry-run] [--yes] [--with-claude]"; } # one place for the usage text
 
 # Run a command, or only print it in dry-run mode.
 run() {
@@ -90,128 +83,6 @@ newest_backup() {
     if [[ -e "$b" || -L "$b" ]]; then newest="$b"; fi # an unmatched glob stays literal and fails the test
   done
   [[ -z "$newest" ]] || echo "$newest"
-}
-
-# Add $1 to LINKS once.
-add_link() {
-  case "$LINK_SET" in *$'\n'"$1"$'\n'*) return 0 ;; esac
-  LINKS+=("$1")
-  LINK_SET="$LINK_SET$1"$'\n'
-}
-
-# Find every link into this repo: the file each package would link, plus stray links in the usual folders.
-scan_links() {
-  local pkg file rel root
-  for pkg in "${PACKAGES[@]}"; do
-    [[ -d "$REPO/$pkg" ]] || continue
-    while IFS= read -r -d '' file; do
-      rel="${file#"$REPO/$pkg/"}"
-      PKG_RELS+=("$rel")
-      if link_points_into "$HOME/$rel" "$REPO_REAL"; then add_link "$HOME/$rel"; fi
-    done < <(find "$REPO/$pkg" -type f -print0)
-  done
-  # leftovers from an older layout, and links a newer package list no longer names
-  while IFS= read -r -d '' file; do
-    if link_points_into "$file" "$REPO_REAL"; then add_link "$file"; fi
-  done < <(find "$HOME" -maxdepth 1 -type l -print0)
-  for root in "$CONFIG" "$HOME/.local/bin"; do
-    [[ -d "$root" ]] || continue
-    while IFS= read -r -d '' file; do
-      if link_points_into "$file" "$REPO_REAL"; then add_link "$file"; fi
-    done < <(find "$root" -maxdepth 4 \( -path "$CLAUDE_DIR" -o -path "$CONFIG/tmux/plugins" \) -prune -o -type l -print0)
-  done
-}
-
-# Print the absolute path the symlink $1 points at, from its text alone: "." and ".." parts are folded and
-# nothing is read from disk, so it works when the target is gone. A relative target is read from the link's folder.
-raw_link_target() {
-  local l="$1" t dir rest part out=""
-  t="$(readlink "$l")" || return 1
-  case "$t" in
-    /*) ;;
-    *) dir="$(cd "$(dirname "$l")" 2>/dev/null && pwd -P)" || dir="$(dirname "$l")"; t="$dir/$t" ;;
-  esac
-  rest="$t"
-  while [[ -n "$rest" ]]; do
-    part="${rest%%/*}"
-    if [[ "$rest" == */* ]]; then rest="${rest#*/}"; else rest=""; fi
-    case "$part" in
-      "" | .) ;;
-      ..) out="${out%/*}" ;;
-      *) out="$out/$part" ;;
-    esac
-  done
-  echo "${out:-/}"
-}
-
-# Remove the symlink $1 if it is broken and its target text is inside $REPO or $REPO_REAL.
-sweep_link() {
-  local target
-  [[ -L "$1" && ! -e "$1" ]] || return 0
-  target="$(raw_link_target "$1")" || return 0
-  case "$target" in
-    "$REPO"/* | "$REPO_REAL"/*) ;;
-    *) return 0 ;;
-  esac
-  rm -f "$1"
-  REMOVED+=("$1")
-  SWEPT=$((SWEPT + 1))
-  prune_up "$(dirname "$1")"
-}
-
-# After the clone is deleted, remove the links into it that are now broken: the places scan_links reads,
-# plus every path a package linked. Never touches a link that works, one pointing elsewhere, or a real file.
-sweep_broken_links() {
-  local rel root file
-  if [[ ${#PKG_RELS[@]} -gt 0 ]]; then
-    for rel in "${PKG_RELS[@]}"; do sweep_link "$HOME/$rel"; done
-  fi
-  while IFS= read -r -d '' file; do sweep_link "$file"; done < <(find "$HOME" -maxdepth 1 -type l -print0)
-  for root in "$CONFIG" "$HOME/.local/bin"; do
-    [[ -d "$root" ]] || continue
-    while IFS= read -r -d '' file; do
-      sweep_link "$file"
-    done < <(find "$root" -maxdepth 4 \( -path "$CLAUDE_DIR" -o -path "$CONFIG/tmux/plugins" \) -prune -o -type l -print0)
-  done
-}
-
-# Generated data and caches, one path per line. Paths that do not exist are skipped by the caller.
-data_paths() {
-  cat <<EOF
-$DATA/zsh-plugins
-$CACHE/zsh
-$CONFIG/tmux/plugins
-$DATA/nvim
-$STATE/nvim
-$CACHE/nvim
-$DATA/mise
-$STATE/mise
-$CACHE/mise
-$DATA/zoxide
-$STATE/lazygit
-$CACHE/starship
-$CONFIG/git/local
-$DATA/theme
-$STATE/theme
-$CACHE/theme
-$STATE/dotfiles
-$HOME/.vim/undo
-$CONFIG/ghostty/theme.conf
-$CONFIG/ghostty/theme.conf.tmp
-$CONFIG/ghostty/themes
-$HOME/Library/Application Support/iTerm2/DynamicProfiles/dotfiles.plist
-$DATA/fonts/${NERD_FONT}NerdFont
-EOF
-  local f
-  for f in "$HOME"/.zcompdump*; do echo "$f"; done # zsh's completion cache; an unmatched glob is skipped later
-}
-
-# Print the data paths that exist now.
-existing_data() {
-  local p
-  while IFS= read -r p; do
-    if [[ -e "$p" || -L "$p" ]]; then echo "$p"; fi
-  done < <(data_paths)
 }
 
 # Is the folder $1 safe to delete? Prints the reason and fails when it is not.
@@ -314,92 +185,23 @@ undo_claude_shell_line() {
   done
 }
 
-# Print the brew commands that remove what the Brewfile installed. Brewfile is the single list.
-brew_hint() {
-  local formulae casks
-  formulae="$(sed -n 's/^brew "\([^"]*\)".*/\1/p' "$REPO/Brewfile" 2>/dev/null | tr '\n' ' ' | sed 's/ $//')"
-  casks="$(sed -n 's/^cask "\([^"]*\)".*/\1/p' "$REPO/Brewfile" 2>/dev/null | tr '\n' ' ' | sed 's/ $//')"
-  echo "Homebrew packages were not touched. If the Brewfile installed them and you no longer want them:"
-  [[ -z "$formulae" ]] || echo "  brew uninstall $formulae"
-  [[ -z "$casks" ]] || echo "  brew uninstall --cask $casks"
-}
-
-# Print the command that makes bash the login shell again; prints nothing if the login shell is not zsh.
-login_shell_hint() {
-  local current=""
-  if [[ "$OSTYPE" == darwin* ]]; then
-    current="$(dscl . -read "/Users/$(id -un)" UserShell 2>/dev/null | awk '{print $2}')" # $SHELL can be stale
-  else
-    current="$(getent passwd "${USER:-$(id -un)}" 2>/dev/null | cut -d: -f7)"
-  fi
-  current="${current:-${SHELL:-}}"
-  [[ "$(basename "${current:-unknown}")" == zsh || "$(basename "${SHELL:-unknown}")" == zsh ]] || return 0
-  if [[ ! -e "$HOME/.zshrc" && ! -L "$HOME/.zshrc" ]]; then
-    echo "Your login shell is zsh and ~/.zshrc is gone, so the next zsh shows its new-user setup menu (press 0 to skip it)."
-    echo "To go back to bash instead, run (this script never changes it):"
-  else
-    echo "Your login shell is zsh. To go back to bash, run (this script never changes it):"
-  fi
-  echo "  chsh -s /bin/bash"
-  echo "If chsh asks for a password you do not have:"
-  echo "  sudo chsh -s /bin/bash \"\$USER\""
-  echo "With SSH connection sharing (ControlMaster), also run 'ssh -O exit <user>@<host>' (the same destination you ssh to) on your laptop, or reconnecting keeps the old shell."
-}
-
-# Returns 0 when a removed file is one that an already-open shell may still load or run:
-# a zsh or bash startup link, the mise binary, or mise's data (the tools it installed, such as starship).
-open_shell_uses_removed() {
-  local l
-  [[ -e "$HOME/.local/bin/mise" || -e "$DATA/mise" ]] && return 0
-  if [[ ${#LINKS[@]} -gt 0 ]]; then
-    for l in "${LINKS[@]}"; do
-      case "$(basename "$l")" in .zsh* | .bash*) return 0 ;; esac
-    done
-  fi
-  return 1
-}
-
-# Print the numbered list of everything the run will do.
-print_plan() {
-  local l p b
-  echo "This will remove:"
-  if [[ ${#LINKS[@]} -gt 0 ]]; then
-    echo "  links into this repo (${#LINKS[@]}):"
-    for l in "${LINKS[@]}"; do
-      echo "    $l"
-      b="$(newest_backup "$l" backup)"
-      [[ -z "$b" ]] || echo "      restores $b"
-    done
-  else
-    echo "  links into this repo: none found"
-  fi
-  for p in "$HOME/.gitconfig" "$HOME/.local/bin/mise"; do
-    b="$(newest_backup "$p" backup)"
-    [[ -z "$b" ]] || echo "  restores $b -> $p"
+# Print the path under $HOME of every file a package would link, one per line.
+package_files() {
+  local pkg file
+  for pkg in "${PACKAGES[@]}"; do
+    [[ -d "$REPO/$pkg" ]] || continue
+    while IFS= read -r -d '' file; do echo "${file#"$REPO/$pkg/"}"; done < <(find "$REPO/$pkg" -type f -print0)
   done
-  echo "  generated data and caches:"
-  while IFS= read -r p; do echo "    $p"; done < <(existing_data)
-  [[ ! -f "$HOME/.local/bin/mise" ]] || echo "    $HOME/.local/bin/mise (the mise binary)"
-  if [[ $WITH_CLAUDE -eq 1 && -d "$CLAUDE_DIR" ]]; then
-    echo "  the Claude config: its links in every ~/.claude-<name> folder,"
-    echo "    its line in ~/.zshrc.local, ~/.zshrc (not a symlink) and ~/.bashrc, then the clone $CLAUDE_DIR"
-    echo "    (the clone's untracked local files, such as coaching logs, go with it)"
-  fi
-  if [[ $KEEP_REPO -eq 0 ]]; then
-    echo "  this clone, last: $REPO (kept if it has unsaved work)"
-  fi
-  echo "It keeps: ~/.zshrc.local, ~/.zsh_history, ~/go, Homebrew packages and the login shell."
-  echo
 }
 
 main() {
-  local arg answer l p b reason mise_bin="$HOME/.local/bin/mise" font_dir stow_ran=0 count had_font=0
+  local arg answer rel reason b REPO_REAL
+  REPO_REAL="$(cd "$REPO" && pwd -P)" # physical path (no symlinks)
   for arg in "$@"; do
     case "$arg" in
       --dry-run) DRY=1 ;;
       --yes | -y) ASSUME_YES=1 ;;
       --with-claude) WITH_CLAUDE=1 ;;
-      --keep-repo) KEEP_REPO=1 ;;
       -h | --help) usage; exit 0 ;;
       *) echo "Unknown option: $arg" >&2; usage >&2; exit 1 ;;
     esac
@@ -408,66 +210,30 @@ main() {
     echo "HOME is empty or /: refusing to run." >&2
     exit 1
   fi
+  command -v stow >/dev/null 2>&1 || { echo "stow is required and was not found." >&2; exit 1; }
 
-  scan_links
-  print_plan
-  local shell_affected=0
-  ! open_shell_uses_removed || shell_affected=1
+  echo "This will unlink the packages of $REPO from $HOME and restore the newest backups install.sh made."
+  [[ $WITH_CLAUDE -eq 0 ]] || echo "It will also undo the Claude config in $CLAUDE_DIR and remove that clone."
+  echo "It keeps this clone, generated data and caches, Homebrew packages and the login shell."
   if [[ $DRY -eq 0 && $ASSUME_YES -eq 0 ]]; then
     read -r -p "Continue? [y/N] " answer || answer=""
     case "$answer" in y | Y | yes | YES) ;; *) echo "Cancelled. Nothing was changed."; exit 0 ;; esac
-    echo
   fi
-  local brew_text=""
-  [[ "$OSTYPE" != darwin* ]] || brew_text="$(brew_hint)" # read the Brewfile before the clone goes
+  echo
 
-  # Step 1: links. stow knows its own links; the sweep catches what is left (the plain-symlink fallback).
-  step "Removing links into $REPO"
-  if command -v stow >/dev/null 2>&1; then
-    run stow --delete --dir="$REPO" --target="$HOME" "${PACKAGES[@]}" || echo "Warning: stow could not remove everything; sweeping the rest" >&2
-    stow_ran=1
-  fi
-  count=0
-  if [[ ${#LINKS[@]} -gt 0 ]]; then
-    for l in "${LINKS[@]}"; do
-      # after a real stow run most links are gone already; a dry run prints stow's command only
-      if link_points_into "$l" "$REPO_REAL" && [[ $DRY -eq 0 || $stow_ran -eq 0 ]]; then run rm -f "$l"; fi
-      REMOVED+=("$l")
-      prune_up "$(dirname "$l")"
-      count=$((count + 1))
-    done
-  fi
-  finish "Removed $count links"
+  step "Unlinking the packages"
+  run stow --delete --no-folding --dir="$REPO" --target="$HOME" "${PACKAGES[@]}"
+  finish "Done"
 
-  # Step 2: put the newest backups back where the path is free.
   step "Restoring backups"
-  if [[ ${#LINKS[@]} -gt 0 ]]; then
-    for l in "${LINKS[@]}"; do restore_backup "$l" backup; done
-  fi
+  while IFS= read -r rel; do
+    link_points_into "$HOME/$rel" "$REPO_REAL" && REMOVED+=("$HOME/$rel") # a dry run still sees the link
+    restore_backup "$HOME/$rel" backup
+    prune_up "$(dirname "$HOME/$rel")"
+  done < <(package_files)
+  restore_backup "$HOME/.gitconfig" backup
   finish "Restored ${#RESTORED[@]} files"
 
-  # Step 3: the mise binary from mise.run, and ~/.gitconfig's backup.
-  step "Removing the mise binary and restoring ~/.gitconfig"
-  if [[ -f "$mise_bin" && ! -L "$mise_bin" ]]; then safe_rm "$mise_bin"; fi
-  restore_backup "$mise_bin" backup
-  restore_backup "$HOME/.gitconfig" backup
-  finish "Done"
-
-  # Step 4: generated data and caches (plain rm, so a test with a temp HOME is safe).
-  step "Removing generated data and caches"
-  font_dir="$DATA/fonts/${NERD_FONT}NerdFont"
-  if [[ -e "$font_dir" ]]; then had_font=1; fi
-  while IFS= read -r p; do
-    [[ -e "$p" || -L "$p" ]] || continue
-    safe_rm "$p"
-    prune_up "$(dirname "$p")"
-  done < <(data_paths)
-  if [[ $had_font -eq 1 && "$OSTYPE" != darwin* ]] && command -v fc-cache >/dev/null 2>&1; then
-    run fc-cache -f # refresh the font cache after the font folder is gone
-  fi
-  finish "Done"
-
-  # Step 5: the optional Claude config.
   if [[ $WITH_CLAUDE -eq 1 ]]; then
     step "Undoing the Claude config in $CLAUDE_DIR"
     if [[ -d "$CLAUDE_DIR" ]]; then
@@ -484,64 +250,20 @@ main() {
       echo "$CLAUDE_DIR does not exist"
     fi
     finish "Done"
-  elif [[ -d "$CLAUDE_DIR" ]]; then
-    SKIPPED+=("$CLAUDE_DIR (kept: run with --with-claude to remove it and its links)")
   fi
 
-  # Step 6: this clone, last and from outside it.
-  if [[ $KEEP_REPO -eq 1 ]]; then
-    SKIPPED+=("$REPO (kept: --keep-repo)")
-  else
-    step "Removing this clone: $REPO"
-    cd "$HOME" # never delete the folder we stand in
-    if reason="$(clone_unsafe_reason "$REPO")"; then
-      SKIPPED+=("$REPO (kept: $reason)")
-      finish "Kept"
-    elif ! path_ok "$REPO" && ! path_ok "$REPO_REAL"; then
-      SKIPPED+=("$REPO (kept: it is outside $HOME)")
-      finish "Kept"
-    else
-      safe_rm "$REPO"
-      finish "Removed"
-      # Step 7: a link the scan missed is broken now; a preview cannot know which ones.
-      step "Sweeping for broken links into the deleted clone"
-      if [[ $DRY -eq 1 ]]; then
-        finish "The final sweep will run after the clone is deleted"
-      else
-        sweep_broken_links
-        finish "Removed $SWEPT broken links"
-      fi
-    fi
-  fi
-
-  # Summary.
   echo "=== Summary ==="
-  echo "Removed (${#REMOVED[@]}):"
-  if [[ ${#REMOVED[@]} -gt 0 ]]; then for p in "${REMOVED[@]}"; do echo "  $p"; done; fi
   echo "Restored (${#RESTORED[@]}):"
-  if [[ ${#RESTORED[@]} -gt 0 ]]; then for p in "${RESTORED[@]}"; do echo "  $p"; done; fi
+  if [[ ${#RESTORED[@]} -gt 0 ]]; then for rel in "${RESTORED[@]}"; do echo "  $rel"; done; fi
   echo "Skipped (${#SKIPPED[@]}):"
-  if [[ ${#SKIPPED[@]} -gt 0 ]]; then for p in "${SKIPPED[@]}"; do echo "  $p"; done; fi
+  if [[ ${#SKIPPED[@]} -gt 0 ]]; then for rel in "${SKIPPED[@]}"; do echo "  $rel"; done; fi
   if [[ ${#LEFT_BACKUPS[@]} -gt 0 ]]; then
     echo "Older backups left in place (delete them when you are sure):"
     for b in "${LEFT_BACKUPS[@]}"; do echo "  $b"; done
   fi
   echo
-  echo "Next:"
-  [[ $shell_affected -eq 1 && $DRY -eq 0 ]] || echo "  Open a new terminal: shells that are already open keep the old settings."
-  echo "  A running tmux server keeps its old config until you stop it yourself (tmux kill-server)."
-  [[ -z "$brew_text" ]] || echo "$brew_text"
-  login_shell_hint
-  if [[ $DRY -eq 1 ]]; then
-    echo "That was a dry run: nothing changed."
-  elif [[ $shell_affected -eq 1 ]]; then
-    echo
-    echo "This terminal still runs the prompt and the mise hook that were just removed."
-    echo "It prints \"no such file or directory\" on every prompt until you run:"
-    echo "  exec bash"
-    echo "(or log out and back in)."
-  fi
+  echo "Open a new terminal: shells that are already open keep the old settings."
+  [[ $DRY -eq 0 ]] || echo "That was a dry run: nothing changed."
 }
 
 main "$@"
-exit

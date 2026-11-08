@@ -265,7 +265,7 @@ cd ~/dotfiles && git pull && ./install.sh
 
 ## Remove the dotfiles
 
-To put the server back as it was, run `./uninstall.sh` in the dotfiles clone. It removes the links, restores your old files from their backups, deletes the data the installer made and, last, the clone. Preview first with `./uninstall.sh --dry-run`. It never changes your login shell: if zsh is your login shell, it prints the `chsh -s /bin/bash` line to run afterwards. Details and flags: [install.md](install.md#undo-or-uninstall).
+To put the server back as it was, run `./uninstall.sh` in the dotfiles clone. It unlinks the packages and restores your old files from their backups. It keeps the clone and the data the installer made. Preview first with `./uninstall.sh --dry-run`. Details and flags: [install.md](install.md#undo-or-uninstall).
 
 ## 7. Several users
 
