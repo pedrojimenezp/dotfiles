@@ -1,5 +1,3 @@
-# ~/.config/git/config: global git config (read before ~/.gitconfig, which therefore wins and should not exist).
-
 [init]
 	defaultBranch = main
 
@@ -13,15 +11,15 @@
 [delta]
 	navigate = true
 	line-numbers = true
-	syntax-theme = ansi                   # highlight code with the terminal's 16 colors (follows any theme)
-	detect-dark-light = auto              # pick light or dark diff backgrounds from the terminal background
+	syntax-theme = ansi                   # follows any terminal theme
+	detect-dark-light = auto
 
 [pull]
 	rebase = true
 
 [rebase]
 	autoStash = true
-	autoSquash = true                     # apply fixup!/squash! commits automatically
+	autoSquash = true
 
 [push]
 	autoSetupRemote = true
@@ -30,36 +28,35 @@
 	prune = true
 
 [diff]
-	colorMoved = default                  # color moved lines differently from added/removed
-	algorithm = histogram                 # better diffs than the default algorithm
+	colorMoved = default
+	algorithm = histogram
 
 [merge]
-	conflictstyle = diff3                 # show base text in conflict markers (zdiff3 needs git 2.35+, fatal on Ubuntu 22.04)
+	conflictstyle = diff3                 # zdiff3 needs git 2.35+ (fails on Ubuntu 22.04)
 
 [rerere]
 	enabled = true
 
 [url "ssh://git@github.com/"]
-	pushInsteadOf = https://github.com/   # push over SSH; the slashes keep github.company.com out; fetch stays https
+	pushInsteadOf = https://github.com/   # push over SSH, fetch stays HTTPS; slashes keep github.company.com out
 
 [filter "lfs"]
 	clean = git-lfs clean -- %f
 	smudge = git-lfs smudge -- %f
 	process = git-lfs filter-process
-	required = true                       # fail if git-lfs is missing
+	required = true
 
 [alias]
 	st = status -sb
 	co = checkout
 	sw = switch
-	br = branch -vv                       # branches with upstream info
-	lg = log --oneline --graph --decorate -20  # compact graph log
-	last = log -1 --stat                  # show the last commit
+	br = branch -vv
+	lg = log --oneline --graph --decorate -20
+	last = log -1 --stat
 	unstage = restore --staged
 	amend = commit --amend --no-edit
 
-# HTTPS GitHub remotes use the `gh auth login` token. The empty `helper =` drops older
-# helpers (e.g. a stale keychain token). Without gh this does nothing. SSH is unaffected.
+# HTTPS GitHub auth via gh; empty helper drops stale ones
 [credential "https://github.com"]
 	helper =
 	helper = "!f() { command -v gh >/dev/null 2>&1 && gh auth git-credential \"$@\"; }; f"
@@ -68,4 +65,4 @@
 	helper = "!f() { command -v gh >/dev/null 2>&1 && gh auth git-credential \"$@\"; }; f"
 
 [include]
-	path = ~/.config/git/local            # machine-specific overrides (untracked)
+	path = ~/.config/git/local            # untracked; last, so it wins

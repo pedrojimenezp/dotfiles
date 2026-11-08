@@ -1,22 +1,17 @@
-# Global git ignores (comments must be on their own line in ignore files).
+# Comments must be on their own line in ignore files.
 
-# macOS Finder metadata
 .DS_Store
-# Windows thumbnail cache
 Thumbs.db
-# Vim swap and backup files
 *.swp
 *.swo
 *~
-# Editor and IDE settings
 .idea/
 .vscode/
-# Local, machine-specific files
 .env.local
 .zshrc.local
-# Claude Code worktrees and personal settings (the rest of .claude/ is shared config)
+# Claude Code's local files; the rest of .claude/ is shared config
 .claude/worktrees/
 .claude/settings.local.json
 CLAUDE.local.md
-# Feature worktrees at the top of a repo (<repo>/worktrees/<feature>)
+# Feature worktrees at a repo's top
 /worktrees/
