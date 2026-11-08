@@ -12,7 +12,6 @@ zsh tool	Right	accept the grey suggestion (zsh-autosuggestions)	docs/zsh.md
 zsh tool	z name / zi	jump to a frequent folder / pick one with fzf (zoxide)	docs/zsh.md
 terminal	Cmd+K	clear the tmux pane in a shell, nothing in vim/nvim: sends prefix Ctrl+l (Ghostty, iTerm; Linux Ghostty: Ctrl+Shift+K)	docs/terminals.md
 terminal	Ctrl+Cmd+V	image on the clipboard, any terminal with an ssh session: upload it to that server and paste its path; otherwise normal paste (needs the Image to server shortcut)	docs/terminals.md
-terminal	Ctrl+Opt+Cmd+V	iTerm2 only, older way: image in an ssh/tssh tab, asks, uploads and types the path	docs/terminals.md
 terminal	Shift+Enter	new line in Claude Code (tmux passes it on via extended keys)	docs/tmux.md
 nvim	Space, then wait	which-key lists every leader key (the leader is Space)	docs/nvim.md
 nvim	<leader>gd / gh / gq	diff view of the working tree / history of this file / close it (diffview.nvim)	docs/nvim.md
