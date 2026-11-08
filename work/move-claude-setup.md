@@ -10,13 +10,16 @@ Claude setup logic lives in claude-config; dotfiles only clones it and calls its
 4. Docs and tests follow.
 
 ## Done
-- Worktree and branch created.
+- uninstall.sh calls claude-shared/install.sh --uninstall; old undo code removed.
+- install.sh --with-claude: clone if missing, then pull.sh --install; SSH probe removed.
+- CLAUDE_SHARED_DIR removed.
+- Docs and tests updated.
 
 ## Where we stopped
-Starting.
+Done and tested.
 
 ## Next step
-Implement the plan.
+Review.
 
 ## How to test
 bash tests/run.sh; shellcheck install.sh uninstall.sh

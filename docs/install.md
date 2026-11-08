@@ -129,7 +129,7 @@ The installer is safe to run again. It refreshes links, installs what is missing
 ```
 
 - **`--dry-run`** prints every action with a `[dry-run]` prefix. Use it first on a new machine.
-- **`--with-claude <git-url>`** clones your own Claude Code config repo to `~/.config/claude-shared` and runs its `install.sh`. Set `CLAUDE_SHARED_DIR` to use another folder. A private GitHub repo needs SSH access. What the repo does is in its own README. `--with-claude=<git-url>` works too.
+- **`--with-claude <git-url>`** clones your own Claude Code config repo to `~/.config/claude-shared` if it is missing, then runs its `pull.sh --install`. A private GitHub repo needs SSH access. Everything else, including Claude Code itself, is in that repo's README. `--with-claude=<git-url>` works too.
 
 ## Undo or uninstall
 
@@ -153,7 +153,7 @@ What it does, in order:
 
 1. **Links.** `stow --delete` removes the [links](glossary.md#link) of every package. A real file is never deleted.
 2. **Backups.** For each file a package links, and for `~/.gitconfig`, it puts back the newest `<file>.backup-<date>-<time>` if the path is free. Older backups stay; the summary lists them.
-3. **Claude config** (only with `--with-claude`). Removes the links its installer made in every `~/.claude-<name>` folder and restores their `.bak-*` files. Removes the `claude.sh` line from `~/.zshrc.local`, `~/.bashrc` and `~/.zshrc` (only when `~/.zshrc` is not a symlink). Deletes `~/.config/claude-shared` unless it has unsaved work. The `settings.json` copies stay, and the summary lists them.
+3. **Claude config** (only with `--with-claude`). Runs `~/.config/claude-shared/install.sh --uninstall`, which undoes its own links, backups and shell line, then deletes `~/.config/claude-shared` unless it has unsaved work. The `settings.json` copies stay, and the summary lists them.
 
 It keeps this clone, the data and caches the installer and the tools created (mise, zsh plugins, tmux plugins, Neovim, `~/.config/git/local`, theme files, the font), Homebrew packages and your login shell, and it never starts or stops tmux. Shells that are already open keep the old settings: open a new terminal.
 
@@ -199,7 +199,7 @@ These files belong to one machine and are never in the repo.
 - **A tmux plugin is missing.** The installer says so when the plugin install failed. In tmux, press `prefix Shift+I`.
 - **Icons look wrong.** Your terminal font is not a Nerd Font ([terminals.md](terminals.md)).
 - **Colors did not change after `theme sync`.** See [theme.md](theme.md).
-- **`--with-claude` says "no GitHub SSH access".** Forward or add your GitHub key as in [server.md](server.md#share-your-github-key-with-the-server), then run it again.
+- **`--with-claude` says "could not clone".** A private repo needs your GitHub key. Forward or add your GitHub key as in [server.md](server.md#share-your-github-key-with-the-server), then run it again.
 
 For more recovery steps, see [first-day.md](first-day.md#if-something-breaks).
 
@@ -249,10 +249,9 @@ By default, stow links a whole folder when it can. `--no-folding` links each fil
 
 ### The `--with-claude` step in detail
 
-- If the target folder already holds a git repo, it is updated with `git pull --rebase --autostash`. When the pull fails (no GitHub SSH access, conflicts), a warning is printed, the clone stays as it is, and its `install.sh` still runs.
-- Before cloning, the installer tests GitHub SSH access. Without access, it skips this step, finishes the rest, and exits with an error at the end.
-- If the folder exists but is not a git repo, the step is skipped the same way.
-- In `--dry-run`, it only prints that it would check access and clone or pull.
+- A missing folder is cloned. A failed clone prints a warning, finishes the rest and exits with an error at the end. A folder that is not a git repo is skipped the same way.
+- Then `~/.config/claude-shared/pull.sh --install` fast-forwards the clone and runs its `install.sh` once. When the pull fails, a warning is printed and the install still runs.
+- In `--dry-run`, it only prints the clone and the `pull.sh` call.
 - `.zshrc` loads `~/.config/claude-shared/claude.sh` only if that file exists, so the dotfiles work without it.
 
 ## Related pages
