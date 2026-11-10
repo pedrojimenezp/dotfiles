@@ -51,6 +51,8 @@ Project missing? `tmux-sessionizer --list` prints `label<TAB>path` for every can
 
 `prefix G` (`tmux-lazygit`) in a folder without `.git` that holds repos (a feature folder) opens the only repo, or asks which one.
 
+`prefix R` (`bin/.local/bin/review`) opens the folder's changes in nvim diffview, one window per repo; see [Reviewing in Neovim](git.md#reviewing-in-neovim).
+
 ## Copying (iTerm2)
 
 tmux copies through OSC 52, so turn on iTerm2's "Applications in terminal may access clipboard" (Settings > General > Selection). Drag, double- or triple-click copies. `Option` + drag bypasses tmux, for example across split panes.
