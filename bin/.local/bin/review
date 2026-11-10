@@ -1,28 +1,40 @@
 #!/usr/bin/env bash
 # Opens each repo's changes since its base branch in Neovim's diffview (go-to-definition works there).
-# Usage: review [--print] [<dir>]   (default: the current folder)
+# Usage: review [--print] [<base>] [<dir>]   (default: the current folder, against the default branch)
+# A positional argument that is an existing folder is <dir>; any other is <base>, in either order.
 # <dir> is reviewed as a repo when it is a repo's top level; otherwise every direct subfolder that is
 # a repo's top level is (a feature folder of worktrees, even inside another repo); otherwise the repo
 # that contains <dir>.
-# Base: origin/HEAD, else origin/main, else origin/master; the diff starts at its merge-base with HEAD,
-# so committed and uncommitted changes show together.
+# Base: <base> (a short name like dev means origin/dev when that exists, else the local ref), else
+# origin/HEAD, else origin/main, else origin/master. It applies to every repo; a repo without it is
+# skipped. The diff starts at the merge-base with HEAD, so committed and uncommitted changes show together.
 # In tmux: one window per repo named review:<repo>, selected again when it already exists.
 # Outside tmux: one repo opens in nvim here, several print one command each.
 # --print only prints the plan and opens nothing. Repos without changes are listed and skipped.
 set -euo pipefail
 
+usage() { echo "usage: review [--print] [<base>] [<dir>]" >&2; exit 2; }
 print_only=0
 dir=.
+dir_set=0
+base_arg=
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --print) print_only=1 ;;
-    -h | --help) sed -n '2,11p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
-    -*) echo "usage: review [--print] [<dir>]" >&2; exit 2 ;;
-    *) dir="$1" ;;
+    -h | --help) sed -n '2,13p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -*) usage ;;
+    *)
+      if [[ -d "$1" ]]; then
+        [[ $dir_set -eq 0 ]] || usage
+        dir="$1" dir_set=1
+      else
+        [[ -z "$base_arg" ]] || usage
+        base_arg="$1"
+      fi
+      ;;
   esac
   shift
 done
-[[ -d "$dir" ]] || { echo "review: not a folder: $dir" >&2; exit 2; }
 "$(dirname "$0")/dotfiles-log" review >/dev/null 2>&1 || true
 dir="$(cd "$dir" && pwd)"
 
@@ -45,9 +57,19 @@ else
 fi
 [[ ${#repos[@]} -gt 0 ]] || { echo "review: no git repo in $dir" >&2; exit 1; }
 
-# base_of <repo>: the remote default branch, or nothing when there is none.
+# base_of <repo>: the requested base (origin/<name> first, else the local ref) or the remote default
+# branch, or nothing when there is none.
 base_of() {
   local base
+  if [[ -n "$base_arg" ]]; then
+    for base in "origin/$base_arg" "$base_arg"; do
+      if git -C "$1" rev-parse --verify --quiet "$base^{commit}" >/dev/null; then
+        echo "$base"
+        return
+      fi
+    done
+    return
+  fi
   if base="$(git -C "$1" symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null)"; then
     echo "$base"
     return
@@ -60,15 +82,21 @@ base_of() {
   done
 }
 
+found=0 # repos that have the base
 names=() paths=() cmds=() # the repos that have changes, in parallel arrays
 for repo in "${repos[@]}"; do
   name="$(basename "$repo")"
   branch="$(git -C "$repo" branch --show-current)"
   base="$(base_of "$repo")"
   if [[ -z "$base" ]]; then
-    echo "$name: branch ${branch:-detached}, no origin/HEAD, origin/main or origin/master: skipped"
+    if [[ -n "$base_arg" ]]; then
+      echo "$name: branch ${branch:-detached}, no branch '$base_arg': skipped"
+    else
+      echo "$name: branch ${branch:-detached}, no origin/HEAD, origin/main or origin/master: skipped"
+    fi
     continue
   fi
+  found=$((found + 1))
   if ! mb="$(git -C "$repo" merge-base "$base" HEAD 2>/dev/null)"; then
     echo "$name: branch ${branch:-detached}, no merge-base with $base: skipped"
     continue
@@ -86,6 +114,10 @@ for repo in "${repos[@]}"; do
   echo "  cd $repo && ${cmds[${#cmds[@]} - 1]}"
 done
 
+if [[ -n "$base_arg" && $found -eq 0 ]]; then
+  echo "review: no branch '$base_arg' in any repo" >&2
+  exit 1
+fi
 [[ ${#names[@]} -gt 0 && $print_only -eq 0 ]] || exit 0
 
 if [[ -z "${TMUX:-}" ]]; then

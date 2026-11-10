@@ -60,6 +60,34 @@ contains "feature folder: web without changes is skipped" "no changes: nothing t
 check "feature folder: only api has a command" "1" "$(grep -c 'nvim -c' <<<"$out")"
 check "feature folder: notes is not listed" "0" "$(grep -c '^notes' <<<"$out")"
 
+# Base argument: a short name prefers origin/<name>, then the local ref; dir and base come in either order.
+git -C "$ROOT/feat/api" branch -q dev main
+git -C "$ROOT/feat/api" push -q origin dev
+git -C "$ROOT/feat/api" branch -q local-only main
+out="$(run --print "$ROOT/feat/api")"
+contains "no base: default origin/main" "api: branch feature, base origin/main," "$out"
+out="$(run --print dev "$ROOT/feat/api")"
+contains "base then dir: origin/dev" "api: branch feature, base origin/dev," "$out"
+out="$(run --print "$ROOT/feat/api" dev)"
+contains "dir then base: origin/dev" "api: branch feature, base origin/dev," "$out"
+out="$(cd "$ROOT/feat/api" && PATH="$STUBS:$PATH" bash "$SCRIPT" --print dev 2>&1)"
+contains "base only: current folder" "api: branch feature, base origin/dev," "$out"
+out="$(run --print local-only "$ROOT/feat/api")"
+contains "base without origin ref: local ref" "api: branch feature, base local-only," "$out"
+out="$(run --print origin/main "$ROOT/feat/api")"
+contains "full ref name as base" "api: branch feature, base origin/main," "$out"
+rc=0
+out="$(PATH="$STUBS:$PATH" bash "$SCRIPT" --print nope "$ROOT/feat/api" 2>&1)" || rc=$?
+check "unknown base: exit 1" "1" "$rc"
+contains "unknown base: message" "review: no branch 'nope' in any repo" "$out"
+# Feature folder where only api has the base: web is skipped with a message, api is reviewed.
+out="$(run --print dev "$ROOT/feat")"
+contains "multi repo: repo with the base" "api: branch feature, base origin/dev," "$out"
+contains "multi repo: repo without the base is skipped" "web: branch master, no branch 'dev': skipped" "$out"
+rc=0
+PATH="$STUBS:$PATH" bash "$SCRIPT" --print dev dev "$ROOT/feat" >/dev/null 2>&1 || rc=$?
+check "two bases: usage error" "2" "$rc"
+
 # Uncommitted edit to a tracked file counts as changed.
 echo more >>"$ROOT/feat/api/a.txt"
 contains "uncommitted edit counts" "api: branch feature, base origin/main, 1 changed files" "$(run --print "$ROOT/feat/api")"
