@@ -17,8 +17,6 @@ return {
     { "<leader>sr", function() require("telescope.builtin").resume() end, desc = "Resume last search" },
     { "<leader>s.", function() require("telescope.builtin").oldfiles() end, desc = "Search recent files" },
     { "<leader>/", function() require("telescope.builtin").current_buffer_fuzzy_find() end, desc = "Fuzzy search in buffer" },
-    { "<leader>gc", function() require("telescope.builtin").git_commits() end, desc = "Git commits" },
-    { "<leader>gb", function() require("telescope.builtin").git_branches() end, desc = "Git branches" },
   },
   config = function()
     require("telescope").setup({

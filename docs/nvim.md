@@ -21,7 +21,7 @@ Needs Neovim 0.12+, `git` and network on the first start, the `tree-sitter` CLI 
 - **Clipboard**: yanks go to the system clipboard, over SSH through OSC 52. Paste uses nvim's own register, because terminals often block OSC 52 reads.
 - **Format on save** (1.5 s timeout) with conform; LSP formatting when no formatter is set. `:ConformInfo` shows what applies.
 - **Lint** with nvim-lint: golangci-lint (Go), shellcheck (sh).
-- **oil** handles `nvim .` and `-`; neo-tree is only a sidebar (`<leader>fe`). It shows dotfiles but hides `.git`, `.zig-cache` and `zig-out`.
+- **oil** handles `nvim .` and `-`; neo-tree is only a sidebar (`<leader>fe`). oil edits the file system as text (rename, move, delete); the sidebar stays open and shows where you are. It shows dotfiles but hides `.git`, `.zig-cache` and `zig-out`.
 - **`timeoutlen` is 0.4 s**: it only affects sequences without a which-key menu.
 - **Go** uses real tabs of width 4; everything else 2 spaces.
 - **Plugin update checks are off**: update with `:Lazy` then `U`.

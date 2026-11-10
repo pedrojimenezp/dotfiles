@@ -2,6 +2,8 @@
 
 Config: `zsh/.zshrc`, plain zsh with no framework. Aliases, keys and functions: `dotfiles-help` (from the `.zshrc` comments) or `alias`. Aliases for a missing tool aren't defined; `command vim` / `command cat` reach the real ones.
 
+`tt` (theme toggle) and `lg` (lazygit) are the shell versions of tmux `prefix t` and `prefix G`, for use outside tmux (for example, over SSH in a Ghostty split).
+
 ## Per-machine settings
 
 `~/.zshrc.local` loads near the end, untracked and globally git-ignored: secrets, machine paths and aliases, `TZ` and `HOST_LABEL` on a server. `~/.zshenv` loads before `.zshrc`, for things needed early (`PATH`, `HISTFILE`). `~/.config/claude-shared/claude.sh` loads only if present.
