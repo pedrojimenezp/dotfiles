@@ -22,25 +22,9 @@ Keep no `~/.gitconfig`: git reads it after `~/.config/git/config`, so it overrid
 
 OS and editor files, `.env.local`, `.zshrc.local`, Claude Code's local files (`.claude/worktrees/`, `.claude/settings.local.json`, `CLAUDE.local.md`; the rest of `.claude/` stays trackable), and `/worktrees/` at a repo's top, so feature worktrees need no `info/exclude` entry.
 
-## Reviewing changes
-
-`git wip` and `git pr` show diffs in delta, untracked files included (plain `git diff` leaves them out). They never touch the index. The script is `bin/.local/bin/git-changes`.
-
-```sh
-git wip            # everything uncommitted: staged, unstaged and untracked (not ignored) files
-git wip -s         # the same, side by side
-git pr             # the whole branch since it left the base branch, committed or not, plus untracked files
-git pr dev         # against another base: origin/dev when it exists, else a local dev
-git pr -s          # side by side; -s and the base can come in either order
-```
-
-The default base is `origin/HEAD`, else `origin/main`, `origin/master`, `main`, `master`. A diff with nothing in it prints one line (`No uncommitted changes.`) instead of opening the pager.
-
-In delta, `n` / `N` jump to the next / previous file and `q` quits.
-
-For interactive review, run `lazygit`: arrow keys move between files, `space` stages or unstages one, and `W` diffs against a branch.
-
 ## Reviewing in Neovim
+
+In delta (the pager for plain `git diff` and `git log`), `n` / `N` jump to the next / previous file and `q` quits. For interactive staging, run `lazygit`: `space` stages or unstages a file and `W` diffs against a branch.
 
 diffview.nvim lists the changed files on the left and shows each one side by side. The right side is your real file, so the language server works there: `gd` goes to the definition. The left side is the old version from git and has no language server.
 

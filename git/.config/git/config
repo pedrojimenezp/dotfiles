@@ -55,8 +55,6 @@
 	last = log -1 --stat
 	unstage = restore --staged
 	amend = commit --amend --no-edit
-	wip = !git-changes wip                # uncommitted + untracked through delta; -s side by side
-	pr = !git-changes pr                  # branch since base + untracked; git pr [-s] [base]
 
 # HTTPS GitHub auth via gh; empty helper drops stale ones
 [credential "https://github.com"]
