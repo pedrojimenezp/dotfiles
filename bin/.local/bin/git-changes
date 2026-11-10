@@ -1,0 +1,65 @@
+#!/bin/sh
+# Shows uncommitted changes, or a whole branch, plus untracked files, through delta (git wip / git pr).
+# Usage: git-changes wip [-s]          (staged and unstaged changes against HEAD, plus untracked files)
+#        git-changes pr [-s] [base]    (everything since the merge-base with base, plus untracked files)
+# -s shows side by side. base defaults to origin/HEAD, else origin/main, origin/master, main, master;
+# a short name like dev means origin/dev when that exists. Never touches the index. POSIX sh.
+set -eu
+
+"$(dirname "$0")/dotfiles-log" git-changes >/dev/null 2>&1 || true
+
+usage() { echo "usage: git changes wip [-s] | pr [-s] [base]" >&2; exit 2; }
+[ $# -ge 1 ] || usage
+mode=$1
+shift
+case $mode in wip | pr) ;; *) usage ;; esac
+
+side=0
+base=
+for arg in "$@"; do
+  case $arg in
+    -s) side=1 ;;
+    -*) usage ;;
+    *) [ -z "$base" ] || usage; base=$arg ;;
+  esac
+done
+
+cd "$(git rev-parse --show-toplevel)"
+exists() { git rev-parse --verify --quiet "$1^{commit}" >/dev/null; }
+
+if [ "$mode" = wip ]; then
+  if exists HEAD; then from=HEAD; else from=$(git hash-object -t tree /dev/null); fi
+  label="uncommitted changes"
+else
+  if [ -n "$base" ]; then
+    if exists "origin/$base"; then base=origin/$base
+    elif ! exists "$base"; then echo "git pr: no branch '$base'" >&2; exit 1
+    fi
+  else
+    # symbolic-ref fails when origin/HEAD is unset, unlike rev-parse --abbrev-ref, which prints "origin/HEAD".
+    base=$(git symbolic-ref --short -q refs/remotes/origin/HEAD || true)
+    if [ -z "$base" ] || ! exists "$base"; then
+      base=
+      for c in origin/main origin/master main master; do
+        if exists "$c"; then base=$c; break; fi
+      done
+    fi
+    [ -n "$base" ] || { echo "git pr: no origin/HEAD, origin/main, origin/master, main or master" >&2; exit 1; }
+  fi
+  from=$(git merge-base "$base" HEAD) || { echo "git pr: no merge-base with $base" >&2; exit 1; }
+  label="changes since $base"
+fi
+
+tmp=$(mktemp "${TMPDIR:-/tmp}/git-changes.XXXXXX")
+trap 'rm -f "$tmp"' EXIT HUP INT TERM
+
+git diff "$from" >"$tmp"
+# Untracked files as new-file diffs; --no-index exits 1 when files differ, and GNU xargs runs once on empty input.
+git ls-files -o --exclude-standard -z | xargs -0 -n1 sh -c '[ -z "$1" ] || git diff --no-index -- /dev/null "$1" || true' sh >>"$tmp"
+
+if [ ! -s "$tmp" ]; then
+  echo "No $label."
+  exit 0
+fi
+if [ "$side" -eq 1 ]; then DELTA_FEATURES="+side-by-side${DELTA_FEATURES:+ $DELTA_FEATURES}"; export DELTA_FEATURES; fi
+delta <"$tmp"

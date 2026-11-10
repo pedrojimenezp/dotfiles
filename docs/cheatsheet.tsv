@@ -18,3 +18,7 @@ nvim	<leader>gd / gh / gq	diff view of the working tree / history of this file /
 nvim	<leader>ut	toggle light/dark	docs/nvim.md
 nvim	<leader>um	toggle Markdown rendering (render-markdown.nvim)	docs/nvim.md
 command	theme toggle / pick / dark / light / auto	light/dark theme; theme help lists every subcommand	docs/theme.md
+git	git wip [-s]	uncommitted and untracked changes through delta; -s side by side	docs/git.md
+git	git pr [-s] [base]	the whole branch since base, plus untracked files, through delta	docs/git.md
+git tool	n / N, q (in delta)	next / previous file, quit	docs/git.md
+git tool	lazygit: space, W	stage a file / diff against a branch	docs/git.md
