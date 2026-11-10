@@ -42,8 +42,8 @@ Project missing? `tmux-sessionizer --list` prints `label<TAB>path` for every can
 
 `bin/.local/bin/tmux-popup` runs them. The scratch shell (`` prefix ` ``) and Claude Code (`prefix A`) keep running: the same key hides them. Each is a hidden session `_popup_shell_<session>` / `_popup_claude_<session>`.
 
-- `prefix s`, `prefix (` and `prefix )` skip `_popup_*` sessions; `tmux ls` still shows them.
-- `prefix s` lists grouped sessions too (`choose-tree -G`); without it tmux 3.7 shows an empty list while a session group exists.
+- `prefix s`, `prefix w`, `prefix (` and `prefix )` skip `_popup_*` sessions; `tmux ls` still shows them.
+- `prefix s` and `prefix w` list grouped sessions too (`choose-tree -G`); without it tmux 3.7 shows an empty list while a session group exists.
 - A `client-session-changed` hook moves you off a popup session you land in after a kill.
 - They store their parent's session id (`@popup_parent`). `session-closed` and resurrect's post-restore hook run `tmux-popup cleanup` to kill orphans.
 - Claude runs as `$SHELL -ic claude`, so your `claude` function applies.
