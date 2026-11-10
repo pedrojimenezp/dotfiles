@@ -7,13 +7,14 @@
 1. review base arg + tests. 2. review-pr + tests. 3. docs/git.md. 4. tests/run.sh.
 
 ## Done
-- review: base argument implemented.
+- review base argument + tests (commit 1).
+- review-pr script, tests/review_pr_test.sh, docs/git.md rewritten.
 
 ## Where we stopped
-Writing review tests.
+All implemented; full tests/run.sh then final commit.
 
 ## Next step
-review_test.sh additions, then review-pr.
+Report to the user; stow bin may need a re-link for review-pr.
 
 ## How to test
 `bash tests/review_test.sh`, `bash tests/review_pr_test.sh`, `tests/run.sh`.

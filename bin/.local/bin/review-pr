@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+# Opens a GitHub pull request in its own worktree and reviews it in Neovim's diffview.
+# Usage: review-pr <number>          (fetch the PR into worktrees/pr-<number> and run review against its base)
+#        review-pr --done <number>   (remove that worktree and its pr-<number> branch)
+# Works from any folder of the repo; the worktree lives under the main checkout. Rerunning fast-forwards it
+# to the PR's latest commit, and stops (touching nothing) on local edits or a force-pushed PR.
+set -euo pipefail
+
+usage() { echo "usage: review-pr <number> | --done <number>" >&2; exit 2; }
+done_mode=0
+num=
+for arg in "$@"; do
+  case "$arg" in
+    -h | --help) sed -n '2,6p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    --done) [[ $done_mode -eq 0 ]] || usage; done_mode=1 ;;
+    -*) usage ;;
+    *) [[ -z "$num" && "$arg" =~ ^[0-9]+$ ]] || usage; num="$arg" ;;
+  esac
+done
+[[ -n "$num" ]] || usage
+"$(dirname "$0")/dotfiles-log" review-pr >/dev/null 2>&1 || true
+
+main="$(git worktree list --porcelain 2>/dev/null | sed -n "1s/^worktree //p" || true)"
+[[ -n "$main" ]] || { echo "review-pr: not in a git repo" >&2; exit 1; }
+wt="$main/worktrees/pr-$num"
+branch="pr-$num"
+git() { command git -C "$main" "$@"; }
+
+if [[ $done_mode -eq 1 ]]; then
+  echo "Removing worktree $wt"
+  git worktree remove "$wt"
+  echo "  removed"
+  echo "Deleting branch $branch"
+  git branch -D "$branch"
+  if [[ -n "${TMUX:-}" ]] && tmux list-windows -F '#{window_name}' | grep -qx "review:pr-$num"; then
+    echo "The tmux window review:pr-$num is still open: close it yourself."
+  fi
+  exit 0
+fi
+
+echo "Fetching pull request $num"
+git fetch -q origin "pull/$num/head"
+sha="$(git rev-parse FETCH_HEAD)" # FETCH_HEAD is per worktree, so keep its value
+echo "  PR $num is at ${sha:0:9}"
+
+if [[ ! -d "$wt" ]]; then
+  echo "Creating worktree $wt"
+  git branch "$branch" "$sha"
+  git worktree add -q "$wt" "$branch"
+  echo "  created branch $branch"
+else
+  echo "Updating worktree $wt"
+  if [[ -n "$(command git -C "$wt" status --porcelain)" ]]; then
+    echo "review-pr: $wt has uncommitted changes; nothing was changed." >&2
+    echo "  Save or drop them, or run: review-pr --done $num, then rerun review-pr $num" >&2
+    exit 1
+  fi
+  if ! command git -C "$wt" merge -q --ff-only "$sha" >/dev/null 2>&1; then
+    echo "review-pr: $branch cannot fast-forward to ${sha:0:9} (the PR was force-pushed); nothing was changed." >&2
+    echo "  Run: review-pr --done $num, then rerun review-pr $num" >&2
+    exit 1
+  fi
+  echo "  now at ${sha:0:9}"
+fi
+
+echo "Looking up the PR's base branch"
+base="$(cd "$wt" && gh pr view "$num" --json baseRefName -q .baseRefName)"
+[[ -n "$base" ]] || { echo "review-pr: gh returned no base for PR $num" >&2; exit 1; }
+git fetch -q origin "$base"
+echo "  base $base"
+
+echo "Worktree: $wt"
+echo "To let gd reach into libraries, install the dependencies there first (for example npm install)."
+echo "Opening the review"
+exec review "$base" "$wt"

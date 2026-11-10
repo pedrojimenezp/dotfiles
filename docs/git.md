@@ -67,25 +67,13 @@ These keys work inside any diffview (leader is `Space`):
 
 1. `cd` into the feature's worktree and run `git fetch`.
 2. Run `review`, or press `prefix R` in a tmux pane in that folder. A tmux window `review:<repo>` opens with everything since the default branch (`origin/main`), committed and uncommitted.
-3. If the PR targets another branch, open Neovim there instead and run `:DiffviewOpen origin/dev...HEAD --imply-local`. The three dots start from the merge-base, as GitHub does; `--imply-local` keeps your real files on the right, so `gd` works.
+3. If the PR targets another branch, pass it: `review dev`. A short name means `origin/dev` when that exists; the base can come before or after a folder.
 
 ### Someone else's PR
 
-1. Get the PR's code into a worktree (replace 123 with the PR number):
+1. Run `review-pr 123` (replace 123 with the PR number) from the repo or any of its worktrees. It fetches the PR into `worktrees/pr-123`, finds the PR's base with `gh` and runs `review` against it.
+2. Install the project's dependencies in that worktree if `gd` should reach into libraries (for example `npm install`). Definitions inside the repo work without them.
+3. Review as above. When the author pushes more commits, run `review-pr 123` again: it fast-forwards the worktree. It stops, changing nothing, when the worktree has edits or the PR was force-pushed; then do step 4 and rerun.
+4. Clean up when you're done: `review-pr --done 123`. It removes the worktree and the `pr-123` branch, and refuses while the worktree has unsaved edits. A `review:pr-123` tmux window stays open; close it yourself.
 
-   ```sh
-   cd <repo>
-   git fetch origin pull/123/head:pr-123
-   git worktree add worktrees/pr-123 pr-123
-   cd worktrees/pr-123
-   ```
-
-2. Install the project's dependencies if `gd` should reach into libraries (for example `npm install`). Definitions inside the repo work without them.
-3. Review it as above: `review`, or the `:DiffviewOpen origin/<base>...HEAD --imply-local` command. `gh pr view 123 --json baseRefName -q .baseRefName` prints the PR's base.
-4. Clean up when you're done:
-
-   ```sh
-   cd <repo>
-   git worktree remove worktrees/pr-123
-   git branch -D pr-123
-   ```
+Without the script: `git fetch origin pull/123/head:pr-123`, `git worktree add worktrees/pr-123 pr-123`, then `review <base>` there (`gh pr view 123 --json baseRefName -q .baseRefName` prints the base).
