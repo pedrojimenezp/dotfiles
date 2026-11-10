@@ -24,7 +24,7 @@ OS and editor files, `.env.local`, `.zshrc.local`, Claude Code's local files (`.
 
 ## Reviewing in Neovim
 
-In delta (the pager for plain `git diff` and `git log`), `n` / `N` jump to the next / previous file and `q` quits. For interactive staging, run `lazygit`: `space` stages or unstages a file and `W` diffs against a branch.
+In delta (the pager for plain `git diff` and `git log`), `n` / `N` jump to the next / previous file and `q` quits. To stage and commit interactively, run `lazygit`: `space` stages or unstages a file.
 
 diffview.nvim lists the changed files on the left and shows each one side by side. The right side is your real file, so the language server works there: `gd` goes to the definition. The left side is the old version from git and has no language server.
 

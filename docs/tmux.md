@@ -1,6 +1,6 @@
 # tmux
 
-Config: `tmux/.config/tmux/tmux.conf`. Keys: `prefix ?` (this config, plugins, tools) and `prefix k` (tmux defaults). `prefix` is `Ctrl+Space`.
+Config: `tmux/.config/tmux/tmux.conf`. Keys: `prefix ?` (this config, plugins, tools). `prefix` is `Ctrl+Space`.
 
 ## Requirements
 
@@ -77,7 +77,6 @@ tmux copies through OSC 52, so turn on iTerm2's "Applications in terminal may ac
 
 - **`Ctrl+h/j/k/l`** are vim-tmux-navigator's plain bindings written into `tmux.conf`: the plugin spent over a second per reload spawning `tmux`. Plain `Ctrl+l` moves right; `prefix Ctrl+l` clears screen and scrollback (skipped in vim and nvim). The scrollback clears 0.3 s later, or the shell redraw pushes the old screen back into history.
 - **`Cmd+K`** in Ghostty and iTerm (`Ctrl+Shift+K` on Linux Ghostty) sends `prefix Ctrl+l`.
-- **`prefix k`** shows tmux's raw keys because `prefix ?` is taken by the help and `prefix /` stays "describe one key".
 - **TPM runs with `run -b`**, so `prefix r` returns at once; plugin keys appear a few seconds later.
 - **Extended keys** (CSI u) let `Shift+Enter` and `Ctrl+Enter` reach Claude Code. `allow-passthrough on` lets `theme` recolor the outer terminal and chafa draw images.
 - **`detach-on-destroy off`**: killing a session moves you to another one.

@@ -14,6 +14,7 @@ Config: `ghostty/.config/ghostty/config`; reload with `Cmd+Shift+R`. `ghostty +l
 
 - `shell-integration-features` has `no-ssh-env` and `no-ssh-terminfo`: Ghostty's ssh wrapper left ControlMaster processes attached to tabs, which stole keystrokes and dropped sessions. So each server needs Ghostty's terminfo once ([server.md](server.md#2-on-the-server-once)).
 - `Cmd+K` (Linux: `Ctrl+Shift+K`) sends `prefix Ctrl+l`, which clears the tmux pane and does nothing in vim or nvim.
+- Ghostty's own splits (`Cmd+D`, `Cmd+Shift+D`) and tabs stay for an ssh session next to local tmux.
 - The `cmd+` binds do nothing on Linux; use Ghostty's defaults there.
 
 ## iTerm2

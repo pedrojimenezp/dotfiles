@@ -73,6 +73,6 @@ command -v fzf >/dev/null 2>&1 || { rows | column -t -s $'\t' | "${PAGER:-less}"
 # Padded display column for fzf, then the raw fields (hidden) for the preview.
 rows | awk -F'\t' '{ printf "%-12s  %-26s  %s\t%s\t%s\t%s\t%s\n", $1, $2, $3, $1, $2, $3, $4 }' |
   fzf --delimiter=$'\t' --with-nth=1 --layout=reverse --tiebreak=index --prompt="keys> " \
-    --header="prefix = Ctrl+Space · type to filter · Esc closes · prefix k: tmux defaults" \
+    --header="prefix = Ctrl+Space · type to filter · Esc closes" \
     --preview='printf "%s  |  %s\n\n%s\n\nMore: %s\n" {2} {3} {4} {5}' --preview-window=down,6,wrap \
     >/dev/null || true # Esc or Enter just closes (fzf exits 130 on Esc)

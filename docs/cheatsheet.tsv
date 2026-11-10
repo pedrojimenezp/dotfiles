@@ -20,4 +20,4 @@ nvim	<leader>ut	toggle light/dark	docs/nvim.md
 nvim	<leader>um	toggle Markdown rendering (render-markdown.nvim)	docs/nvim.md
 command	theme toggle / pick / dark / light / auto	light/dark theme; theme help lists every subcommand	docs/theme.md
 git tool	n / N, q (in delta)	next / previous file, quit	docs/git.md
-git tool	lazygit: space, W	stage a file / diff against a branch	docs/git.md
+git tool	lazygit: space	stage or unstage a file	docs/git.md
