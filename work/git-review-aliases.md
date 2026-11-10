@@ -10,7 +10,7 @@ POSIX sh script `bin/.local/bin/git-changes` (stowed onto PATH with the other sc
 Script, aliases, `tests/git_changes_test.sh` (26 checks), `docs/git.md` section, cheatsheet rows.
 
 ## Where we stopped
-Committed; `tests/run.sh` result pending review.
+Committed; tests/run.sh passes.
 
 ## Next step
 Review, then `/merge`.
