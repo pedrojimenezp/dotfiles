@@ -19,7 +19,7 @@ esac
 tools="tssh" # a zsh function, not a file; z and zi are only aliases of zoxide below
 while read -r name; do
   case "$name" in
-    tree-sitter|git-lfs|zls|shellcheck|shfmt|golangci-lint|pngpaste) continue ;; # run by nvim, git or another script: never typed
+    tree-sitter|git-lfs|zls|shellcheck|shfmt|golangci-lint|pngpaste) continue ;; # helpers other programs run: no command to count
     ripgrep) name=rg ;; tealdeer) name=tldr ;; neovim) name=nvim ;; # command differs from formula
   esac
   tools="$tools $name"
