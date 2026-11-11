@@ -46,7 +46,15 @@ echo "  PR $num is at ${sha:0:9}"
 if [[ ! -d "$wt" ]]; then
   echo "Creating worktree $wt"
   git worktree prune # a folder deleted by hand leaves a stale entry that keeps the branch "checked out"
-  git branch -f "$branch" "$sha" # a branch left behind by that folder is reset to the PR head
+  if ! git show-ref -q --verify "refs/heads/$branch"; then
+    git branch "$branch" "$sha"
+  elif git merge-base --is-ancestor "$branch" "$sha"; then
+    git branch -f "$branch" "$sha" # a leftover branch with no commits of its own moves to the PR head
+  else
+    echo "review-pr: branch $branch has commits that PR $num does not; nothing was changed." >&2
+    echo "  Delete it with: git branch -D $branch (or rename it with: git branch -m $branch <new-name>), then rerun review-pr $num" >&2
+    exit 1
+  fi
   git worktree add -q "$wt" "$branch"
   echo "  created branch $branch"
 else

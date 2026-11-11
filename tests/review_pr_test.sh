@@ -143,6 +143,33 @@ check "rm -rf then rerun: exit 0" "0" "$rc"
 check "rm -rf then rerun: worktree is back at the PR head" "$(git -C "$ROOT/seed" rev-parse prsrc)" "$(git -C "$WT" rev-parse HEAD)"
 check "rm -rf then rerun: branch pr-123" "pr-123" "$(git -C "$WT" branch --show-current)"
 
+echo "leftover branch behind the PR (ancestor)"
+pr_commit two.txt 2
+rm -rf "$WT"
+run "$CLONE" 123
+check "ancestor branch: exit 0" "0" "$rc"
+check "ancestor branch: moved to the new PR head" "$(git -C "$ROOT/seed" rev-parse prsrc)" "$(git -C "$WT" rev-parse HEAD)"
+
+echo "leftover branch with its own commits"
+echo mine >"$WT/mine.txt"
+git -C "$WT" add mine.txt
+git -C "$WT" commit -q -m mine
+mine="$(git -C "$WT" rev-parse HEAD)"
+rm -rf "$WT"
+pr_commit three.txt 3
+run "$CLONE" 123
+check "diverged branch: exit non-zero" "1" "$rc"
+contains "diverged branch: names the branch" "branch pr-123" "$out"
+contains "diverged branch: says how to resolve" "git branch -D pr-123" "$out"
+check "diverged branch: branch untouched" "$mine" "$(git -C "$CLONE" rev-parse pr-123)"
+check "diverged branch: no worktree created" "no" "$([[ -d "$WT" ]] && echo yes || echo no)"
+
+echo "no leftover branch"
+git -C "$CLONE" branch -q -D pr-123
+run "$CLONE" 123
+check "missing branch: exit 0" "0" "$rc"
+check "missing branch: created at the PR head" "$(git -C "$ROOT/seed" rev-parse prsrc)" "$(git -C "$WT" rev-parse HEAD)"
+
 echo
 echo "passed: $PASS, failed: $FAIL"
 [[ $FAIL -eq 0 ]]

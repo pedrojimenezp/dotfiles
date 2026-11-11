@@ -7,10 +7,10 @@ Fix the 15 review findings (tests safety, uninstall, tmux, nvim, bin scripts, do
 One small commit per finding group; tests/run.sh green at the end.
 
 ## Done
-All 15 findings fixed (see git log); new tests: tmux_sessions, tmux_popup, dotfiles_tools; install/uninstall/review_pr tests extended.
+All 15 findings fixed (see git log); new tests: tmux_sessions, tmux_popup, dotfiles_tools; install/uninstall/review_pr tests extended; review-pr no longer drops local commits on a leftover pr-N branch (moves it only if an ancestor of the PR head, else errors).
 
 ## Where we stopped
-Running the full suite.
+Full suite run after the review-pr branch change.
 
 ## Next step
 Report to the user.

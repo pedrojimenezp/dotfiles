@@ -76,7 +76,7 @@ Diffs look like GitHub's split view with every colorscheme: the old side tints c
 
 1. Run `review-pr 123` (replace 123 with the PR number) from the repo or any of its worktrees. It fetches the PR into `worktrees/pr-123`, finds the PR's base with `gh` and runs `review` against it.
 2. Install the project's dependencies in that worktree if `gd` should reach into libraries (for example `npm install`). Definitions inside the repo work without them.
-3. Review as above. When the author pushes more commits, run `review-pr 123` again: it fast-forwards the worktree. It stops, changing nothing, when the worktree has edits or the PR was force-pushed; then do step 4 and rerun.
+3. Review as above. When the author pushes more commits, run `review-pr 123` again: it fast-forwards the worktree. It stops, changing nothing, when the worktree has edits or the PR was force-pushed; then do step 4 and rerun. If you deleted the worktree folder by hand, rerunning recreates it; a leftover `pr-123` branch is moved to the PR head only when it has no commits of its own, otherwise it stops and tells you to delete or rename the branch.
 4. Clean up when you're done: `review-pr --done 123`. It removes the worktree and the `pr-123` branch, and refuses while the worktree has unsaved edits. A `review:pr-123` tmux window stays open; close it yourself.
 
 Without the script: `git fetch origin pull/123/head:pr-123`, `git worktree add worktrees/pr-123 pr-123`, then `review <base>` there (`gh pr view 123 --json baseRefName -q .baseRefName` prints the base).
