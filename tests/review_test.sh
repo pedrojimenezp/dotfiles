@@ -88,6 +88,23 @@ rc=0
 PATH="$STUBS:$PATH" bash "$SCRIPT" --print dev dev "$ROOT/feat" >/dev/null 2>&1 || rc=$?
 check "two bases: usage error" "2" "$rc"
 
+# -u: the gitsigns unified panel with the same merge-base; the default stays diffview.
+uni="nvim -c \"lua require('gitsigns').diff('$mb', nil, { diff = 'unified' })\""
+out="$(run --print -u "$ROOT/feat/api")"
+contains "-u: gitsigns command" "cd $ROOT/feat/api && $uni" "$out"
+check "-u: no diffview" "0" "$(grep -c DiffviewOpen <<<"$out")"
+contains "default: still diffview" "DiffviewOpen $mb" "$(run --print "$ROOT/feat/api")"
+out="$(run --print -u dev "$ROOT/feat/api")"
+contains "-u base dir: origin/dev" "base origin/dev," "$out"
+contains "-u base dir: gitsigns command" "&& nvim -c \"lua require('gitsigns').diff('$(git -C "$ROOT/feat/api" merge-base origin/dev HEAD)'" "$out"
+out="$(run --print "$ROOT/feat/api" dev -u)"
+contains "dir base -u: origin/dev" "base origin/dev," "$out"
+contains "dir base -u: gitsigns command" "diff = 'unified'" "$out"
+out="$(run --print dev -u "$ROOT/feat/api")"
+contains "base -u dir: gitsigns command" "diff = 'unified'" "$out"
+contains "-h mentions -u" "-u opens gitsigns" "$(run -h)"
+check "-u, single repo, no tmux: opens nvim" "nvim -c lua require('gitsigns').diff('$mb', nil, { diff = 'unified' })" "$(run -u "$ROOT/feat/api" | tail -1)"
+
 # Uncommitted edit to a tracked file counts as changed.
 echo more >>"$ROOT/feat/api/a.txt"
 contains "uncommitted edit counts" "api: branch feature, base origin/main, 1 changed files" "$(run --print "$ROOT/feat/api")"

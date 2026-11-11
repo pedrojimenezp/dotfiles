@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Opens each repo's changes since its base branch in Neovim's diffview (go-to-definition works there).
-# Usage: review [--print] [<base>] [<dir>]   (default: the current folder, against the default branch)
+# Usage: review [-u] [--print] [<base>] [<dir>]   (default: the current folder, against the default branch)
 # A positional argument that is an existing folder is <dir>; any other is <base>, in either order.
 # <dir> is reviewed as a repo when it is a repo's top level; otherwise every direct subfolder that is
 # a repo's top level is (a feature folder of worktrees, even inside another repo); otherwise the repo
@@ -10,18 +10,22 @@
 # skipped. The diff starts at the merge-base with HEAD, so committed and uncommitted changes show together.
 # In tmux: one window per repo named review:<repo>, selected again when it already exists.
 # Outside tmux: one repo opens in nvim here, several print one command each.
+# -u opens gitsigns' unified diff panel instead of diffview: real file buffers with the deleted lines
+# inline, so go-to-definition works. It compares the same merge-base with the working tree.
 # --print only prints the plan and opens nothing. Repos without changes are listed and skipped.
 set -euo pipefail
 
-usage() { echo "usage: review [--print] [<base>] [<dir>]" >&2; exit 2; }
+usage() { echo "usage: review [-u] [--print] [<base>] [<dir>]" >&2; exit 2; }
 print_only=0
+unified=0
 dir=.
 dir_set=0
 base_arg=
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --print) print_only=1 ;;
-    -h | --help) sed -n '2,13p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -u) unified=1 ;;
+    -h | --help) sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     -*) usage ;;
     *)
       if [[ -d "$1" ]]; then
@@ -110,7 +114,11 @@ for repo in "${repos[@]}"; do
   fi
   names+=("$name")
   paths+=("$repo")
-  cmds+=("nvim -c \"DiffviewOpen $mb\"")
+  if [[ $unified -eq 1 ]]; then
+    cmds+=("nvim -c \"lua require('gitsigns').diff('$mb', nil, { diff = 'unified' })\"")
+  else
+    cmds+=("nvim -c \"DiffviewOpen $mb\"")
+  fi
   echo "  cd $repo && ${cmds[${#cmds[@]} - 1]}"
 done
 

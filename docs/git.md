@@ -41,9 +41,24 @@ These keys work inside any diffview (leader is `Space`):
 | `g?` | every diffview key |
 | `Space g q` | close the diffview |
 
+### Unified view: `review -u`
+
+`review -u [<base>] [<dir>]` opens the same changes in gitsigns' diff panel instead of diffview: one pane with your real file, deleted lines shown inline in red and added lines in green, so `gd` and the rest of the language server work on the whole file. The panel lists committed and uncommitted changes since the merge-base, like diffview. Everything else (base, folder, tmux window `review:<repo>`, `--print`) works as without `-u`.
+
+| Key | Does |
+| --- | --- |
+| `gu` (file panel) | toggle between the unified and the side-by-side view |
+| `]f` / `[f` | open the next / previous changed file, keeping focus |
+| `]c` / `[c` | next / previous hunk in the file |
+| `Enter` (file panel) | open a file or fold a folder |
+| `g?` (file panel) | every panel key, including staging with `s` / `u` |
+| `q` (file panel) | close the panel |
+
+Inside nvim, `:lua require('gitsigns').diff('<base>', nil, { diff = 'unified' })` does the same for any revision.
+
 ### Diff colors
 
-Diffs look like GitHub's split view with every colorscheme: the old side tints changed lines light red and the new side light green, with the changed words darker. Only backgrounds change, so syntax colors stay. The tints are the `Normal` background blended with the scheme's red and green (`DiagnosticError` / `DiagnosticOk`), with GitHub-like fallbacks. Filler lines are blank with a faint gap background. The groups are in `lua/config/diff_colors.lua`, redefined after every colorscheme load; diffview picks the per-side groups through `hooks.diff_buf_win_enter` in `lua/plugins/git.lua`.
+Diffs look like GitHub's split view with every colorscheme: the old side tints changed lines light red and the new side light green, with the changed words darker. Only backgrounds change, so syntax colors stay. The tints are the `Normal` background blended with the scheme's red and green (`DiagnosticError` / `DiagnosticOk`), with GitHub-like fallbacks. Filler lines are blank with a faint gap background. The groups are in `lua/config/diff_colors.lua`, redefined after every colorscheme load; the unified view uses `GitSignsAddPreview` / `GitSignsDeleteVirtLn` for whole lines and `GitSignsAddInline` / `GitSignsChangeInline` / `GitSignsDeleteVirtLnInLine` for the changed words, also background-only; diffview picks the per-side groups through `hooks.diff_buf_win_enter` in `lua/plugins/git.lua`.
 
 ### Uncommitted changes
 

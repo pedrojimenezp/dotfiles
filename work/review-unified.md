@@ -11,12 +11,15 @@
 
 ## Done
 - Verified headless: `diff(<mb>, nil, {diff='unified'})` lists committed and uncommitted files.
+- `review -u` (usage, header, -h, plan output); tests in `tests/review_test.sh`.
+- Gitsigns groups colored in `diff_colors.lua`; test in `tests/nvim_diff_colors_test.sh`.
+- `docs/git.md` section "Unified view: `review -u`".
 
 ## Where we stopped
-Starting the script change.
+All code done; running `bash tests/run.sh`.
 
 ## Next step
-Edit the script.
+Review and merge.
 
 ## How to test
 `bash tests/review_test.sh`, `bash tests/nvim_diff_colors_test.sh`, then `bash tests/run.sh`.

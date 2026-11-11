@@ -4,6 +4,8 @@
 --   DiffAdd         added line (green); DiffAddOld is the same line as seen on the old side (red)
 --   DiffChange*     changed line, DiffText* the changed words inside it; Old = red, New = green
 --   DiffDelete      filler where the other side has lines: a faint gap, drawn with blank fillchars
+--   GitSigns*       gitsigns' unified view: AddPreview added line, DeleteVirtLn deleted line,
+--                   AddInline/ChangeInline/DeleteVirtLnInLine the changed words (green or red)
 local M = {}
 
 local fallback = {
@@ -49,6 +51,12 @@ function M.apply()
   hl("DiffChangeOld", red, k.line)
   hl("DiffTextOld", red, k.text)
   hl("DiffDelete", fg, k.gap)
+  hl("GitSignsAddPreview", green, k.line)
+  hl("GitSignsDeleteVirtLn", red, k.line)
+  hl("GitSignsAddInline", green, k.text)
+  hl("GitSignsChangeInline", green, k.text)
+  hl("GitSignsDeleteInline", red, k.text)
+  hl("GitSignsDeleteVirtLnInLine", red, k.text)
   -- Plain :diffthis windows get the new-side look
   vim.api.nvim_set_hl(0, "DiffChange", { link = "DiffChangeNew" })
   vim.api.nvim_set_hl(0, "DiffText", { link = "DiffTextNew" })

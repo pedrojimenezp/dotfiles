@@ -29,7 +29,7 @@ fi
 
 # Loads the scheme through config.theme and checks the groups. Prints "ok" or the problem.
 LUA_GROUPS='
-local names = { "DiffAdd", "DiffAddOld", "DiffChange", "DiffChangeOld", "DiffChangeNew", "DiffText", "DiffTextOld", "DiffTextNew", "DiffDelete" }
+local names = { "DiffAdd", "DiffAddOld", "DiffChange", "DiffChangeOld", "DiffChangeNew", "DiffText", "DiffTextOld", "DiffTextNew", "DiffDelete", "GitSignsAddPreview", "GitSignsDeleteVirtLn", "GitSignsAddInline", "GitSignsChangeInline", "GitSignsDeleteInline", "GitSignsDeleteVirtLnInLine" }
 local function get(n) return vim.api.nvim_get_hl(0, { name = n, link = false }) end
 local theme = require("config.theme")
 theme.load()
@@ -45,6 +45,8 @@ local r1, g1 = rgb(get("DiffAddOld").bg)
 local r2, g2 = rgb(get("DiffAdd").bg)
 if not (r1 > g1) then table.insert(problems, "old side line is not reddish") end
 if not (g2 > r2) then table.insert(problems, "new side line is not greenish") end
+if get("GitSignsDeleteVirtLnInLine").bg == get("GitSignsDeleteVirtLn").bg then table.insert(problems, "gitsigns deleted words match the line tint") end
+if get("GitSignsAddInline").bg == get("GitSignsAddPreview").bg then table.insert(problems, "gitsigns added words match the line tint") end
 if get("DiffTextOld").bg == get("DiffChangeOld").bg then table.insert(problems, "changed words match the line tint") end
 if vim.o.fillchars:find("diff: ", 1, true) == nil then table.insert(problems, "fillchars diff is not blank") end
 io.stdout:write(#problems == 0 and "ok" or table.concat(problems, "; "))
@@ -93,6 +95,31 @@ else
   old="DiffAdd:DiffAddOld,DiffChange:DiffChangeOld,DiffText:DiffTextOld"
   new="DiffChange:DiffChangeNew,DiffText:DiffTextNew"
   if [[ "$out" == *"$old"* && "$out" == *"$new"* ]]; then ok "each side gets its winhighlight"; else bad "winhighlight: $out"; fi
+fi
+
+echo "gitsigns unified"
+if [[ ! -d "$REAL_LAZY/gitsigns.nvim" ]]; then
+  echo "  skip (gitsigns.nvim not installed)"
+else
+  repo="$ROOT/grepo"
+  mkdir -p "$repo"
+  git -C "$repo" init -q -b main
+  git -C "$repo" config user.email t@example.com
+  git -C "$repo" config user.name t
+  printf 'one\ntwo\n' >"$repo/f.txt"
+  printf 'x\n' >"$repo/g.txt"
+  git -C "$repo" add .
+  git -C "$repo" commit -qm init
+  rev="$(git -C "$repo" rev-parse HEAD)"
+  printf 'one\nTWO\n' >"$repo/f.txt"
+  git -C "$repo" commit -qam committed
+  printf 'x\ny\n' >"$repo/g.txt"
+  printf 'new\n' >"$repo/h.txt"
+  out="$(cd "$repo" && nvim --headless -u NONE -i NONE \
+    --cmd "set rtp^=$SRC/nvim/.config/nvim,$REAL_LAZY/gitsigns.nvim" \
+    -c "lua require('config.diff_colors').setup(); require('gitsigns').setup({}); local ok, err = pcall(require('gitsigns').diff, '$rev', nil, { diff = 'unified' }); if not ok then io.stdout:write('error: ' .. tostring(err)); return end; local panel; vim.wait(5000, function() for _, b in ipairs(vim.api.nvim_list_bufs()) do if vim.bo[b].filetype == 'gitsigns-diff' then local t = table.concat(vim.api.nvim_buf_get_lines(b, 0, -1, false), ' '); if t:find('f.txt', 1, true) and t:find('g.txt', 1, true) and t:find('h.txt', 1, true) then panel = t return true end end end end, 50); for _, n in ipairs({ 'GitSignsAddPreview', 'GitSignsDeleteVirtLn', 'GitSignsAddInline', 'GitSignsChangeInline', 'GitSignsDeleteInline', 'GitSignsDeleteVirtLnInLine' }) do local h = vim.api.nvim_get_hl(0, { name = n, link = false }); if h.fg or not h.bg then io.stdout:write(n .. ' has fg or no bg; ') end end; io.stdout:write(panel and 'ok' or 'panel missing files')" \
+    -c "qa!" 2>&1 | tr -d '\r' | tail -n 1)"
+  if [[ "$out" == *ok ]]; then ok "unified panel lists committed, uncommitted and untracked files; groups are background-only"; else bad "gitsigns unified: $out"; fi
 fi
 
 echo
