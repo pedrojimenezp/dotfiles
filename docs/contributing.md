@@ -8,6 +8,6 @@
 - **Script** in `bin/.local/bin/`: a description on line 2, then `# Usage:` lines with the note after two or more spaces, in parentheses.
 - **Plugin, tool or terminal keys** (no config line to describe them): a row in [cheatsheet.tsv](cheatsheet.tsv): `area<TAB>keys<TAB>description<TAB>doc`. Keep real tabs.
 
-A new tool goes in the mise config (or the `Brewfile`). With a config, add a package to `PACKAGES` in `install.sh` and `uninstall.sh`, and its data paths to `data_paths` in `uninstall.sh`.
+A new tool goes in the mise config (or the `Brewfile`). With a config, add a package to `PACKAGES` in `install.sh` and `uninstall.sh`.
 
 Check with `dotfiles-help --list | grep -i <words>` (reload tmux first), then run `tests/run.sh`: it runs every `tests/*_test.*` against temp folders and fails if one does.

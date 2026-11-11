@@ -13,7 +13,7 @@ The tool list is `mise/.config/mise/config.toml` (per user, no sudo, macOS and L
 
 - `mise use node@22 go@1.25` writes a `mise.toml` to commit; versions switch on `cd`. `.nvmrc` and `.node-version` work too (run `mise install`).
 - Secrets go in an untracked `mise.local.toml`.
-- `.zshrc` activates mise early, so its tools beat Homebrew copies. On macOS, `install.sh` renames an old standalone `~/.local/bin/mise` that would shadow Homebrew's.
+- `.zshrc` activates mise early, so its tools beat Homebrew copies.
 - mise tools bring no zsh completions: load them from `~/.zshrc.local` ([zsh.md](zsh.md#completions-for-mise-tools)).
 
 ## Not from mise

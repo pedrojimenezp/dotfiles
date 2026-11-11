@@ -74,7 +74,7 @@ Never in the repo:
 ./uninstall.sh             # asks "Continue? [y/N]"; --yes skips it
 ```
 
-It runs `stow --delete` and puts back the newest backup of each file (and `~/.gitconfig`) when the path is free. `--with-claude` also runs `~/.config/claude-shared/install.sh --uninstall` and deletes the clone unless it has unsaved work. It keeps the clone, tool data and caches, Homebrew packages, the login shell and running tmux.
+It runs `stow --delete` and puts back the newest backup of each file (and `~/.gitconfig`) when the path is free. `--with-claude` also runs `~/.config/claude-shared/install.sh --uninstall` and deletes the clone unless it has unsaved work or that uninstall is missing or fails (then it keeps the clone and says so). The summary lists what it removed, restored and skipped. It keeps the clone, tool data and caches, Homebrew packages, the login shell and running tmux.
 
 To restore one file: `ls ~/.zshrc.backup-*`, then `rm ~/.zshrc && mv ~/.zshrc.backup-<stamp> ~/.zshrc`. The next `./install.sh` links it again.
 
@@ -90,6 +90,7 @@ stow runs with `--no-folding`, so folders like `~/.config/ghostty` stay real and
 
 - **"Missing: ..."** (Linux): run the `apt-get` line it prints.
 - **"Homebrew was not found."**: install it, open a new shell, rerun.
+- **"brew bundle failed"**: one formula or app failed; the install went on. Run `brew bundle` in the repo to see which, then rerun it.
 - **"some mise tools failed"**: `mise install` shows which and why (often the network).
 - **`zsh compinit: insecure directories`**: a completion folder is group- or world-writable. `install.sh` runs `chmod go-w` on Homebrew's, but `brew` can restore the bits: `compaudit`, then `chmod go-w` each path. A path owned by another user still prompts: check it first.
 - **stow conflict**: a real file blocks a link. Rename it and rerun.

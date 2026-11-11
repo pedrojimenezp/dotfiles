@@ -184,17 +184,26 @@ main() {
   if [[ $WITH_CLAUDE -eq 1 ]]; then
     step "Undoing the Claude config in $CLAUDE_DIR"
     if [[ -d "$CLAUDE_DIR" ]]; then
+      local claude_ok=1 # 0 = its own uninstall did not run or failed: keep the clone, its links still point into it
       if [[ $DRY -eq 1 ]]; then
         echo "[dry-run] $CLAUDE_DIR/install.sh --uninstall"
       elif [[ -x "$CLAUDE_DIR/install.sh" ]]; then
-        "$CLAUDE_DIR/install.sh" --uninstall
+        "$CLAUDE_DIR/install.sh" --uninstall || {
+          claude_ok=0
+          SKIPPED+=("$CLAUDE_DIR (kept: its install.sh --uninstall failed)")
+        }
+      else
+        claude_ok=0
+        SKIPPED+=("$CLAUDE_DIR (kept: install.sh is missing or not executable, so its links were not removed)")
       fi
       SKIPPED+=("settings.json in each ~/.claude-<name> folder (copies that Claude Code also writes; delete them yourself if you want)")
-      if reason="$(clone_unsafe_reason "$CLAUDE_DIR")"; then
-        SKIPPED+=("$CLAUDE_DIR (kept: $reason)")
-      else
-        safe_rm "$CLAUDE_DIR"
-        prune_up "$(dirname "$CLAUDE_DIR")"
+      if [[ $claude_ok -eq 1 ]]; then
+        if reason="$(clone_unsafe_reason "$CLAUDE_DIR")"; then
+          SKIPPED+=("$CLAUDE_DIR (kept: $reason)")
+        else
+          safe_rm "$CLAUDE_DIR"
+          prune_up "$(dirname "$CLAUDE_DIR")"
+        fi
       fi
     else
       echo "$CLAUDE_DIR does not exist"
@@ -203,6 +212,8 @@ main() {
   fi
 
   echo "=== Summary ==="
+  echo "Removed (${#REMOVED[@]}):"
+  if [[ ${#REMOVED[@]} -gt 0 ]]; then for rel in "${REMOVED[@]}"; do echo "  $rel"; done; fi
   echo "Restored (${#RESTORED[@]}):"
   if [[ ${#RESTORED[@]} -gt 0 ]]; then for rel in "${RESTORED[@]}"; do echo "  $rel"; done; fi
   echo "Skipped (${#SKIPPED[@]}):"

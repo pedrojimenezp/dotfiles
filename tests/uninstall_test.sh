@@ -129,6 +129,27 @@ check "its installer ran once with --uninstall" has_text "$h/claude-calls" "--un
 check "settings.json copies reported" grep -q "settings.json in each" "$ROOT/claude1.out"
 check "Claude clone removed" gone "$c"
 
+echo "== --with-claude keeps the clone when its install.sh is missing or fails"
+B="$ROOT/claude-missing"
+make_machine "$B"
+h="$B/home"
+c="$h/.config/claude-shared"
+git clone -q "$ROOT/claude/claude-origin.git" "$c"
+chmod -x "$c/install.sh"
+(cd "$h/dotfiles" && env HOME="$h" /bin/bash ./uninstall.sh --yes --with-claude >"$ROOT/claude4.out" 2>&1) || { cat "$ROOT/claude4.out"; bad "exit 0"; }
+check "not executable: clone kept" test -d "$c"
+check "not executable: reported as skipped" grep -q "install.sh is missing or not executable" "$ROOT/claude4.out"
+rm -f "$c/install.sh"
+(cd "$h/dotfiles" && env HOME="$h" /bin/bash ./uninstall.sh --yes --with-claude >"$ROOT/claude5.out" 2>&1) || { cat "$ROOT/claude5.out"; bad "exit 0"; }
+check "missing: clone kept" test -d "$c"
+check "missing: reported as skipped" grep -q "install.sh is missing or not executable" "$ROOT/claude5.out"
+printf '#!/bin/bash\nexit 3\n' >"$c/install.sh"
+chmod +x "$c/install.sh"
+(cd "$h/dotfiles" && env HOME="$h" /bin/bash ./uninstall.sh --yes --with-claude >"$ROOT/claude6.out" 2>&1) || { cat "$ROOT/claude6.out"; bad "exit 0"; }
+check "failing uninstall: clone kept" test -d "$c"
+check "failing uninstall: reported as skipped" grep -q "its install.sh --uninstall failed" "$ROOT/claude6.out"
+check "summary prints Removed (n)" grep -q "^Removed (" "$ROOT/claude6.out"
+
 echo
 echo "passed: $PASS, failed: $FAIL"
 [[ $FAIL -eq 0 ]]
