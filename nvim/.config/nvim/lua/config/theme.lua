@@ -1,5 +1,6 @@
 -- Colors that follow the dotfiles theme pair (~/.config/theme/config).
--- 'background' picks the slot; the slot's name picks the scheme: TokyoNight -> tokyonight.nvim,
+-- 'background' picks the slot; the slot's name picks the scheme (nvim_light/nvim_dark, when set,
+-- replace the terminal's name for that slot): TokyoNight -> tokyonight.nvim,
 -- GitHub -> github-nvim-theme, anything else -> mini.base16 from the theme file.
 -- g:colors_name is cleared after loading, or Neovim would reload that scheme itself on a
 -- 'background' change and fight the other slot. g:dotfiles_theme holds the name instead.
@@ -12,19 +13,23 @@ M.applied_bg = nil
 local appearance = { at = nil, value = nil } -- cache: each `defaults` read is a process
 local appearance_ttl = 5000 -- ms
 
+-- Returns { light = name, dark = name }: the nvim_<slot> name when set, else the terminal's.
 function M.read_config()
   local dir = vim.env.XDG_CONFIG_HOME or (vim.env.HOME .. "/.config") -- same path as the script
   local names = vim.deepcopy(defaults)
   local ok, lines = pcall(vim.fn.readfile, dir .. "/theme/config")
   if not ok then return names end
-  local seen = {} -- first line of each slot wins, like the script
+  local keys = { light = "light", dark = "dark", nvim_light = "light", nvim_dark = "dark" } -- key -> slot
+  local terminal, nvim = {}, {}
+  local seen = {} -- first line of each key wins, like the script
   for _, line in ipairs(lines) do
-    local slot, name = line:match("^%s*(%a+)%s*=%s*(.-)%s*$")
-    if (slot == "light" or slot == "dark") and name ~= "" and not seen[slot] then
-      names[slot] = name
-      seen[slot] = true
+    local key, name = line:match("^%s*([%a_]+)%s*=%s*(.-)%s*$")
+    if keys[key] and name ~= "" and not seen[key] then
+      seen[key] = true
+      if key:find("^nvim_") then nvim[keys[key]] = name else terminal[keys[key]] = name end
     end
   end
+  for slot in pairs(names) do names[slot] = nvim[slot] or terminal[slot] or names[slot] end
   return names
 end
 

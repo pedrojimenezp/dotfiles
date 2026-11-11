@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # theme: pick terminal color themes from Ghostty's collection and apply them everywhere.
-# The light/dark pair lives in ~/.config/theme/config (tracked); the mode (auto, light, dark)
+# The light/dark pair lives in ~/.config/theme/config (tracked), with optional nvim_light and
+# nvim_dark names that only Neovim reads; the mode (auto, light, dark)
 # is per machine in ~/.local/state/theme. Works with macOS bash 3.2.
 # Usage: see usage() below, or run `theme help`.
 set -euo pipefail
@@ -33,11 +34,14 @@ usage: theme <command> [--tty <path>] [--print] [--no-download]
   dark | light | auto      set the mode (auto = terminal profile, follows macOS) and apply it
   toggle                   flip between light and dark
   apply                    re-apply the saved mode (--no-download: fail fast if its theme is not cached or bundled)
-  status                   print the mode and the light/dark picks (* = in use)
+  status                   print the mode and the light/dark picks (* = in use), plus the Neovim picks if set
   mode                     print only the saved mode: dark, light or auto (for scripts)
   effective                print the mode in effect: dark or light (auto resolved; for scripts)
-  pick [light|dark]        choose a theme with fzf and live preview (default: the current mode's slot)
-  set light|dark <name>    save <name> as the light or dark theme, sync and apply
+  pick [slot]              choose a theme with fzf and live preview (default: the current mode's slot)
+  set <slot> <name>        save <name> in a slot, sync and apply
+  set nvim-light|nvim-dark --clear
+                           remove a Neovim pick, so Neovim follows the terminal again
+                           slot: light | dark | nvim-light | nvim-dark (the nvim slots only change Neovim)
   list                     print every available theme name
   file <name>              print the path of a theme file (downloads it if needed;
                            --no-download: cache and Ghostty bundles only, fails fast offline)
@@ -88,7 +92,8 @@ effective_mode() {
 
 # --- Tracked config (~/.config/theme/config) ---
 
-# Print the theme name for a slot (light or dark), or its default.
+# Print the theme name for a key (light, dark, nvim_light or nvim_dark). light and dark fall
+# back to their defaults; an unset nvim key prints nothing.
 config_get() {
   local slot=$1 line name=""
   local re="^[[:space:]]*${slot}[[:space:]]*=[[:space:]]*(.*[^[:space:]])[[:space:]]*$"
@@ -98,7 +103,10 @@ config_get() {
     done <"$CONFIG_FILE"
   fi
   if [[ -z $name ]]; then
-    if [[ $slot == light ]]; then name=$DEFAULT_LIGHT; else name=$DEFAULT_DARK; fi
+    case $slot in
+      light) name=$DEFAULT_LIGHT ;;
+      dark) name=$DEFAULT_DARK ;;
+    esac
   fi
   echo "$name"
 }
@@ -120,6 +128,18 @@ config_set() {
   fi
   ((found)) || out+="$slot = $name"$'\n'
   printf '%s' "$out" >"$CONFIG_FILE"                # '>' follows a symlink: the repo file changes, the link stays
+}
+
+# Remove the line for a key; the other lines stay as they are.
+config_unset() {
+  local slot=$1 line out="" found=0
+  local re="^[[:space:]]*${slot}[[:space:]]*="
+  [[ -e $CONFIG_FILE ]] || return 0
+  while IFS= read -r line || [[ -n $line ]]; do
+    if ((!found)) && [[ $line =~ $re ]]; then found=1; continue; fi # first match, like config_get
+    out+="$line"$'\n'
+  done <"$CONFIG_FILE"
+  printf '%s' "$out" >"$CONFIG_FILE"
 }
 
 # --- Theme files ---
@@ -396,26 +416,54 @@ sync_all() {
   sync_iterm "$light_file" "$dark_file"
 }
 
-# Save a theme in a slot, regenerate the files and apply the current mode.
+# Print the config key for a slot name, or fail: light, dark, nvim-light -> nvim_light, nvim-dark.
+slot_key() {
+  case $1 in
+    light | dark) echo "$1" ;;
+    nvim-light) echo nvim_light ;;
+    nvim-dark) echo nvim_dark ;;
+    *) return 1 ;;
+  esac
+}
+
+# Save a theme in a slot. The terminal slots regenerate the files and apply the current mode;
+# the nvim slots only write the config, since nothing but Neovim reads them.
 set_theme() {
-  local slot=$1 name=$2
-  [[ $slot == light || $slot == dark ]] || die "slot must be light or dark"
+  local slot=$1 name=$2 key
+  key="$(slot_key "$slot")" || die "slot must be light, dark, nvim-light or nvim-dark"
   theme_file "$name" >/dev/null || exit 1           # check (and fetch) before writing anything
+  if [[ $key == nvim_* ]]; then
+    config_set "$key" "$name"
+    echo "$slot theme: $name (commit $CONFIG_FILE in your dotfiles repo to keep it)" >&2
+    return 0
+  fi
   config_set "$slot" "$name"
   echo "$slot theme: $name (commit $CONFIG_FILE in your dotfiles repo to keep it)" >&2
   sync_all || exit 1
   apply_state "$(read_state)"
 }
 
-# Print the mode and both picked themes, marking the one in use.
+# Remove a Neovim pick so Neovim follows the terminal theme in that mode again.
+clear_nvim() {
+  local key
+  key="$(slot_key "$1")" || die "slot must be nvim-light or nvim-dark"
+  [[ $key == nvim_* ]] || die "--clear only works on nvim-light or nvim-dark"
+  config_unset "$key"
+  echo "$1 theme cleared: Neovim follows the terminal (commit $CONFIG_FILE in your dotfiles repo to keep it)" >&2
+}
+
+# Print the mode and both picked themes, marking the one in use, then the Neovim picks if set.
 status_report() {
-  local state mode light dark lmark="" dmark=""
+  local state mode light dark lmark="" dmark="" nl nd
   state="$(read_state)"
   mode="$(effective_mode)"
   light="$(config_get light)" dark="$(config_get dark)"
   if [[ $state == auto ]]; then state="auto ($mode now)"; fi
   if [[ $mode == light ]]; then lmark="  *"; else dmark="  *"; fi
   printf 'mode:  %s\nlight: %s%s\ndark:  %s%s\n' "$state" "$light" "$lmark" "$dark" "$dmark"
+  nl="$(config_get nvim_light)" nd="$(config_get nvim_dark)"
+  [[ -z $nl ]] || printf 'nvim light: %s\n' "$nl"
+  [[ -z $nd ]] || printf 'nvim dark:  %s\n' "$nd"
 }
 
 # --- Picker (fzf) ---
@@ -470,13 +518,15 @@ preview_apply() {
 
 # Choose a theme with fzf: live preview on focus, Enter saves, Esc restores.
 pick() {
-  local slot=${1:-} self list pos choice
+  local slot=${1:-} self list pos choice key current
   [[ -n $slot ]] || slot="$(effective_mode)"
-  [[ $slot == light || $slot == dark ]] || die "usage: theme pick [light|dark]"
+  key="$(slot_key "$slot")" || die "usage: theme pick [light|dark|nvim-light|nvim-dark]"
   command -v fzf >/dev/null 2>&1 || die "fzf not found: use 'theme set $slot <name>' (see 'theme list')"
   list="$(list_themes)"
   [[ -n $list ]] || die "no themes found"
-  pos="$(printf '%s\n' "$list" | grep -nxF -- "$(config_get "$slot")" | cut -d: -f1 || true)"
+  current="$(config_get "$key")"
+  [[ -n $current ]] || current="$(config_get "${key#nvim_}")" # an unset nvim pick follows the terminal
+  pos="$(printf '%s\n' "$list" | grep -nxF -- "$current" | cut -d: -f1 || true)"
   self="$(printf '%q' "$SELF")"                     # quoted for fzf's shell
   choice="$(printf '%s\n' "$list" | fzf \
     --prompt="$slot theme> " \
@@ -491,6 +541,10 @@ pick() {
     return 0
   fi
   set_theme "$slot" "$choice"
+  if [[ $key == nvim_* ]]; then
+    OUT_TTY=/dev/tty PANE_TTY=1                     # the preview recolored the terminal: undo it
+    apply_state "$(read_state)"
+  fi
 }
 
 # --- Arguments ---
@@ -539,8 +593,8 @@ case $CMD in
     ;;
   pick) pick "$ARG1" ;;
   set)
-    [[ -n $ARG1 && -n $ARG2 ]] || die "usage: theme set light|dark <name>"
-    set_theme "$ARG1" "$ARG2"
+    [[ -n $ARG1 && -n $ARG2 ]] || die "usage: theme set light|dark|nvim-light|nvim-dark <name> | theme set nvim-light|nvim-dark --clear"
+    if [[ $ARG2 == --clear ]]; then clear_nvim "$ARG1"; else set_theme "$ARG1" "$ARG2"; fi
     ;;
   list) list_themes ;;
   file)
