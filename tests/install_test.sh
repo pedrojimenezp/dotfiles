@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # shellcheck disable=SC2016
-# Tests install.sh's Claude flags against a temp HOME. Offline: errors exit before any step, and the
-# dry runs only print. Run: bash tests/install_test.sh
+# Tests install.sh against a temp HOME. Offline and side-effect free: stub brew, mise, curl, pkill and
+# pgrep sit first on PATH, a git wrapper fakes GitHub clones, THEME_NO_RELOAD=1 keeps Ghostty alone, and stdin
+# is /dev/null. Run: bash tests/install_test.sh
 set -euo pipefail
 
 SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)" # the repo under test
@@ -12,6 +13,28 @@ trap 'rm -rf "$ROOT"' EXIT
 export GIT_CONFIG_NOSYSTEM=1 GIT_TERMINAL_PROMPT=0
 export HOME="$ROOT/home"
 mkdir -p "$HOME"
+export THEME_NO_RELOAD=1
+
+# Stubs for everything that would install packages or touch the real system.
+STUBS="$ROOT/stubs"
+mkdir -p "$STUBS"
+for t in brew mise curl pkill pgrep; do
+  printf '#!/bin/sh\n[ "$1" = --prefix ] && echo "%s/brew-prefix"\nexit 0\n' "$ROOT" >"$STUBS/$t"
+done
+printf '#!/bin/sh\nexit 1\n' >"$STUBS/pgrep" # no Ghostty running
+REAL_GIT="$(command -v git)"
+# A clone of a github.com URL only creates the folder; every other git call is real.
+cat >"$STUBS/git" <<G
+#!/bin/bash
+for a in "\$@"; do
+  if [[ \$a == https://github.com/* ]]; then
+    mkdir -p "\${@: -1}"
+    exit 0
+  fi
+done
+exec "$REAL_GIT" "\$@"
+G
+chmod +x "$STUBS"/*
 
 ok() { PASS=$((PASS + 1)); echo "  ok   $1"; }
 bad() { FAIL=$((FAIL + 1)); echo "  FAIL $1"; }
@@ -24,7 +47,7 @@ check() { # check "<description>" <test command...>
 # Runs install.sh with the given flags; sets OUT (stdout and stderr) and RC (exit code).
 run_install() {
   RC=0
-  OUT="$(env HOME="$HOME" bash "$SRC/install.sh" "$@" 2>&1)" || RC=$?
+  OUT="$(env HOME="$HOME" PATH="$STUBS:$PATH" bash "$SRC/install.sh" "$@" 2>&1 </dev/null)" || RC=$?
 }
 
 # True when the last run failed with exit 1 and its output contains $1.

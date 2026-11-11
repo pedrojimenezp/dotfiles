@@ -99,7 +99,7 @@ if [[ "$OSTYPE" == darwin* ]]; then
   if command -v brew >/dev/null 2>&1; then
     echo "==> Installing Homebrew packages"
     # Upgrades are a separate, deliberate `brew upgrade`.
-    run brew bundle --no-upgrade --file="$REPO/Brewfile"
+    run brew bundle --no-upgrade --file="$REPO/Brewfile" || echo "Warning: brew bundle failed; run 'brew bundle' later" >&2
     # compinit prompts about group/other-writable completion dirs, which brew can recreate.
     echo "==> Removing group/other write from Homebrew's zsh completion dirs (chmod go-w)"
     BREW_SHARE="$(brew --prefix)/share"
