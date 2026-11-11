@@ -11,12 +11,13 @@ Neovim diffs (diffview.nvim) look like GitHub's split view with every colorschem
 
 ## Done
 - Worktree and note created.
+- `config/diff_colors.lua`, hooked into `theme.lua` and the diffview spec; `tests/nvim_diff_colors_test.sh` passes; `docs/git.md` section; `tests/run.sh` all passed.
 
 ## Where we stopped
-Starting the implementation.
+Implementation, docs and tests done.
 
 ## Next step
-Write `diff_colors.lua`, wire it in `theme.lua` and `plugins/git.lua`.
+Review and merge.
 
 ## How to test
 `bash tests/nvim_diff_colors_test.sh`
