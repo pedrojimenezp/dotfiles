@@ -1,3 +1,5 @@
 # Names from Ghostty's collection (`theme list`). `theme pick` / `theme set` edit this file: commit it.
 light = One Half Light
 dark = Rose Pine Moon
+nvim_light = GitHub Light Default
+nvim_dark = TokyoNight Night
