@@ -45,7 +45,8 @@ echo "  PR $num is at ${sha:0:9}"
 
 if [[ ! -d "$wt" ]]; then
   echo "Creating worktree $wt"
-  git branch "$branch" "$sha"
+  git worktree prune # a folder deleted by hand leaves a stale entry that keeps the branch "checked out"
+  git branch -f "$branch" "$sha" # a branch left behind by that folder is reset to the PR head
   git worktree add -q "$wt" "$branch"
   echo "  created branch $branch"
 else

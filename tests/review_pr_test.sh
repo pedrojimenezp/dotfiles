@@ -135,6 +135,14 @@ check "done in tmux: exit 0" "0" "$rc"
 contains "done in tmux: mentions the open window" "review:pr-123 is still open" "$out"
 check "done in tmux: window not killed" "review:pr-123" "$(env -u TMUX tmux -S "$SOCK" list-windows -F '#{window_name}')"
 
+echo "worktree folder deleted by hand"
+run "$CLONE" 123
+rm -rf "$WT"
+run "$CLONE" 123
+check "rm -rf then rerun: exit 0" "0" "$rc"
+check "rm -rf then rerun: worktree is back at the PR head" "$(git -C "$ROOT/seed" rev-parse prsrc)" "$(git -C "$WT" rev-parse HEAD)"
+check "rm -rf then rerun: branch pr-123" "pr-123" "$(git -C "$WT" branch --show-current)"
+
 echo
 echo "passed: $PASS, failed: $FAIL"
 [[ $FAIL -eq 0 ]]
