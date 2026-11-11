@@ -22,6 +22,8 @@ for t in brew mise curl pkill pgrep; do
   printf '#!/bin/sh\n[ "$1" = --prefix ] && echo "%s/brew-prefix"\nexit 0\n' "$ROOT" >"$STUBS/$t"
 done
 printf '#!/bin/sh\nexit 1\n' >"$STUBS/pgrep" # no Ghostty running
+# shellcheck disable=SC2016
+printf '#!/bin/sh\n[ "$1" = bundle ] && [ -n "${BREW_FAIL:-}" ] && exit 1\n[ "$1" = --prefix ] && echo "%s/brew-prefix"\nexit 0\n' "$ROOT" >"$STUBS/brew"
 REAL_GIT="$(command -v git)"
 # A clone of a github.com URL only creates the folder; every other git call is real.
 cat >"$STUBS/git" <<G
@@ -86,6 +88,43 @@ echo "== a folder that is not a git repo is skipped"
 mkdir -p "$claude_dir"
 run_install --with-claude "$origin"
 check "exit 1 and a warning" failed_with "is not a git repo"
+
+echo "== backup step and linking (real run against the temp HOME)"
+bhome="$ROOT/backup-home"
+mkdir -p "$bhome"
+echo mine >"$bhome/.zshrc"
+echo gitconfig >"$bhome/.gitconfig"
+mkdir -p "$bhome/.config/starship"
+echo mine >"$bhome/.config/starship.toml"
+run_in() { # run_in <home> [flags]: a real install with that HOME
+  RC=0
+  OUT="$(env HOME="$1" PATH="$STUBS:$PATH" bash "$SRC/install.sh" "${@:2}" 2>&1 </dev/null)" || RC=$?
+}
+run_in "$bhome"
+check "first install: exit 0" test "$RC" -eq 0
+check "a real file is moved to .backup-<stamp>" bash -c 'cat "$1"/.zshrc.backup-* | grep -qx mine' _ "$bhome"
+check "the backup message names both paths" grep -qE "backup: .*/\.zshrc -> .*/\.zshrc\.backup-[0-9]{8}-[0-9]{6}" <<<"$OUT"
+check "the path is now a link into the repo" bash -c '[[ -L "$1/.zshrc" && "$(realpath "$1/.zshrc")" == "$2"/* ]]' _ "$bhome" "$(cd "$SRC" && pwd -P)"
+check "the old gitconfig is backed up too" bash -c 'grep -qx gitconfig "$1"/.gitconfig.backup-*' _ "$bhome"
+check "the old gitconfig is gone, so config/git applies" bash -c '[[ ! -e "$1/.gitconfig" ]]' _ "$bhome"
+check "another package file is backed up" bash -c 'grep -qx mine "$1"/.config/starship.toml.backup-*' _ "$bhome"
+before="$(ls -A "$bhome" | sort | tr '\n' ' ')"
+sleep 1 # a new stamp would show as a new backup name
+run_in "$bhome"
+check "second install: exit 0" test "$RC" -eq 0
+check "existing repo links are left alone: no new backups" test "$before" = "$(ls -A "$bhome" | sort | tr '\n' ' ')"
+check "no backup message on the second run" bash -c '! grep -q "^backup:" <<<"$1"' _ "$OUT"
+
+echo "== brew bundle failure does not stop the install"
+if [[ "$OSTYPE" == darwin* ]]; then
+  fhome="$ROOT/brew-fail-home"
+  mkdir -p "$fhome"
+  RC=0
+  OUT="$(env HOME="$fhome" BREW_FAIL=1 PATH="$STUBS:$PATH" bash "$SRC/install.sh" 2>&1 </dev/null)" || RC=$?
+  check "exit 0" test "$RC" -eq 0
+  check "warning printed" grep -qF "Warning: brew bundle failed; run 'brew bundle' later" <<<"$OUT"
+  check "later steps still ran" grep -qF "Linking packages" <<<"$OUT"
+fi
 
 echo "== font install failure"
 # install_font only runs on a Linux desktop, so run the function alone with stub tools on PATH.

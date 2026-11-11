@@ -7,13 +7,13 @@ Fix the 15 review findings (tests safety, uninstall, tmux, nvim, bin scripts, do
 One small commit per finding group; tests/run.sh green at the end.
 
 ## Done
-- 1 install_test safe (stubs), 6 brew bundle guard
+All 15 findings fixed (see git log); new tests: tmux_sessions, tmux_popup, dotfiles_tools; install/uninstall/review_pr tests extended.
 
 ## Where we stopped
-Finding 1 and 6 committed.
+Running the full suite.
 
 ## Next step
-Finding 2 onwards.
+Report to the user.
 
 ## How to test
 bash tests/run.sh
