@@ -11,7 +11,7 @@ tmux 3.5 or newer (`extended-keys-format`), installed by mise. Never use apt's t
 1. Edit `tmux.conf` in the repo. Give every new `bind` a `-N "note"` so it shows in `prefix ?`.
 2. Reload with `prefix r`. Some `set -s` options need `tmux kill-server`.
 
-Machine-only options go in `~/.config/tmux/local.conf`. It is sourced after the status settings and before the plugins, so it can override anything.
+Machine-only options go in `~/.config/tmux/local.conf`. It is sourced after the status settings and the plugin options, right before the plugins load, so it can override anything (including `@continuum-restore`) and add `@plugin` lines.
 
 ## Add a plugin
 
