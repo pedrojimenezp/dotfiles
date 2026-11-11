@@ -2,6 +2,7 @@
 # Tests the nvim_light/nvim_dark keys of bin/.local/bin/theme and nvim's config/theme.lua in a
 # temp HOME. Offline: themes come from a fake Ghostty folder. Run: bash tests/theme_test.sh
 set -euo pipefail
+unset TMUX # theme refreshes tmux clients; never reach a real server
 
 SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)" # the repo under test
 PASS=0
