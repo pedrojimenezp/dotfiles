@@ -166,10 +166,12 @@ function M.load()
   M.applied_bg = bg -- a plugin scheme may force 'background' to the other value
   vim.g.dotfiles_theme = name
   vim.g.colors_name = nil -- see the header
+  require("config.diff_colors").apply() -- mini.base16 fires no ColorScheme
   loading = false
 end
 
 function M.setup()
+  require("config.diff_colors").setup()
   local want = M.mode() -- nil = keep nvim's detected background
   if want then vim.o.background = want end
   M.load()

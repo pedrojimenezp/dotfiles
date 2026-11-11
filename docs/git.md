@@ -41,6 +41,10 @@ These keys work inside any diffview (leader is `Space`):
 | `g?` | every diffview key |
 | `Space g q` | close the diffview |
 
+### Diff colors
+
+Diffs look like GitHub's split view with every colorscheme: the old side tints changed lines light red and the new side light green, with the changed words darker. Only backgrounds change, so syntax colors stay. The tints are the `Normal` background blended with the scheme's red and green (`DiagnosticError` / `DiagnosticOk`), with GitHub-like fallbacks. Filler lines are blank with a faint gap background. The groups are in `lua/config/diff_colors.lua`, redefined after every colorscheme load; diffview picks the per-side groups through `hooks.diff_buf_win_enter` in `lua/plugins/git.lua`.
+
 ### Uncommitted changes
 
 1. `cd` into the repo or worktree and run `nvim`.
