@@ -28,6 +28,7 @@ return {
       spec = {
         { "<leader>s", group = "Search" },
         { "<leader>f", group = "Files" },
+        { "<leader>c", group = "Code" },
         { "<leader>g", group = "Git" },
         { "<leader>h", group = "Hunks" },
         { "<leader>d", group = "Diagnostics/symbols" },
