@@ -78,7 +78,14 @@ found="$(tm list-sessions -F '#{session_name}'$'\t''#{session_path}' 2>/dev/null
 if [[ -n "$found" ]]; then
   name="$found"
 elif tm has-session -t "=$name" 2>/dev/null; then
-  name="$name-$(clean "$extra")" # name taken by another folder; if this is taken too, tmux errors out
+  # Name taken by another folder: add the owner folder, then a counter until the name is free.
+  base="$name-$(clean "$extra")"
+  name="$base"
+  n=2
+  while tm has-session -t "=$name" 2>/dev/null; do
+    name="$base-$n"
+    n=$((n + 1))
+  done
 fi
 
 if [[ -z "${TMUX:-}" ]]; then

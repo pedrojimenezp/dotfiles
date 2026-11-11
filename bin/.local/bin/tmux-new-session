@@ -24,7 +24,7 @@ list_candidates() {
     if command -v tmux-sessionizer >/dev/null 2>&1; then
       tmux-sessionizer --list 2>/dev/null | awk -F'\t' '{ print $2 }' || true # 2nd field is the path
     fi
-  } | awk 'NF && !seen[$0]++' | while IFS= read -r d; do [[ -d "$d" ]] && printf '%s\n' "$d"; done
+  } | awk 'NF && !seen[$0]++' | while IFS= read -r d; do if [[ -d "$d" ]]; then printf '%s\n' "$d"; fi; done
 }
 
 if [[ "${1:-}" == "--list" ]]; then
