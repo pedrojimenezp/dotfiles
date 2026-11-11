@@ -41,3 +41,13 @@ vim.api.nvim_create_autocmd("FocusGained", {
   nested = true, -- so the 'background' change fires OptionSet
   callback = function() require("config.theme").sync() end,
 })
+
+vim.api.nvim_create_autocmd("VimResized", {
+  group = group,
+  desc = "Rebalance windows in every tab",
+  callback = function()
+    local current = vim.api.nvim_get_current_tabpage()
+    vim.cmd("tabdo wincmd =") -- windows with 'winfixwidth' keep their width
+    if vim.api.nvim_tabpage_is_valid(current) then vim.api.nvim_set_current_tabpage(current) end
+  end,
+})

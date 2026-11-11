@@ -26,6 +26,7 @@ Needs Neovim 0.12+, `git` and network on the first start, the `tree-sitter` CLI 
 - **Go** uses real tabs of width 4; everything else 2 spaces.
 - **Plugin update checks are off**: update with `:Lazy` then `U`.
 - **`zls`, `shfmt`, `shellcheck` and `golangci-lint` come from mise**, not Mason: `zls` must match `zig`. bashls has shellcheck off, since nvim-lint runs it.
+- **Resize**: when the terminal or tmux pane is resized, windows in every tab are rebalanced; `winfixwidth` windows (diffview file panel) keep their width.
 - **Theme**: `<leader>ut` runs the `theme` script, then nvim reads the pair from `~/.config/theme/config` ([theme.md](theme.md)).
 
 ## Add a plugin
