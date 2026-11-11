@@ -185,8 +185,10 @@ class FakeSystem:
 class MainFlow(unittest.TestCase):
     def setUp(self):
         self.sys = FakeSystem()
-        self.saved = {n: getattr(mod, n) for n in ("run", "find_tool", "process_argv", "post_cmd_v", "LOG_PATH")}
+        self.saved = {n: getattr(mod, n) for n in ("run", "find_tool", "process_argv", "post_cmd_v", "LOG_PATH", "count_use")}
         mod.run = self.sys.run
+        self.counted = 0
+        mod.count_use = self.count_use        # never writes the real usage log
         mod.post_cmd_v = self.post_cmd_v      # never posts real key events
         self.log_dir = tempfile.mkdtemp()
         self.addCleanup(shutil.rmtree, self.log_dir, ignore_errors=True)
@@ -199,6 +201,9 @@ class MainFlow(unittest.TestCase):
     def tearDown(self):
         for name, fn in self.saved.items():
             setattr(mod, name, fn)
+
+    def count_use(self):
+        self.counted += 1
 
     def post_cmd_v(self):
         if self.post_error:
@@ -227,6 +232,12 @@ class MainFlow(unittest.TestCase):
 
     def scp_call(self):
         return next(c for c in self.sys.calls if os.path.basename(c[0]) == "scp")
+
+    def test_real_run_counts_use_and_dry_run_does_not(self):
+        self.assertEqual(self.main("--dry-run"), 0)
+        self.assertEqual(self.counted, 0)
+        self.assertEqual(self.main(), 0)
+        self.assertEqual(self.counted, 1)
 
     def test_image_data_with_text_types_uploads(self):
         self.one_host()

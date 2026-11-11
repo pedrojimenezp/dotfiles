@@ -402,8 +402,7 @@ def frontmost_app():
 def iterm_foreground_ssh():
     """Returns the Target of the foreground ssh in iTerm2's current session, or None.
 
-    None also when iTerm2 refuses the Apple event (Automation not allowed) or has no window:
-    the caller then uses the process list.
+    None also when iTerm2 refuses the Apple event or has no window.
     """
     code, out, err = osascript('tell application "iTerm2" to tty of current session of current window')
     tty = out.strip().replace("/dev/", "")
@@ -537,11 +536,23 @@ def write_log(lines, path=LOG_PATH):
         print(f"img-to-server: cannot write {path}: {error}", file=sys.stderr)
 
 
+def count_use():
+    """Appends one line to the usage log of dotfiles-usage; never fails."""
+    here = os.path.dirname(os.path.abspath(__file__))
+    try:
+        subprocess.run([os.path.join(here, "dotfiles-log"), "img-to-server"], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                       stderr=subprocess.DEVNULL, timeout=5, check=False)
+    except (OSError, subprocess.SubprocessError):
+        pass
+
+
 def main(argv):
     if argv not in ([], ["--dry-run"]):
         print(__doc__, file=sys.stderr)
         return 2
     dry_run = bool(argv)
+    if not dry_run:
+        count_use()
     LOG_LINES.clear()
     log(f"=== {datetime.datetime.now():%Y-%m-%d %H:%M:%S} ===" + (" (dry run)" if dry_run else ""))
     status = 1
@@ -558,7 +569,7 @@ def main(argv):
 
 
 def handle(dry_run):
-    """Does one run for main(); returns the exit code."""
+    """Runs once; returns the exit code."""
     front = frontmost_app()
     log(f"front app: {front or 'unknown'}")
     code, info, _ = osascript("clipboard info")

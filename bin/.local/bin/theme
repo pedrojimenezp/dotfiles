@@ -19,7 +19,7 @@ RAW_URL="https://raw.githubusercontent.com/$UPSTREAM/master/ghostty"
 API_URL="https://api.github.com/repos/$UPSTREAM/contents/ghostty"
 DEFAULT_LIGHT="GitHub Light Default"
 DEFAULT_DARK="TokyoNight Night"
-# Ghostty's bundled themes, first match wins; THEME_GHOSTTY_DIRS (colon-separated) overrides it for tests.
+# Ghostty's bundled themes, first match wins; THEME_GHOSTTY_DIRS (colon-separated) overrides it.
 GHOSTTY_DIRS="${THEME_GHOSTTY_DIRS-$HOME/Applications/Ghostty.app/Contents/Resources/ghostty/themes:/Applications/Ghostty.app/Contents/Resources/ghostty/themes:/usr/share/ghostty/themes:$HOME/.local/share/ghostty/themes}"
 SELF="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")" # absolute, for fzf callbacks
 ESC=$'\033'
@@ -356,7 +356,7 @@ sync_ghostty() {
   rm -f "$GHOSTTY_CONFIG_DIR/theme.conf"            # drop a symlink if one is there
   mv "$GHOSTTY_CONFIG_DIR/theme.conf.tmp" "$GHOSTTY_CONFIG_DIR/theme.conf"
   echo "ghostty: $GHOSTTY_CONFIG_DIR/theme.conf" >&2
-  # Ghostty reloads its config on SIGUSR2; THEME_NO_RELOAD=1 skips it (tests).
+  # Ghostty reloads its config on SIGUSR2; THEME_NO_RELOAD=1 skips it.
   if [[ -z ${THEME_NO_RELOAD:-} ]] && pgrep -x ghostty >/dev/null 2>&1; then
     pkill -USR2 -x ghostty 2>/dev/null || true
   fi

@@ -19,8 +19,8 @@ esac
 tools="tssh" # a zsh function, not a file; z and zi are only aliases of zoxide below
 while read -r name; do
   case "$name" in
-    zsh-*|fzf-tab|tree-sitter-cli|git-lfs|zls|font-*) continue ;; # plugins, libraries, helpers: no command to count
-    ripgrep) name=rg ;; git-delta) name="delta" ;; tealdeer) name=tldr ;; neovim) name=nvim ;; # command differs from formula
+    tree-sitter|git-lfs|zls|shellcheck|shfmt|golangci-lint|pngpaste) continue ;; # run by nvim, git or another script: never typed
+    ripgrep) name=rg ;; tealdeer) name=tldr ;; neovim) name=nvim ;; # command differs from formula
   esac
   tools="$tools $name"
 done < <({
@@ -28,7 +28,7 @@ done < <({
   sed -n '/^\[tools\]/,/^\[/s/^\([A-Za-z0-9_-]*\) *=.*/\1/p' "$ROOT/mise/.config/mise/config.toml" # plain keys only: "github:..." backends are libraries or helpers
 })
 for f in "$ROOT"/bin/.local/bin/*; do [[ ${f##*/} == dotfiles-log ]] || tools="$tools ${f##*/}"; done # the log helper itself is not a tool
-logged="$(grep -lE '^[^#]*dotfiles-log" +[a-z]' "$ROOT"/bin/.local/bin/* | sed 's|.*/||' | tr '\n' ' ' || true)" # scripts that call dotfiles-log (key-launched): counted from the log only
+logged="$(grep -lE '^[^#]*dotfiles-log"[),]* +"?[a-z]' "$ROOT"/bin/.local/bin/* | sed 's|.*/||' | tr '\n' ' ' || true)" # scripts that call dotfiles-log (key-launched): counted from the log only
 aliases="z=zoxide zi=zoxide $(grep -oE "alias [^= ]+='[^ ']+" "$ROOT/zsh/.zshrc" | sed "s/alias \(.*\)='\(.*\)/\1=\2/" | tr '\n' ' ')" # name=first word
 
 # Data source: a custom file, else zsh's own history.

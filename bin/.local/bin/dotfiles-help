@@ -62,7 +62,7 @@ script_rows() {
 rows() { tmux_rows; zsh_rows; script_rows; grep -v '^#' "$ROOT/docs/cheatsheet.tsv"; }
 
 case "${1:-}" in
-  --list) rows; exit 0 ;;                                   # plain table for scripts and tests
+  --list) rows; exit 0 ;;                                   # tab-separated table
   "") ;;                                                    # interactive
   *) sed -n '2,7s/^# //p' "$0"; exit 2 ;;                   # unknown option: show the header
 esac
