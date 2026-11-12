@@ -10,6 +10,7 @@
 
 ## Done
 - Script, tests (tests/review_pr_test.sh) and docs/git.md updated; shellcheck clean; tests/run.sh green.
+- Window name: review gets --name (pr-<n> or pr-<repo>-<n>) so two PRs of one repo never share a window; --done note, docs and tests updated.
 - Lookup tested read-only in a repo with ~98 submodules: ~0.1s on a hit, ~1.2s on a miss.
 
 ## Where we stopped

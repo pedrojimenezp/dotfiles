@@ -88,6 +88,10 @@ rc=0
 PATH="$STUBS:$PATH" bash "$SCRIPT" --print dev dev "$ROOT/feat" >/dev/null 2>&1 || rc=$?
 check "two bases: usage error" "2" "$rc"
 
+rc=0
+PATH="$STUBS:$PATH" bash "$SCRIPT" --name >/dev/null 2>&1 || rc=$?
+check "--name without a value: usage error" "2" "$rc"
+
 # -u: the gitsigns unified panel with the same merge-base; the default stays diffview.
 uni="nvim -c \"lua require('gitsigns').diff('$mb', nil, { diff = 'unified' })\""
 out="$(run --print -u "$ROOT/feat/api")"
@@ -147,6 +151,9 @@ check "single repo, no tmux: opens nvim" "nvim -c DiffviewOpen $mb" "$(run "$ROO
 # Several repos with changes, outside tmux: prints the commands and exits 0.
 echo w >"$ROOT/feat/web/w.txt"
 out="$(PATH="$STUBS:$PATH" bash "$SCRIPT" "$ROOT/feat" 2>&1)"
+rc=0
+PATH="$STUBS:$PATH" bash "$SCRIPT" --name x "$ROOT/feat" >/dev/null 2>&1 || rc=$?
+check "--name with several repos: exit 2" "2" "$rc"
 contains "several repos, no tmux: hint" "Not in tmux: run one of the commands above" "$out"
 check "several repos, no tmux: nvim not started" "0" "$(grep -c '^nvim ' <<<"$out")"
 

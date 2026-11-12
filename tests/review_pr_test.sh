@@ -77,7 +77,7 @@ run "$CLONE" 123
 check "first open: exit 0" "0" "$rc"
 check "first open: worktree is at the PR head" "$(git -C "$ROOT/seed" rev-parse prsrc)" "$(git -C "$WT" rev-parse HEAD)"
 check "first open: branch pr-123" "pr-123" "$(git -C "$WT" branch --show-current)"
-contains "first open: runs review with base and path" "review develop $WT" "$(cat "$ROOT/review.log")"
+contains "first open: runs review with base and path" "review --name pr-123 develop $WT" "$(cat "$ROOT/review.log")"
 contains "first open: gh asked for the base" "gh pr view 123 --json baseRefName -q .baseRefName" "$(cat "$ROOT/gh.log")"
 contains "first open: dependency hint" "install the dependencies" "$out"
 contains "first open: prints the path" "Worktree: $WT" "$out"
@@ -243,7 +243,7 @@ check "super->sub: worktree under the superproject" "pr-7" "$(git -C "$SWT" bran
 check "super->sub: it is a worktree of the submodule" "$(git -C "$SUBO.seed" rev-parse HEAD)" "$(git -C "$SWT" rev-parse HEAD)"
 contains "super->sub: submodule lists it" "$SWT" "$(git -C "$SUPER/Website" worktree list)"
 contains "super->sub: gh gets -R" "gh pr view -R acme/website 7 --json" "$(cat "$ROOT/gh.log")"
-contains "super->sub: runs review" "review develop $SWT" "$(cat "$ROOT/review.log")"
+contains "super->sub: runs review" "review --name pr-website-7 develop $SWT" "$(cat "$ROOT/review.log")"
 git -C "$SUPER" config -f .gitmodules submodule.Website.url "https://github.com/Acme/Website.git" # url hint path
 run "$SUPER" "https://github.com/acme/website/pull/7"
 check "super->sub with a matching .gitmodules url: exit 0" "0" "$rc"
@@ -262,6 +262,21 @@ run "$SUPER/feat" "https://github.com/acme/website/pull/7"
 check "from a feature worktree of the superproject: exit 0" "0" "$rc"
 contains "feature worktree: lands under the main checkout" "Updating worktree $SWT" "$out"
 git -C "$SUPER" worktree remove -f -f "$SUPER/feat"
+
+echo "two PRs of the same submodule"
+git -C "$SUBO.seed" push -q origin HEAD:refs/pull/8/head
+run "$SUPER" "https://github.com/acme/website/pull/8"
+check "second PR: exit 0" "0" "$rc"
+contains "second PR: its own window name" "review --name pr-website-8 develop $SUPER/worktrees/pr-website-8/Website" "$(cat "$ROOT/review.log")"
+check "second PR: first worktree kept" "pr-7" "$(git -C "$SWT" branch --show-current)"
+env -u TMUX tmux -S "$SOCK" -f /dev/null new-session -d -s u -n review:pr-website-7 "sleep 300"
+env -u TMUX tmux -S "$SOCK" new-window -t u -n review:pr-website-8 "sleep 300"
+rc=0
+out="$(cd "$SUPER" && TMUX="$SOCK,1,0" PATH="$STUBS:$PATH" bash "$SCRIPT" --done "https://github.com/acme/website/pull/8" 2>&1)" || rc=$?
+check "done second PR in tmux: exit 0" "0" "$rc"
+contains "done second PR in tmux: names its window" "review:pr-website-8 is still open" "$out"
+check "done second PR in tmux: other PR's name not mentioned" "0" "$(grep -c 'pr-website-7' <<<"$out")"
+env -u TMUX tmux -S "$SOCK" kill-server >/dev/null 2>&1 || true
 
 echo "URL of the superproject, run from its submodule"
 run "$SUPER/Website" "https://github.com/acme/platform/pull/5"

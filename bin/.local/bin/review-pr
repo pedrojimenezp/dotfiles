@@ -5,6 +5,7 @@
 # A number means the repo you are in. A URL (https://github.com/<owner>/<repo>/pull/<n>, optionally with /files,
 # /commits or a #fragment) is matched against the origin of the current repo, its superproject, and their submodules.
 # Single repo: <main checkout>/worktrees/pr-<n>. Submodule: <superproject main checkout>/worktrees/pr-<repo>-<n>/<Repo>.
+# The tmux window is review:pr-<n>, or review:pr-<repo>-<n> for a submodule.
 # Rerunning fast-forwards the worktree to the PR's latest commit, and stops (touching nothing) on local edits or a force-push.
 set -euo pipefail
 
@@ -16,7 +17,7 @@ want= # owner/repo in lowercase when a URL was given
 url_re='^https://github\.com/([^/]+)/([^/]+)/pull/([0-9]+)(/(files|commits))?/?(#.*)?$'
 for arg in "$@"; do
   case "$arg" in
-    -h | --help) sed -n '2,8p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h | --help) sed -n '2,9p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     --done) [[ $done_mode -eq 0 ]] || usage; done_mode=1 ;;
     -*) usage ;;
     *)
@@ -93,10 +94,12 @@ if [[ -n "$super" ]]; then
   repo_slug="$(printf '%s' "$repo_dir" | tr '[:upper:]' '[:lower:]')"
   wt_parent="$(main_checkout "$super")/worktrees/pr-$repo_slug-$num"
   wt="$wt_parent/$repo_dir"
+  win="$(basename "$wt_parent")"
 else
   repo="$(main_checkout "$repo")"
   wt_parent=
   wt="$repo/worktrees/pr-$num"
+  win="pr-$num"
 fi
 git() { command git -C "$repo" "$@"; }
 gh_repo=()
@@ -109,8 +112,8 @@ if [[ $done_mode -eq 1 ]]; then
   [[ -z "$wt_parent" ]] || rmdir "$wt_parent" 2>/dev/null || true
   echo "Deleting branch $branch"
   git branch -D "$branch"
-  if [[ -n "${TMUX:-}" ]] && tmux list-windows -F '#{window_name}' | grep -qx "review:$(basename "$wt")"; then
-    echo "The tmux window review:$(basename "$wt") is still open: close it yourself."
+  if [[ -n "${TMUX:-}" ]] && tmux list-windows -F '#{window_name}' | grep -qx "review:$win"; then
+    echo "The tmux window review:$win is still open: close it yourself."
   fi
   exit 0
 fi
@@ -158,4 +161,4 @@ echo "  base $base"
 echo "Worktree: $wt"
 echo "To let gd reach into libraries, install the dependencies there first (for example npm install)."
 echo "Opening the review"
-exec review "$base" "$wt"
+exec review --name "$win" "$base" "$wt"
