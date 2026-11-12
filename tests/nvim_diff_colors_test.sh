@@ -18,6 +18,9 @@ export THEME_GHOSTTY_DIRS="$ROOT/themes"
 mkdir -p "$HOME" "$XDG_CONFIG_HOME/theme" "$XDG_STATE_HOME" "$THEME_GHOSTTY_DIRS"
 printf 'background = #fafafa\nforeground = #383a42\npalette = 1=#e45649\npalette = 2=#50a14f\n' >"$THEME_GHOSTTY_DIRS/Fake Light"
 printf 'background = #282c34\nforeground = #dcdfe4\npalette = 1=#e06c75\npalette = 2=#98c379\n' >"$THEME_GHOSTTY_DIRS/Fake Dark"
+printf 'background = #fafafa\nforeground = #383a42\npalette = 1=#e45649\npalette = 2=#6f8f72\n' >"$THEME_GHOSTTY_DIRS/Dull Green"
+printf 'background = #fafafa\nforeground = #383a42\npalette = 1=#9a6f72\npalette = 2=#2da44e\n' >"$THEME_GHOSTTY_DIRS/Dull Red"
+printf 'background = #fafafa\nforeground = #383a42\npalette = 1=#d1242f\npalette = 2=#2da44e\n' >"$THEME_GHOSTTY_DIRS/Vivid Light"
 
 ok() { PASS=$((PASS + 1)); echo "  ok   $1"; }
 bad() { FAIL=$((FAIL + 1)); echo "  FAIL $1"; }
@@ -72,6 +75,45 @@ check_scheme "tokyonight-night" dark "TokyoNight Night" tokyonight.nvim
 check_scheme "tokyonight-day" light "TokyoNight Day" tokyonight.nvim
 check_scheme "base16 light" light "Fake Light"
 check_scheme "base16 dark" dark "Fake Dark"
+
+# check_tints <label> <theme name> <expected green source> <expected red source>
+# Light mode: DiffAdd / DiffTextNew must blend the expected green, DiffAddOld / DiffTextOld the red.
+check_tints() {
+  local label="$1" name="$2" green="$3" red="$4" out
+  if [[ ! -d "$REAL_LAZY/mini.nvim" ]]; then echo "  skip $label (mini.nvim not installed)"; return; fi
+  printf 'nvim_light = %s\n' "$name" >"$XDG_CONFIG_HOME/theme/config"
+  echo light >"$XDG_STATE_HOME/theme"
+  out="$(nvim --headless -u NONE -i NONE --cmd "set rtp^=$SRC/nvim/.config/nvim,$REAL_LAZY/mini.nvim" --cmd "set background=light" \
+    -c "lua require('config.diff_colors').setup(); require('config.theme').load(); require('config.diff_colors').apply()" \
+    -c "lua $LUA_TINTS" -c "lua io.stdout:write(check('$green', '$red'))" -c "qa!" 2>&1 | tr -d '\r' | tail -n 1)"
+  if [[ "$out" == ok ]]; then ok "$label"; else bad "$label: $out"; fi
+}
+
+LUA_TINTS='
+local function get(n) return vim.api.nvim_get_hl(0, { name = n, link = false }).bg end
+local function blend(a, b, t)
+  local out = 0
+  for _, sh in ipairs({ 16, 8, 0 }) do
+    local x, y = math.floor(a / 2 ^ sh) % 256, tonumber(b:sub(2 + (16 - sh) / 4, 3 + (16 - sh) / 4), 16)
+    out = out * 256 + math.floor(x + (y - x) * t + 0.5)
+  end
+  return out
+end
+function check(green, red)
+  local bg = vim.api.nvim_get_hl(0, { name = "Normal" }).bg
+  local want = { DiffAdd = { green, 0.14 }, DiffTextNew = { green, 0.32 }, DiffAddOld = { red, 0.14 }, DiffTextOld = { red, 0.32 } }
+  local problems = {}
+  for n, w in pairs(want) do
+    if get(n) ~= blend(bg, w[1], w[2]) then table.insert(problems, string.format("%s is #%06x, want a blend of %s", n, get(n), w[1])) end
+  end
+  return #problems == 0 and "ok" or table.concat(problems, "; ")
+end
+'
+
+echo "dull colours fall back"
+check_tints "dull green uses the fallback green, red stays" "Dull Green" "#1a7f37" "#e45649"
+check_tints "dull red uses the fallback red, green stays" "Dull Red" "#2da44e" "#cf222e"
+check_tints "vivid theme keeps its own colours" "Vivid Light" "#2da44e" "#d1242f"
 
 echo "diffview"
 if [[ ! -d "$REAL_LAZY/diffview.nvim" ]]; then

@@ -1,6 +1,8 @@
 -- GitHub-style diff colors for any colorscheme: Diff* groups get a background and never a
 -- foreground, so syntax highlighting shows through. The tints are the Normal background blended
--- with the scheme's red and green.
+-- with the scheme's red and green. A scheme colour that is too dull (HSL saturation below
+-- min_saturation) is replaced by the mode's GitHub colour from `fallback`, so tints always read
+-- as red or green. Each colour is judged on its own.
 --   DiffAdd         added line (green); DiffAddOld is the same line as seen on the old side (red)
 --   DiffChange*     changed line, DiffText* the changed words inside it; Old = red, New = green
 --   DiffDelete      filler where the other side has lines: a faint gap, drawn with blank fillchars
@@ -16,6 +18,8 @@ local strength = { -- blend amount: whole line, changed words, filler gap
   light = { line = 0.14, text = 0.32, gap = 0.05 },
   dark = { line = 0.20, text = 0.40, gap = 0.07 },
 }
+
+local min_saturation = 0.32 -- HSL; Dayfox green is 0.29, base16 greens 0.34 and up
 
 local function to_hex(n) return n and string.format("#%06x", n) or nil end
 
@@ -36,13 +40,27 @@ local function blend(a, b, t)
   return out
 end
 
+-- HSL saturation of "#rrggbb", 0 (grey) to 1.
+local function saturation(hex)
+  local r, g, b = tonumber(hex:sub(2, 3), 16) / 255, tonumber(hex:sub(4, 5), 16) / 255, tonumber(hex:sub(6, 7), 16) / 255
+  local hi, lo = math.max(r, g, b), math.min(r, g, b)
+  if hi == lo then return 0 end
+  return (hi - lo) / (1 - math.abs(hi + lo - 1))
+end
+
+-- The scheme colour, or the fallback when it is missing or too dull.
+local function vivid(scheme, fallback_color)
+  if scheme and saturation(scheme) >= min_saturation then return scheme end
+  return fallback_color
+end
+
 function M.apply()
   local mode = vim.o.background == "light" and "light" or "dark"
   local fb, k = fallback[mode], strength[mode]
   local bg = color("bg", "Normal") or fb.bg
   local fg = color("fg", "Normal") or fb.fg
-  local red = color("fg", "DiagnosticError", "Removed") or fb.red
-  local green = color("fg", "DiagnosticOk", "Added") or fb.green
+  local red = vivid(color("fg", "DiagnosticError", "Removed"), fb.red)
+  local green = vivid(color("fg", "DiagnosticOk", "Added"), fb.green)
   local function hl(name, tint, t) vim.api.nvim_set_hl(0, name, { bg = blend(bg, tint, t) }) end
   hl("DiffAdd", green, k.line)
   hl("DiffAddOld", red, k.line)
