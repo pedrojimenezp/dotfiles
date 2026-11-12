@@ -10,18 +10,20 @@
 4. Extend tests/review_pr_test.sh; update header.
 
 ## Done
-- Worktree and branch created.
+- Script rewritten (lookup, same-repo naming, reuse, markers, --done), header updated.
+- tests/review_pr_test.sh extended (156 checks pass); shellcheck clean on the script.
 
 ## Where we stopped
-Starting the script change.
+Ready to commit and hand back.
 
 ## Next step
-Edit bin/.local/bin/review-pr, then the tests.
+Review and merge.
 
 ## How to test
 `bash tests/review_pr_test.sh`, `tests/run.sh`, `shellcheck bin/.local/bin/review-pr tests/review_pr_test.sh`.
 
 ## Open questions
+- After a force-push on a same-repo PR, `--done` refuses (old commits are not on the new origin ref); the user resets or drops the branch by hand.
 - `--done` when `gh` cannot look the PR up falls back to the fork layout (`pr-<n>`).
 
 Updated: 2026-11-12 by niche@Pedros-MacBook-Pro-M4

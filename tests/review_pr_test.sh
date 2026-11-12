@@ -29,7 +29,16 @@ contains() { # contains "<description>" "<needle>" "<haystack>"
 
 STUBS="$ROOT/stubs"
 mkdir -p "$STUBS"
-printf '#!/bin/sh\necho "gh $*" >>"%s/gh.log"\necho develop\n' "$ROOT" >"$STUBS/gh"
+# gh prints head branch, cross-repo flag and base for the PR number, from $ROOT/pr-<n>.meta (default: a fork PR on develop).
+cat >"$STUBS/gh" <<STUB
+#!/bin/sh
+echo "gh \$*" >>"$ROOT/gh.log"
+shift 2
+while [ \$# -gt 0 ]; do
+  case "\$1" in -R) shift 2 ;; -*) shift ;; *) n="\$1"; break ;; esac
+done
+if [ -f "$ROOT/pr-\$n.meta" ]; then cat "$ROOT/pr-\$n.meta"; else printf 'fork-head\ntrue\ndevelop\n'; fi
+STUB
 printf '#!/bin/sh\necho "review $*" >>"%s/review.log"\n' "$ROOT" >"$STUBS/review"
 chmod +x "$STUBS/gh" "$STUBS/review"
 SCRIPT="$SRC/bin/.local/bin/review-pr"
@@ -78,7 +87,7 @@ check "first open: exit 0" "0" "$rc"
 check "first open: worktree is at the PR head" "$(git -C "$ROOT/seed" rev-parse prsrc)" "$(git -C "$WT" rev-parse HEAD)"
 check "first open: branch pr-123" "pr-123" "$(git -C "$WT" branch --show-current)"
 contains "first open: runs review with base and path" "review --name pr-123 develop $WT" "$(cat "$ROOT/review.log")"
-contains "first open: gh asked for the base" "gh pr view 123 --json baseRefName -q .baseRefName" "$(cat "$ROOT/gh.log")"
+contains "first open: gh asked for the base" "gh pr view 123 --json headRefName,isCrossRepository,baseRefName" "$(cat "$ROOT/gh.log")"
 contains "first open: dependency hint" "install the dependencies" "$out"
 contains "first open: prints the path" "Worktree: $WT" "$out"
 git -C "$CLONE" rev-parse --verify -q origin/develop >/dev/null && ok "first open: base fetched" || bad "first open: base fetched"
@@ -314,6 +323,154 @@ check "done (submodule layout): exit 0" "0" "$rc"
 [[ ! -d "$SWT" ]] && ok "done (submodule layout): worktree removed" || bad "done (submodule layout): worktree removed"
 [[ ! -d "$SUPER/worktrees/pr-website-7" ]] && ok "done (submodule layout): empty folder removed" || bad "done (submodule layout): empty folder removed"
 check "done (submodule layout): branch removed" "" "$(git -C "$SUPER/Website" branch --list pr-7)"
+
+# ---- same-repo PRs: the worktree uses the PR's own branch ----
+git clone -q "$ORIGIN" "$ROOT/seed2"
+# pr_meta <n> <head branch> <cross-repo true|false> <base>: what the gh stub returns for PR <n>.
+pr_meta() { printf '%s\n%s\n%s\n' "$2" "$3" "$4" >"$ROOT/pr-$1.meta"; }
+# remote_commit <branch> <file> <text> [fresh]: pushes a commit to origin's <branch>; fresh rebuilds it from main (a force-push).
+remote_commit() {
+  local base="origin/$1"
+  git -C "$ROOT/seed2" fetch -q origin
+  { [[ "${4:-}" != fresh ]] && git -C "$ROOT/seed2" rev-parse -q --verify "$base" >/dev/null; } || base=origin/main
+  git -C "$ROOT/seed2" checkout -q -B "$1" "$base"
+  echo "$3" >"$ROOT/seed2/$2"
+  git -C "$ROOT/seed2" add "$2"
+  git -C "$ROOT/seed2" commit -q -m "$2"
+  git -C "$ROOT/seed2" push -q -f origin "$1"
+}
+# local_commit <branch> <file>: commits on a local branch of the clone that is not checked out anywhere.
+local_commit() {
+  git -C "$CLONE" worktree add -q "$ROOT/tmpwt" "$1"
+  echo local >"$ROOT/tmpwt/$2"
+  git -C "$ROOT/tmpwt" add "$2"
+  git -C "$ROOT/tmpwt" commit -q -m "$2"
+  git -C "$CLONE" worktree remove "$ROOT/tmpwt"
+}
+cfg() { git -C "$CLONE" config --get "$1" || true; }
+
+echo "fork PR keeps pr-<n> and has no upstream"
+check "fork: no upstream" "" "$(cfg branch.pr-123.remote)"
+check "fork: no marker" "" "$(cfg branch.pr-123.reviewPr)"
+
+echo "same-repo PR, new branch"
+pr_meta 201 BRAVO-1/feat false develop
+remote_commit BRAVO-1/feat a.txt 1
+AWT="$CLONE/worktrees/BRAVO-1-feat"
+run "$CLONE" 201
+check "new branch: exit 0" "0" "$rc"
+check "new branch: local branch has the PR's name" "BRAVO-1/feat" "$(git -C "$AWT" branch --show-current)"
+check "new branch: at the remote tip" "$(git -C "$ROOT/seed2" rev-parse BRAVO-1/feat)" "$(git -C "$AWT" rev-parse HEAD)"
+check "new branch: tracks origin" "origin/BRAVO-1/feat" "$(git -C "$AWT" rev-parse --abbrev-ref '@{upstream}')"
+check "new branch: marked as created" "true" "$(cfg branch.BRAVO-1/feat.reviewPr)"
+check "new branch: no pr-201 folder" "no" "$([[ -d "$CLONE/worktrees/pr-201" ]] && echo yes || echo no)"
+contains "new branch: window and path" "review --name BRAVO-1-feat develop $AWT" "$(cat "$ROOT/review.log")"
+contains "new branch: one gh call with the three fields" "gh pr view 201 --json headRefName,isCrossRepository,baseRefName" "$(cat "$ROOT/gh.log")"
+remote_commit BRAVO-1/feat b.txt 2
+run "$CLONE" 201
+check "same-repo rerun: exit 0" "0" "$rc"
+check "same-repo rerun: fast-forwarded" "$(git -C "$ROOT/seed2" rev-parse BRAVO-1/feat)" "$(git -C "$AWT" rev-parse HEAD)"
+echo edit >>"$AWT/a.txt"
+run "$CLONE" 201
+check "same-repo dirty: exit 1" "1" "$rc"
+contains "same-repo dirty: says what to do" "review-pr --done 201" "$out"
+git -C "$AWT" checkout -q a.txt
+
+echo "--done removes what the script made"
+run "$CLONE" --done 201
+check "done marked: exit 0" "0" "$rc"
+[[ ! -d "$AWT" ]] && ok "done marked: worktree removed" || bad "done marked: worktree removed"
+check "done marked: branch removed" "" "$(git -C "$CLONE" branch --list BRAVO-1/feat)"
+run "$CLONE" 201
+
+echo "same-repo force-push, then --done refuses the old commits"
+remote_commit BRAVO-1/feat z.txt 9 fresh
+before="$(git -C "$AWT" rev-parse HEAD)"
+run "$CLONE" 201
+check "same-repo force-push: exit 1" "1" "$rc"
+contains "same-repo force-push: says what to do" "review-pr --done 201" "$out"
+check "same-repo force-push: HEAD unchanged" "$before" "$(git -C "$AWT" rev-parse HEAD)"
+run "$CLONE" --done 201
+check "done unpushed: exit 1" "1" "$rc"
+contains "done unpushed: names the upstream" "not on origin/BRAVO-1/feat" "$out"
+contains "done unpushed: says what to do" "git branch -D BRAVO-1/feat" "$out"
+[[ -d "$AWT" ]] && ok "done unpushed: worktree kept" || bad "done unpushed: worktree kept"
+check "done unpushed: branch kept" "BRAVO-1/feat" "$(git -C "$CLONE" branch --list BRAVO-1/feat | tr -d ' *+')"
+git -C "$AWT" reset -q --hard origin/BRAVO-1/feat
+env -u TMUX tmux -S "$SOCK" -f /dev/null new-session -d -s v -n review:BRAVO-1-feat "sleep 300"
+rc=0
+out="$(cd "$CLONE" && TMUX="$SOCK,1,0" PATH="$STUBS:$PATH" bash "$SCRIPT" --done 201 2>&1)" || rc=$?
+env -u TMUX tmux -S "$SOCK" kill-server >/dev/null 2>&1 || true
+check "done pushed: exit 0" "0" "$rc"
+contains "done pushed: tmux window hint" "review:BRAVO-1-feat is still open" "$out"
+check "done pushed: branch removed" "" "$(git -C "$CLONE" branch --list BRAVO-1/feat)"
+
+echo "branch already checked out in another worktree"
+pr_meta 202 BRAVO-2/mine false develop
+remote_commit BRAVO-2/mine m.txt 1
+git -C "$CLONE" fetch -q origin
+OWN="$ROOT/own/widgets"
+git -C "$CLONE" worktree add -q -b BRAVO-2/mine "$OWN" origin/BRAVO-2/mine
+echo mine >"$OWN/mine.txt"
+git -C "$OWN" add mine.txt
+git -C "$OWN" commit -q -m mine
+echo wip >"$OWN/wip.txt"
+before="$(git -C "$OWN" rev-parse HEAD)"
+remote_commit BRAVO-2/mine m.txt 2
+run "$CLONE" 202
+check "reuse: exit 0" "0" "$rc"
+contains "reuse: says which worktree" "Reusing worktree $OWN" "$out"
+check "reuse: no second worktree" "no" "$([[ -d "$CLONE/worktrees/BRAVO-2-mine" ]] && echo yes || echo no)"
+check "reuse: HEAD not moved" "$before" "$(git -C "$OWN" rev-parse HEAD)"
+check "reuse: untracked file kept" "wip" "$(cat "$OWN/wip.txt")"
+contains "reuse: review opens there" "review --name BRAVO-2-mine develop $OWN" "$(cat "$ROOT/review.log")"
+check "reuse: no marker" "" "$(cfg branch.BRAVO-2/mine.reviewPr)"
+run "$CLONE" --done 202
+check "done reused: exit 0" "0" "$rc"
+contains "done reused: removes nothing" "Nothing was removed" "$out"
+[[ -d "$OWN" ]] && ok "done reused: worktree kept" || bad "done reused: worktree kept"
+check "done reused: branch kept" "BRAVO-2/mine" "$(git -C "$CLONE" branch --list BRAVO-2/mine | tr -d ' *+')"
+
+echo "existing local branch, not checked out"
+pr_meta 203 BRAVO-3/ahead false develop
+remote_commit BRAVO-3/ahead c.txt 1
+git -C "$CLONE" fetch -q origin
+git -C "$CLONE" branch -q BRAVO-3/ahead origin/BRAVO-3/ahead
+local_commit BRAVO-3/ahead l.txt
+mine="$(git -C "$CLONE" rev-parse BRAVO-3/ahead)"
+CWT="$CLONE/worktrees/BRAVO-3-ahead"
+run "$CLONE" 203
+check "ahead: exit 0" "0" "$rc"
+contains "ahead: says it is used as it is" "not on origin/BRAVO-3/ahead; using it as it is" "$out"
+check "ahead: branch not reset" "$mine" "$(git -C "$CWT" rev-parse HEAD)"
+check "ahead: marked worktree only" "worktree" "$(cfg branch.BRAVO-3/ahead.reviewPr)"
+run "$CLONE" --done 203
+check "done ahead: exit 0" "0" "$rc"
+[[ ! -d "$CWT" ]] && ok "done ahead: worktree removed" || bad "done ahead: worktree removed"
+check "done ahead: branch kept" "$mine" "$(git -C "$CLONE" rev-parse BRAVO-3/ahead)"
+contains "done ahead: says the branch stays" "Keeping branch BRAVO-3/ahead" "$out"
+pr_meta 204 BRAVO-4/behind false develop
+remote_commit BRAVO-4/behind d.txt 1
+git -C "$CLONE" fetch -q origin
+git -C "$CLONE" branch -q BRAVO-4/behind origin/BRAVO-4/behind
+remote_commit BRAVO-4/behind d.txt 2
+run "$CLONE" 204
+check "behind: exit 0" "0" "$rc"
+contains "behind: says it fast-forwarded" "fast-forwarded the existing branch BRAVO-4/behind" "$out"
+check "behind: at the remote tip" "$(git -C "$ROOT/seed2" rev-parse BRAVO-4/behind)" "$(git -C "$CLONE/worktrees/BRAVO-4-behind" rev-parse HEAD)"
+
+echo "same-repo PR in a submodule"
+pr_meta 209 BRAVO-9/sub false develop
+git -C "$SUBO.seed" push -q origin HEAD:refs/heads/BRAVO-9/sub
+SWT2="$SUPER/worktrees/BRAVO-9-sub/Website"
+run "$SUPER" "https://github.com/acme/website/pull/209"
+check "submodule same-repo: exit 0" "0" "$rc"
+check "submodule same-repo: branch" "BRAVO-9/sub" "$(git -C "$SWT2" branch --show-current)"
+contains "submodule same-repo: window and path" "review --name BRAVO-9-sub develop $SWT2" "$(cat "$ROOT/review.log")"
+run "$SUPER" --done "https://github.com/acme/website/pull/209"
+check "submodule same-repo done: exit 0" "0" "$rc"
+[[ ! -d "$SUPER/worktrees/BRAVO-9-sub" ]] && ok "submodule same-repo done: folder removed" || bad "submodule same-repo done: folder removed"
+check "submodule same-repo done: branch removed" "" "$(git -C "$SUPER/Website" branch --list BRAVO-9/sub)"
 
 echo
 echo "passed: $PASS, failed: $FAIL"

@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
 # Opens a GitHub pull request in its own worktree and reviews it in Neovim's diffview.
 # Usage: review-pr <number|url>         (fetch the PR into a worktree and run review against its base)
-#        review-pr --done <number|url>  (remove that worktree and its pr-<number> branch)
+#        review-pr --done <number|url>  (remove the worktree and branch this script made for that PR)
 # A number means the repo you are in. A URL (https://github.com/<owner>/<repo>/pull/<n>, optionally with /files,
 # /commits or a #fragment) is matched against the origin of the current repo, its superproject, and their submodules.
-# Single repo: <main checkout>/worktrees/pr-<n>. Submodule: <superproject main checkout>/worktrees/pr-<repo>-<n>/<Repo>.
-# The tmux window is review:pr-<n>, or review:pr-<repo>-<n> for a submodule.
+# Same-repo PR: the PR's own branch, tracking origin/<branch>. The folder and the tmux window (review:<name>) are the branch with / as -.
+#   Single repo: <main checkout>/worktrees/<name>. Submodule: <superproject main checkout>/worktrees/<name>/<Repo>.
+#   A branch already checked out in a worktree is reused untouched; --done removes only what this script created and
+#   refuses to delete a branch with commits that are not on its upstream.
+# Fork PR: branch pr-<n> from pull/<n>/head, in worktrees/pr-<n> (submodule: worktrees/pr-<repo>-<n>/<Repo>), window review:pr-<n>.
 # Rerunning fast-forwards the worktree to the PR's latest commit, and stops (touching nothing) on local edits or a force-push.
 set -euo pipefail
 
@@ -17,7 +20,7 @@ want= # owner/repo in lowercase when a URL was given
 url_re='^https://github\.com/([^/]+)/([^/]+)/pull/([0-9]+)(/(files|commits))?/?(#.*)?$'
 for arg in "$@"; do
   case "$arg" in
-    -h | --help) sed -n '2,9p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h | --help) sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     --done) [[ $done_mode -eq 0 ]] || usage; done_mode=1 ;;
     -*) usage ;;
     *)
@@ -88,55 +91,158 @@ if [[ -n "$want" ]]; then
 fi
 
 super="$(command git -C "$repo" rev-parse --show-superproject-working-tree)"
-branch="pr-$num"
-if [[ -n "$super" ]]; then
-  repo_dir="$(basename "$repo")"
-  repo_slug="$(printf '%s' "$repo_dir" | tr '[:upper:]' '[:lower:]')"
-  wt_parent="$(main_checkout "$super")/worktrees/pr-$repo_slug-$num"
-  wt="$wt_parent/$repo_dir"
-  win="$(basename "$wt_parent")"
-else
-  repo="$(main_checkout "$repo")"
-  wt_parent=
-  wt="$repo/worktrees/pr-$num"
-  win="pr-$num"
-fi
+[[ -n "$super" ]] || repo="$(main_checkout "$repo")"
 git() { command git -C "$repo" "$@"; }
 gh_repo=()
 [[ -z "$want" ]] || gh_repo=(-R "$want")
 
+# Looks the PR up once: sets head (its branch), cross (true for a fork) and base.
+head='' cross='' base=''
+lookup_pr() {
+  { read -r head && read -r cross && read -r base; } < <(cd "$repo" &&
+    gh pr view ${gh_repo[@]+"${gh_repo[@]}"} "$num" --json headRefName,isCrossRepository,baseRefName \
+      -q '.headRefName, .isCrossRepository, .baseRefName') || return 1
+  [[ -n "$head" && -n "$base" ]]
+}
+# Prints the worktree where branch $1 is checked out, if any.
+worktree_of() {
+  git worktree list --porcelain | awk -v b="refs/heads/$1" '/^worktree /{p=substr($0,10)} $0=="branch " b{print p; exit}'
+}
+# Prints the upstream of branch $1: its configured one, else origin/$1 when that exists.
+upstream_of() {
+  git rev-parse -q --verify "$1@{upstream}" >/dev/null 2>&1 && { git rev-parse --abbrev-ref "$1@{upstream}"; return; }
+  ! git rev-parse -q --verify "refs/remotes/origin/$1" >/dev/null || echo "origin/$1"
+}
+
+echo "Looking up pull request $num"
+if ! lookup_pr; then
+  if [[ $done_mode -eq 0 ]]; then
+    echo "review-pr: gh could not look up PR $num" >&2
+    exit 1
+  fi
+  echo "  gh could not look it up; using the fork layout (pr-$num)"
+  head='' cross=true base=''
+fi
+
+# fork keeps the old names (pr-<n>); a same-repo PR is named after its branch, with / as -.
+if [[ "$cross" == "true" ]]; then
+  branch="pr-$num"
+  name="pr-$num"
+  [[ -z "$super" ]] || name="pr-$(basename "$repo" | tr '[:upper:]' '[:lower:]')-$num"
+else
+  branch="$head"
+  name="${head//\//-}"
+fi
+if [[ -n "$super" ]]; then
+  wt_parent="$(main_checkout "$super")/worktrees/$name"
+  wt="$wt_parent/$(basename "$repo")"
+else
+  wt_parent=
+  wt="$repo/worktrees/$name"
+fi
+win="$name"
+echo "  $([[ "$cross" == "true" ]] && echo "fork PR" || echo "branch $branch")"
+
 if [[ $done_mode -eq 1 ]]; then
-  echo "Removing worktree $wt"
-  git worktree remove "$wt"
-  echo "  removed"
-  [[ -z "$wt_parent" ]] || rmdir "$wt_parent" 2>/dev/null || true
-  echo "Deleting branch $branch"
-  git branch -D "$branch"
+  if [[ "$cross" == "true" ]]; then
+    echo "Removing worktree $wt"
+    git worktree remove "$wt"
+    echo "  removed"
+    [[ -z "$wt_parent" ]] || rmdir "$wt_parent" 2>/dev/null || true
+    echo "Deleting branch $branch"
+    git branch -D "$branch"
+  else
+    other="$(worktree_of "$branch")"
+    marker="$(git config --get "branch.$branch.reviewPr" || true)"
+    if [[ -n "$other" && "$other" != "$wt" ]]; then
+      echo "Branch $branch is checked out in $other, which review-pr did not create."
+      echo "  Nothing was removed."
+    elif [[ -z "$marker" ]]; then
+      echo "Branch $branch and its worktree were not created by review-pr."
+      echo "  Nothing was removed."
+    else
+      if [[ "$marker" == "true" ]] && git show-ref -q --verify "refs/heads/$branch"; then
+        up="$(upstream_of "$branch")"
+        ahead=0
+        [[ -z "$up" ]] || ahead="$(git rev-list --count "$up..$branch")"
+        if [[ -z "$up" || "$ahead" -gt 0 ]]; then
+          echo "review-pr: branch $branch has commits that are not on ${up:-a remote}; nothing was changed." >&2
+          echo "  Push them (git -C $wt push) or drop them (git branch -D $branch, after git worktree remove $wt), then rerun review-pr --done $arg_ref" >&2
+          exit 1
+        fi
+      fi
+      if [[ -d "$wt" ]]; then
+        echo "Removing worktree $wt"
+        git worktree remove "$wt"
+        echo "  removed"
+      fi
+      [[ -z "$wt_parent" ]] || rmdir "$wt_parent" 2>/dev/null || true
+      git worktree prune
+      if [[ "$marker" == "true" ]]; then
+        echo "Deleting branch $branch"
+        git branch -D "$branch"
+      else
+        echo "Keeping branch $branch: it existed before review-pr."
+        git config --unset "branch.$branch.reviewPr"
+      fi
+    fi
+  fi
   if [[ -n "${TMUX:-}" ]] && tmux list-windows -F '#{window_name}' | grep -qx "review:$win"; then
     echo "The tmux window review:$win is still open: close it yourself."
   fi
   exit 0
 fi
 
-echo "Fetching pull request $num"
-git fetch -q origin "pull/$num/head"
-sha="$(git rev-parse FETCH_HEAD)" # FETCH_HEAD is per worktree, so keep its value
+reused=
+if [[ "$cross" == "true" ]]; then
+  echo "Fetching pull request $num"
+  git fetch -q origin "pull/$num/head"
+  sha="$(git rev-parse FETCH_HEAD)" # FETCH_HEAD is per worktree, so keep its value
+else
+  echo "Fetching branch $head"
+  git fetch -q origin "+refs/heads/$head:refs/remotes/origin/$head"
+  sha="$(git rev-parse "refs/remotes/origin/$head")"
+  other="$(worktree_of "$branch")"
+  if [[ -n "$other" && "$other" != "$wt" ]]; then
+    reused="$other"
+  fi
+fi
 echo "  PR $num is at ${sha:0:9}"
 
-if [[ ! -d "$wt" ]]; then
+if [[ -n "$reused" ]]; then
+  wt="$reused"
+  echo "Reusing worktree $wt (branch $branch is checked out there); it is left as it is"
+elif [[ ! -d "$wt" ]]; then
   echo "Creating worktree $wt"
   git worktree prune # a folder deleted by hand leaves a stale entry that keeps the branch "checked out"
-  if ! git show-ref -q --verify "refs/heads/$branch"; then
-    git branch "$branch" "$sha"
-  elif git merge-base --is-ancestor "$branch" "$sha"; then
-    git branch -f "$branch" "$sha" # a leftover branch with no commits of its own moves to the PR head
+  if [[ "$cross" == "true" ]]; then
+    if ! git show-ref -q --verify "refs/heads/$branch"; then
+      git branch "$branch" "$sha"
+    elif git merge-base --is-ancestor "$branch" "$sha"; then
+      git branch -f "$branch" "$sha" # a leftover branch with no commits of its own moves to the PR head
+    else
+      echo "review-pr: branch $branch has commits that PR $num does not; nothing was changed." >&2
+      echo "  Delete it with: git branch -D $branch (or rename it with: git branch -m $branch <new-name>), then rerun review-pr $arg_ref" >&2
+      exit 1
+    fi
+    git worktree add -q "$wt" "$branch"
+    echo "  created branch $branch"
+  elif ! git show-ref -q --verify "refs/heads/$branch"; then
+    git branch -q --track "$branch" "origin/$head"
+    git config "branch.$branch.reviewPr" true
+    git worktree add -q "$wt" "$branch"
+    echo "  created branch $branch tracking origin/$head"
   else
-    echo "review-pr: branch $branch has commits that PR $num does not; nothing was changed." >&2
-    echo "  Delete it with: git branch -D $branch (or rename it with: git branch -m $branch <new-name>), then rerun review-pr $arg_ref" >&2
-    exit 1
+    if git merge-base --is-ancestor "$branch" "$sha"; then
+      git branch -f "$branch" "$sha"
+      echo "  fast-forwarded the existing branch $branch to ${sha:0:9}"
+    else
+      echo "  the existing branch $branch has commits that are not on origin/$head; using it as it is"
+    fi
+    git config "branch.$branch.reviewPr" worktree
+    git worktree add -q "$wt" "$branch"
+    echo "  created the worktree on the existing branch $branch"
   fi
-  git worktree add -q "$wt" "$branch"
-  echo "  created branch $branch"
 else
   echo "Updating worktree $wt"
   if [[ -n "$(command git -C "$wt" status --porcelain)" ]]; then
@@ -152,9 +258,6 @@ else
   echo "  now at ${sha:0:9}"
 fi
 
-echo "Looking up the PR's base branch"
-base="$(cd "$wt" && gh pr view ${gh_repo[@]+"${gh_repo[@]}"} "$num" --json baseRefName -q .baseRefName)"
-[[ -n "$base" ]] || { echo "review-pr: gh returned no base for PR $num" >&2; exit 1; }
 git fetch -q origin "$base"
 echo "  base $base"
 
