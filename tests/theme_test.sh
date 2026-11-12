@@ -13,6 +13,7 @@ export GIT_CONFIG_NOSYSTEM=1 GIT_TERMINAL_PROMPT=0
 export HOME="$ROOT/home"
 export XDG_CONFIG_HOME="$ROOT/config" XDG_STATE_HOME="$ROOT/state" XDG_DATA_HOME="$ROOT/data" XDG_CACHE_HOME="$ROOT/cache"
 export THEME_NO_RELOAD=1 THEME_GHOSTTY_DIRS="$ROOT/themes"
+export THEME_NVIM_LIST="$SRC/nvim/.config/nvim/themes.tsv"
 mkdir -p "$HOME" "$XDG_CONFIG_HOME/theme" "$XDG_CONFIG_HOME/ghostty" "$XDG_STATE_HOME" "$THEME_GHOSTTY_DIRS"
 
 THEME="$SRC/bin/.local/bin/theme"
@@ -119,6 +120,41 @@ else
   printf 'nvim_light =\nlight = Plain Light\n' >"$CONFIG"
   check "read_config ignores an empty nvim key" test "$(lua_names)" = "Plain Light|TokyoNight Night"
 fi
+
+echo "original Neovim themes"
+reset_config
+run_theme list nvim
+check "list nvim prints the list names" out_has "Kanagawa Wave"
+check "list nvim includes the Neovim-only names" out_has "Cyberdream Light"
+check "list nvim prints names only" test "$(grep -c "$(printf '\t')" <<<"$OUT")" = 0
+check "list nvim skips other themes" test "$(grep -c '^Plain' <<<"$OUT")" = 0
+run_theme list nvim dark
+check "list nvim dark has a dark theme" out_has "Catppuccin Mocha"
+check "list nvim dark has Cyberdream" out_has "Cyberdream"
+check "list nvim dark has no light theme" test "$(grep -cE 'Latte|Dayfox|Lotus|Light' <<<"$OUT")" = 0
+run_theme list nvim light
+check "list nvim light has Catppuccin Latte" out_has "Catppuccin Latte"
+check "list nvim light has no dark theme" test "$(grep -cE 'Mocha|Wave|Dark|Storm|Frappe' <<<"$OUT")" = 0
+run_theme list nvim blue
+check "list nvim rejects another brightness" test "$RC" -ne 0
+check "_list nvim-dark is list nvim dark" test "$("$THEME" _list nvim-dark)" = "$("$THEME" list nvim dark)"
+run_theme set light Cyberdream
+check "Cyberdream is refused for the light slot" test "$RC" -ne 0
+run_theme set dark Cyberdream
+check "Cyberdream is refused for the dark slot" test "$RC" -ne 0
+check "a refused Cyberdream is not saved" test "$(grep -c Cyberdream "$CONFIG")" = 0
+run_theme set nvim-dark Cyberdream
+check "Cyberdream is accepted for nvim-dark" test "$RC" -eq 0
+check "nvim-dark saves Cyberdream" has_line "nvim_dark = Cyberdream"
+run_theme _swatch Cyberdream
+check "the swatch of a Neovim-only theme is a note, not an error" test "$RC" -eq 0
+check "the swatch says it is Neovim only" out_has "Neovim only"
+run_theme sync
+check "sync ignores a Neovim-only nvim pick" test "$RC" -eq 0
+printf 'light = Cyberdream\ndark = Plain Dark\n' >"$CONFIG"
+run_theme sync
+check "a Neovim-only name in a terminal key fails sync" test "$RC" -ne 0
+reset_config
 
 echo "list by brightness"
 FD="$ROOT/filter-themes" FC="$ROOT/filter-data"

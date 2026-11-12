@@ -1,7 +1,7 @@
 -- Colors that follow the dotfiles theme pair (~/.config/theme/config).
 -- 'background' picks the slot; the slot's name picks the scheme (nvim_light/nvim_dark, when set,
--- replace the terminal's name for that slot): TokyoNight -> tokyonight.nvim,
--- GitHub -> github-nvim-theme, the Nightfox family -> nightfox.nvim, anything else -> mini.base16 from the theme file.
+-- replace the terminal's name for that slot). Names map to colorschemes through themes.tsv, the
+-- list `theme list nvim` prints; a name not in it gets Dayfox (light) or Nightfox (dark).
 -- g:colors_name is cleared after loading, or Neovim would reload that scheme itself on a
 -- 'background' change and fight the other slot. g:dotfiles_theme holds the name instead.
 local M = {}
@@ -50,102 +50,31 @@ function M.mode()
   return nil
 end
 
--- Path of a theme file. Mirrors theme_file() in bin/.local/bin/theme (same folders and order)
--- without spawning it, and never downloads, so startup can't wait on curl.
-local function theme_file(name)
-  if name == "" or name:find("/", 1, true) or name:sub(1, 1) == "." then return nil end -- the script refuses paths
-  local home = vim.env.HOME or ""
-  local dirs = vim.uv.os_getenv("THEME_GHOSTTY_DIRS") -- set, even empty, replaces the list
-  if dirs == nil then
-    dirs = table.concat({
-      home .. "/Applications/Ghostty.app/Contents/Resources/ghostty/themes",
-      "/Applications/Ghostty.app/Contents/Resources/ghostty/themes",
-      "/usr/share/ghostty/themes",
-      home .. "/.local/share/ghostty/themes",
-    }, ":")
+-- Original themes from themes.tsv: { [name] = { scheme = colorscheme, background = "light"|"dark" } }.
+local themes
+local function original_themes()
+  if themes then return themes end
+  themes = {}
+  local path = vim.api.nvim_get_runtime_file("themes.tsv", false)[1]
+  for _, line in ipairs(path and vim.fn.readfile(path) or {}) do
+    local name, scheme, background = line:match("^([^#\t][^\t]*)\t([^\t]+)\t(%a+)")
+    if name then themes[name] = { scheme = scheme, background = background } end
   end
-  local data = vim.env.XDG_DATA_HOME
-  if data == nil or data == "" then data = home .. "/.local/share" end -- like bash ${VAR:-default}
-  local candidates = vim.split(dirs, ":", { plain = true })
-  candidates[#candidates + 1] = data .. "/theme/themes"
-  for _, dir in ipairs(candidates) do
-    if dir ~= "" then
-      local stat = vim.uv.fs_stat(dir .. "/" .. name)
-      if stat and stat.type == "file" then return dir .. "/" .. name end
-    end
-  end
-  return nil
+  return themes
 end
 
--- Parse a Ghostty theme file into { palette = { [0..15] = "#rrggbb" }, bg = ..., fg = ... }.
-local function parse(path)
-  local t = { palette = {} }
-  for _, line in ipairs(vim.fn.readfile(path)) do
-    local idx, color = line:match("^%s*palette%s*=%s*(%d+)%s*=%s*#?(%x%x%x%x%x%x)")
-    if idx then
-      t.palette[tonumber(idx)] = "#" .. color:lower()
-    else
-      local key, value = line:match("^%s*([%a-]+)%s*=%s*#?(%x%x%x%x%x%x)")
-      if key == "background" then t.bg = "#" .. value:lower() end
-      if key == "foreground" then t.fg = "#" .. value:lower() end
-    end
-  end
-  return t
-end
-
--- Mix two "#rrggbb" colors: t = 0 gives a, t = 1 gives b.
-local function blend(a, b, t)
-  local out = "#"
-  for i = 2, 6, 2 do
-    local x, y = tonumber(a:sub(i, i + 1), 16), tonumber(b:sub(i, i + 1), 16)
-    out = out .. string.format("%02x", math.floor(x + (y - x) * t + 0.5))
-  end
-  return out
-end
-
--- Apply mini.base16 with a palette derived from a Ghostty theme file.
-local function base16(path)
-  local t = parse(path)
-  if not (t.bg and t.fg) then return false end
-  local p = t.palette
-  local function c(i) return p[i] or t.fg end
-  require("mini.base16").setup({
-    palette = {
-      base00 = t.bg, -- default background
-      base01 = blend(t.bg, t.fg, 0.08), -- lighter background (status bars, cursor line)
-      base02 = blend(t.bg, t.fg, 0.18), -- selection background
-      base03 = c(8), -- comments, invisibles
-      base04 = blend(t.bg, t.fg, 0.55), -- dark foreground (status bars)
-      base05 = t.fg, -- default foreground
-      base06 = blend(t.bg, t.fg, 0.9), -- light foreground
-      base07 = p[15] or t.fg, -- lightest foreground
-      base08 = c(1), -- variables, tags, errors (red)
-      base09 = p[9] or blend(c(3), t.fg, 0.25), -- numbers, constants (bright red or a brighter yellow)
-      base0A = c(3), -- types, search (yellow)
-      base0B = c(2), -- strings (green)
-      base0C = c(6), -- regex, escapes (cyan)
-      base0D = c(4), -- functions (blue)
-      base0E = c(5), -- keywords (magenta)
-      base0F = p[9] or c(1), -- deprecated, embedded tags
-    },
-  })
-  return true
-end
-
-local foxes = { nightfox = true, dayfox = true, dawnfox = true, duskfox = true, nordfox = true, terafox = true, carbonfox = true }
-
--- Colorscheme for a "TokyoNight ...", "GitHub ..." or Nightfox family name, or nil.
+-- Colorscheme for a name in the list, or nil.
 local function plugin_scheme(name)
-  local tokyo = name:match("^TokyoNight%s*(%a*)$")
-  if tokyo then
-    local style = ({ Night = "night", Storm = "storm", Moon = "moon", Day = "day" })[tokyo] or "night"
+  local theme = original_themes()[name]
+  if not theme then return nil end
+  local style = theme.scheme:match("^tokyonight%-(%a+)$")
+  if style then
     require("tokyonight").setup({ style = style, light_style = style, transparent = false }) -- both slots
-    return "tokyonight-" .. style
   end
-  if name == "GitHub" then return "github_light" end -- Ghostty's plain "GitHub" theme is light
-  if name:match("^GitHub ") then return (name:lower():gsub("%s+", "_")) end -- GitHub Light Default -> github_light_default
-  if foxes[name:lower()] then return name:lower() end -- Dayfox -> dayfox
-  return nil
+  -- Catppuccin picks the flavour from 'background' when it differs from the one loaded last.
+  local flavour = theme.scheme:match("^catppuccin%-(%a+)$")
+  if flavour then require("catppuccin").setup({ background = { light = flavour, dark = flavour } }) end
+  return theme.scheme
 end
 
 function M.load()
@@ -157,19 +86,12 @@ function M.load()
   vim.cmd("highlight clear") -- schemes skip this when g:colors_name is unset
   local found, scheme = pcall(plugin_scheme, name) -- the plugin may be missing
   if found and scheme then ok = pcall(vim.cmd.colorscheme, scheme) end
-  if not ok then
-    local path = theme_file(name)
-    if path then
-      local called, applied = pcall(base16, path)
-      ok = called and applied
-    end
-  end
-  if not ok then pcall(vim.cmd.colorscheme, bg == "light" and "tokyonight-day" or "tokyonight-night") end -- last resort
+  if not ok then pcall(vim.cmd.colorscheme, bg == "light" and "dayfox" or "nightfox") end -- unlisted name or failed load
   M.applied = name
   M.applied_bg = bg -- a plugin scheme may force 'background' to the other value
   vim.g.dotfiles_theme = name
   vim.g.colors_name = nil -- see the header
-  require("config.diff_colors").apply() -- mini.base16 fires no ColorScheme
+  require("config.diff_colors").apply() -- covers a scheme that fires no ColorScheme
   loading = false
 end
 

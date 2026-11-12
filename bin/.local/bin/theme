@@ -12,6 +12,7 @@ STATE_FILE="${XDG_STATE_HOME:-$HOME/.local/state}/theme"
 CACHE_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/theme/themes"
 LIST_CACHE="${XDG_CACHE_HOME:-$HOME/.cache}/theme/list"
 GHOSTTY_CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/ghostty"
+NVIM_LIST="${THEME_NVIM_LIST:-${XDG_CONFIG_HOME:-$HOME/.config}/nvim/themes.tsv}" # original Neovim themes: name, colorscheme, brightness, [nvim]
 ITERM_TEMPLATE="${XDG_CONFIG_HOME:-$HOME/.config}/iterm/dotfiles-profile.plist"
 ITERM_PROFILE="$HOME/Library/Application Support/iTerm2/DynamicProfiles/dotfiles.plist"
 UPSTREAM="mbadolato/iTerm2-Color-Schemes" # holds Ghostty's theme collection
@@ -38,12 +39,15 @@ usage: theme <command> [--tty <path>] [--print] [--no-download]
   mode                     print only the saved mode: dark, light or auto (for scripts)
   effective                print the mode in effect: dark or light (auto resolved; for scripts)
   pick [slot]              choose a theme with fzf and live preview (default: the current mode's slot);
-                           lists only themes of the slot's brightness, Ctrl-A toggles all themes
+                           lists only themes of the slot's brightness, Ctrl-A toggles all themes;
+                           the nvim slots start with the original Neovim themes of that brightness
   set <slot> <name>        save <name> in a slot, sync and apply
   set nvim-light|nvim-dark --clear
                            remove a Neovim pick, so Neovim follows the terminal again
-                           slot: light | dark | nvim-light | nvim-dark (the nvim slots only change Neovim)
+                           slot: light | dark | nvim-light | nvim-dark (the nvim slots only change Neovim,
+                           and alone accept the Neovim-only names, e.g. Cyberdream)
   list [light|dark]        print the available theme names; with an argument, only that brightness
+  list nvim [light|dark]   print only the original Neovim themes (those with their own colorscheme)
   file <name>              print the path of a theme file (downloads it if needed;
                            --no-download: cache and Ghostty bundles only, fails fast offline)
   sync                     regenerate the Ghostty and iTerm files from ~/.config/theme/config
@@ -151,6 +155,17 @@ check_name() {
   [[ $1 != */* && $1 != .* ]] || die "invalid theme name: $1" # no paths, no hidden files
 }
 
+# Print the original Neovim themes as "<name><TAB><colorscheme><TAB><light|dark>[<TAB>nvim]".
+nvim_rows() {
+  [[ -r $NVIM_LIST ]] || return 0
+  grep -v -e '^[[:space:]]*#' -e '^[[:space:]]*$' "$NVIM_LIST" || true
+}
+
+# Succeed when the name is a Neovim-only theme: not in Ghostty's collection, so no terminal colors.
+nvim_only() {
+  nvim_rows | awk -F'\t' -v n="$1" '$1 == n && $4 == "nvim" { found = 1 } END { exit !found }'
+}
+
 # Print each bundled Ghostty themes directory that exists.
 ghostty_dirs() {
   local dir
@@ -205,6 +220,10 @@ download_theme() {
 theme_file() {
   local name=$1
   check_name "$name"
+  if nvim_only "$name"; then
+    echo "theme: '$name' is a Neovim-only theme: use it with nvim-light or nvim-dark" >&2
+    return 1
+  fi
   bundled_file "$name" && return 0 # same colors as Ghostty itself
   [[ -f "$CACHE_DIR/$name" ]] && { echo "$CACHE_DIR/$name"; return 0; }
   if ((NO_DOWNLOAD)); then
@@ -283,7 +302,13 @@ list_themes() {
       awk -F'\t' -v want="$want" 'NR == FNR { cls[$1] = $2; next } !($0 in cls) || cls[$0] == want' \
         <(classify_themes) <(all_theme_names)
       ;;
-    *) die "usage: theme list [light|dark]" ;;
+    nvim | nvim-light | nvim-dark) # nvim [light|dark]; the dashed forms are the picker's
+      local bright=${2:-}
+      [[ $want == nvim ]] || bright=${want#nvim-}
+      case $bright in light | dark | "") ;; *) die "usage: theme list nvim [light|dark]" ;; esac
+      nvim_rows | awk -F'\t' -v want="$bright" 'want == "" || $3 == want { print $1 }'
+      ;;
+    *) die "usage: theme list [light|dark|nvim [light|dark]]" ;;
   esac
 }
 
@@ -474,7 +499,11 @@ slot_key() {
 set_theme() {
   local slot=$1 name=$2 key
   key="$(slot_key "$slot")" || die "slot must be light, dark, nvim-light or nvim-dark"
-  theme_file "$name" >/dev/null || exit 1           # check (and fetch) before writing anything
+  if [[ $key == nvim_* ]] && nvim_only "$name"; then
+    :                                               # no terminal file to check
+  else
+    theme_file "$name" >/dev/null || exit 1         # check (and fetch) before writing anything
+  fi
   if [[ $key == nvim_* ]]; then
     config_set "$key" "$name"
     echo "$slot theme: $name (commit $CONFIG_FILE in your dotfiles repo to keep it)" >&2
@@ -514,6 +543,10 @@ status_report() {
 # Print a preview of a theme: the 16 colors as blocks and sample text on its background.
 swatch() {
   local file cols i
+  if nvim_only "$1"; then
+    printf '%s\n\nNeovim only: the terminal cannot preview this theme.\nEnter saves it; see it in Neovim.\n' "$1"
+    return 0
+  fi
   file="$(theme_file "$1")" || return 0             # fzf shows the error text
   parse_theme "$file" || return 0
   cols=${FZF_PREVIEW_COLUMNS:-60}
@@ -555,6 +588,7 @@ swatch() {
 
 # Apply a theme to the terminal fzf runs in (fzf callbacks have no tty on stdout).
 preview_apply() {
+  ! nvim_only "$1" || return 0                      # no terminal colors: leave the terminal as it is
   OUT_TTY=/dev/tty PANE_TTY=1
   palette_sequences "$1" 2>/dev/null | emit || true # ignore unknown names while scrolling
 }
@@ -567,18 +601,26 @@ slot_brightness() {
   esac
 }
 
+# Print the list filter a slot starts with: its brightness, or nvim-<brightness> for the nvim slots.
+slot_filter() {
+  case $1 in nvim-*) echo "nvim-$2" ;; *) echo "$2" ;; esac
+}
+
 # fzf callbacks for the picker. The state file holds "filtered" or "all"; THEME_PICK_CURRENT is the saved theme.
 # Print the picker header for the state file's mode.
 pick_header() {
   local statefile=$1 slot=$2 bright=$3 mode
-  mode="$bright only (ctrl-a: all)"
-  [[ $(cat "$statefile") == all ]] && mode="all themes (ctrl-a: $bright only)"
+  local only="$bright only"
+  [[ $slot == nvim-* ]] && only="original Neovim $bright themes"
+  mode="$only (ctrl-a: all)"
+  [[ $(cat "$statefile") == all ]] && mode="all themes (ctrl-a: back)"
   echo "Enter: save as the $slot theme   Esc: cancel   $mode"
 }
 
 # Print the fzf actions that apply the state file's mode: reload the list, retitle the header.
 pick_mode_actions() {
-  local statefile=$1 filter=$3
+  local statefile=$1 filter
+  filter="$(slot_filter "$2" "$3")"
   [[ $(cat "$statefile") == all ]] && filter=""
   printf 'reload(%s _list %s)+change-header(%s)' "$(printf '%q' "$SELF")" "$filter" "$(pick_header "$@")"
 }
@@ -592,8 +634,8 @@ pick_toggle() {
 
 # Print the fzf action that puts the cursor on the current theme in the file's mode.
 pick_position() {
-  local statefile=$1 bright=$3 filter="" pos
-  [[ $(cat "$statefile") == all ]] || filter=$bright
+  local statefile=$1 filter="" pos
+  [[ $(cat "$statefile") == all ]] || filter="$(slot_filter "$2" "$3")"
   pos="$(list_themes "$filter" | grep -nxF -- "${THEME_PICK_CURRENT:-}" | cut -d: -f1 || true)"
   echo "pos(${pos:-1})"
 }
@@ -609,7 +651,7 @@ pick() {
   current="$(config_get "$key")"
   [[ -n $current ]] || current="$(config_get "${key#nvim_}")" # an unset nvim pick follows the terminal
   statefile="$(mktemp)"
-  list="$(list_themes "$bright")"
+  list="$(list_themes "$(slot_filter "$slot" "$bright")")"
   # the current theme must be visible: otherwise start on the full list
   if printf '%s\n' "$list" | grep -qxF -- "$current"; then echo filtered >"$statefile"; else echo all >"$statefile"; fi
   [[ -n $list ]] || die "no themes found"
@@ -617,7 +659,7 @@ pick() {
   self="$(printf '%q' "$SELF")"                     # quoted for fzf's shell
   local qstate
   qstate="$(printf '%q' "$statefile")"
-  choice="$("$SELF" _list "$([[ $(cat "$statefile") == all ]] || echo "$bright")" | fzf \
+  choice="$("$SELF" _list "$([[ $(cat "$statefile") == all ]] || slot_filter "$slot" "$bright")" | fzf \
     --prompt="$slot theme> " \
     --header="$(pick_header "$statefile" "$slot" "$bright")" \
     --preview="$self _swatch {}" \
@@ -687,7 +729,7 @@ case $CMD in
     [[ -n $ARG1 && -n $ARG2 ]] || die "usage: theme set light|dark|nvim-light|nvim-dark <name> | theme set nvim-light|nvim-dark --clear"
     if [[ $ARG2 == --clear ]]; then clear_nvim "$ARG1"; else set_theme "$ARG1" "$ARG2"; fi
     ;;
-  list) list_themes "$ARG1" ;;
+  list) list_themes "$ARG1" "$ARG2" ;;
   file)
     [[ -n $ARG1 ]] || die "usage: theme file <name>"
     theme_file "${ARGS[*]}"                         # path (joined, so quotes are optional)

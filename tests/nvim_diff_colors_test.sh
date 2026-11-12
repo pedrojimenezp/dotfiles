@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Tests nvim's config/diff_colors.lua in a temp HOME: with each colorscheme the Diff groups have a
-# background and no foreground, and diffview sets a winhighlight per side. Offline: the
-# base16 theme comes from a fake Ghostty folder; plugin schemes are skipped when not installed.
+# background and no foreground, and diffview sets a winhighlight per side. Offline: plugin schemes
+# are skipped when not installed; the saturation fallback sets the highlight groups directly.
 # Run: bash tests/nvim_diff_colors_test.sh
 set -euo pipefail
 
@@ -14,13 +14,7 @@ trap 'rm -rf "$ROOT"' EXIT
 export GIT_CONFIG_NOSYSTEM=1 GIT_TERMINAL_PROMPT=0
 export HOME="$ROOT/home"
 export XDG_CONFIG_HOME="$ROOT/config" XDG_STATE_HOME="$ROOT/state" XDG_DATA_HOME="$ROOT/data" XDG_CACHE_HOME="$ROOT/cache"
-export THEME_GHOSTTY_DIRS="$ROOT/themes"
-mkdir -p "$HOME" "$XDG_CONFIG_HOME/theme" "$XDG_STATE_HOME" "$THEME_GHOSTTY_DIRS"
-printf 'background = #fafafa\nforeground = #383a42\npalette = 1=#e45649\npalette = 2=#50a14f\n' >"$THEME_GHOSTTY_DIRS/Fake Light"
-printf 'background = #282c34\nforeground = #dcdfe4\npalette = 1=#e06c75\npalette = 2=#98c379\n' >"$THEME_GHOSTTY_DIRS/Fake Dark"
-printf 'background = #fafafa\nforeground = #383a42\npalette = 1=#e45649\npalette = 2=#6f8f72\n' >"$THEME_GHOSTTY_DIRS/Dull Green"
-printf 'background = #fafafa\nforeground = #383a42\npalette = 1=#9a6f72\npalette = 2=#2da44e\n' >"$THEME_GHOSTTY_DIRS/Dull Red"
-printf 'background = #fafafa\nforeground = #383a42\npalette = 1=#d1242f\npalette = 2=#2da44e\n' >"$THEME_GHOSTTY_DIRS/Vivid Light"
+mkdir -p "$HOME" "$XDG_CONFIG_HOME/theme" "$XDG_STATE_HOME"
 
 ok() { PASS=$((PASS + 1)); echo "  ok   $1"; }
 bad() { FAIL=$((FAIL + 1)); echo "  FAIL $1"; }
@@ -73,18 +67,18 @@ echo "groups"
 check_scheme "github_light_default" light "GitHub Light Default" github-nvim-theme
 check_scheme "tokyonight-night" dark "TokyoNight Night" tokyonight.nvim
 check_scheme "tokyonight-day" light "TokyoNight Day" tokyonight.nvim
-check_scheme "base16 light" light "Fake Light"
-check_scheme "base16 dark" dark "Fake Dark"
+check_scheme "dayfox" light "Dayfox" nightfox.nvim
+check_scheme "nightfox" dark "Nightfox" nightfox.nvim
+check_scheme "kanagawa-lotus" light "Kanagawa Lotus" kanagawa.nvim
+check_scheme "catppuccin-mocha" dark "Catppuccin Mocha" catppuccin
 
-# check_tints <label> <theme name> <expected green source> <expected red source>
-# Light mode: DiffAdd / DiffTextNew must blend the expected green, DiffAddOld / DiffTextOld the red.
+# check_tints <label> <ok color> <error color> <expected green source> <expected red source>
+# Light mode with Normal, DiagnosticOk and DiagnosticError set directly: DiffAdd / DiffTextNew must
+# blend the expected green, DiffAddOld / DiffTextOld the red.
 check_tints() {
-  local label="$1" name="$2" green="$3" red="$4" out
-  if [[ ! -d "$REAL_LAZY/mini.nvim" ]]; then echo "  skip $label (mini.nvim not installed)"; return; fi
-  printf 'nvim_light = %s\n' "$name" >"$XDG_CONFIG_HOME/theme/config"
-  echo light >"$XDG_STATE_HOME/theme"
-  out="$(nvim --headless -u NONE -i NONE --cmd "set rtp^=$SRC/nvim/.config/nvim,$REAL_LAZY/mini.nvim" --cmd "set background=light" \
-    -c "lua require('config.diff_colors').setup(); require('config.theme').load(); require('config.diff_colors').apply()" \
+  local label="$1" ok_color="$2" err_color="$3" green="$4" red="$5" out
+  out="$(nvim --headless -u NONE -i NONE --cmd "set rtp^=$SRC/nvim/.config/nvim" --cmd "set background=light" \
+    -c "lua vim.api.nvim_set_hl(0, 'Normal', { bg = '#fafafa', fg = '#383a42' }); vim.api.nvim_set_hl(0, 'DiagnosticOk', { fg = '$ok_color' }); vim.api.nvim_set_hl(0, 'DiagnosticError', { fg = '$err_color' }); require('config.diff_colors').apply()" \
     -c "lua $LUA_TINTS" -c "lua io.stdout:write(check('$green', '$red'))" -c "qa!" 2>&1 | tr -d '\r' | tail -n 1)"
   if [[ "$out" == ok ]]; then ok "$label"; else bad "$label: $out"; fi
 }
@@ -111,9 +105,9 @@ end
 '
 
 echo "dull colours fall back"
-check_tints "dull green uses the fallback green, red stays" "Dull Green" "#1a7f37" "#e45649"
-check_tints "dull red uses the fallback red, green stays" "Dull Red" "#2da44e" "#cf222e"
-check_tints "vivid theme keeps its own colours" "Vivid Light" "#2da44e" "#d1242f"
+check_tints "dull green uses the fallback green, red stays" "#6f8f72" "#e45649" "#1a7f37" "#e45649"
+check_tints "dull red uses the fallback red, green stays" "#2da44e" "#9a6f72" "#2da44e" "#cf222e"
+check_tints "vivid theme keeps its own colours" "#2da44e" "#d1242f" "#2da44e" "#d1242f"
 
 echo "diffview"
 if [[ ! -d "$REAL_LAZY/diffview.nvim" ]]; then

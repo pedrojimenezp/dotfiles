@@ -13,4 +13,22 @@ return {
     "EdenEast/nightfox.nvim",
     lazy = true,
   },
+  {
+    "rebelot/kanagawa.nvim",
+    lazy = true,
+  },
+  {
+    "scottmckendry/cyberdream.nvim",
+    lazy = true,
+  },
+  {
+    "rose-pine/neovim",
+    name = "rose-pine",
+    lazy = true,
+  },
+  {
+    "catppuccin/nvim",
+    name = "catppuccin",
+    lazy = true,
+  },
 }

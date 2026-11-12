@@ -1,11 +1,11 @@
 # Theme
 
-`theme` recolors the terminal, tmux, Neovim, bat and delta together. `tt`, `prefix t` and `<leader>ut` toggle light/dark; `theme pick [light|dark|nvim-light|nvim-dark]` previews themes live in fzf (only themes of the slot's brightness; Ctrl-A switches to all themes and back); `theme help` lists the rest.
+`theme` recolors the terminal, tmux, Neovim, bat and delta together. `tt`, `prefix t` and `<leader>ut` toggle light/dark; `theme pick [light|dark|nvim-light|nvim-dark]` previews themes live in fzf (only themes of the slot's brightness, or for the nvim slots only the [original Neovim themes](#original-neovim-themes) of that brightness; Ctrl-A switches to all themes and back); `theme help` lists the rest.
 
 ## Two settings
 
 - **The pair**, tracked: `theme/.config/theme/config` names one light and one dark theme (defaults `GitHub Light Default` and `TokyoNight Night`). A pick edits this file through the link: commit it so every machine gets it.
-- **A Neovim pair**, optional, in the same file: `nvim_light` and `nvim_dark`. In each mode Neovim uses its `nvim_<mode>` name when set, otherwise the pair's name. Only Neovim reads these keys; the terminal, tmux and the rest ignore them. See [Neovim only](#neovim-only).
+- **A Neovim pair**, optional, in the same file: `nvim_light` and `nvim_dark`. In each mode Neovim uses its `nvim_<mode>` name when set, otherwise the pair's name. Only Neovim reads these keys; the terminal, tmux and the rest ignore them. See [Neovim only](#original-neovim-themes).
 - **The mode**, per machine: `auto`, `light` or `dark` in `~/.local/state/theme`. `auto` follows macOS; on Linux it means the terminal's own colors.
 
 `dark`, `light`, `auto` and `toggle` save the mode only if applying worked. Scripts should read `theme mode` or `theme effective` (one word each), not `theme status`.
@@ -21,7 +21,7 @@ Names are from Ghostty's collection ([iTerm2-Color-Schemes](https://github.com/m
 - **Ghostty:** `theme sync` writes `~/.config/ghostty/theme.conf` (`theme = light:<a>,dark:<b>`, so Ghostty follows macOS itself), copies downloaded themes to `~/.config/ghostty/themes`, and sends SIGUSR2 to reload.
 - **iTerm2:** `theme sync` writes the Dotfiles Dynamic Profile ([terminals.md](terminals.md#iterm2)).
 - **tmux:** the status line uses palette color names.
-- **Neovim:** `TokyoNight ...` uses tokyonight.nvim, `GitHub ...` github-nvim-theme, the seven Nightfox names (`Nightfox`, `Dayfox`, `Dawnfox`, `Duskfox`, `Nordfox`, `Terafox`, `Carbonfox`) nightfox.nvim, anything else is built with `mini.base16` from the theme file (close, not exact). Open instances update on `<leader>ut` and on focus, including after a change to the Neovim keys.
+- **Neovim:** a name in the [original Neovim themes](#original-neovim-themes) loads its own colorscheme; any other name loads Dayfox (light) or Nightfox (dark). Open instances update on `<leader>ut` and on focus, including after a change to the Neovim keys.
 - **bat and delta:** the `ansi` theme, so they use the terminal's 16 colors.
 
 `theme sync` runs from `install.sh`, `theme set` and `theme pick`. Its output is generated: never edit or commit it.
@@ -35,7 +35,13 @@ Keep a terminal pair and give Neovim another one. Light/dark stays shared: `them
 - `theme set nvim-light --clear` (or `nvim-dark`) removes the key, so Neovim follows the terminal again.
 - `theme status` lists the Neovim picks when they are set.
 
-Names are checked like any other (`theme list`). Only `TokyoNight Night|Storm|Moon|Day`, `GitHub ...` and the Nightfox names get a real Neovim colorscheme. Any other name falls back to `mini.base16`, which is close but not exact. These names work well: `TokyoNight Night`, `TokyoNight Storm`, `TokyoNight Moon`, `TokyoNight Day`, `GitHub Light Default`, `GitHub Dark Default`, `Nightfox`, `Dayfox` and the other Nightfox names, and the other `GitHub ...` variants in `theme list`.
+### Original Neovim themes
+
+`nvim/.config/nvim/themes.tsv` lists the themes that have their own Neovim colorscheme: TokyoNight, GitHub, the seven Nightfox names, Kanagawa (Wave, Dragon, Lotus), Rose Pine (Rose Pine, Moon, Dawn), Catppuccin (Latte, Frappe, Macchiato, Mocha) and Cyberdream. Both the script and Neovim read that one file; each line is `name`, `colorscheme`, `light|dark` and, for Neovim-only names, `nvim`. Add a theme by adding a line (and its plugin in `lua/plugins/theme.lua`).
+
+- `theme list nvim [light|dark]` prints the names.
+- **Cyberdream** and **Cyberdream Light** are not in Ghostty's collection, so only `nvim-light` and `nvim-dark` accept them; the terminal slots refuse them. The picker previews them as a note, without recoloring the terminal.
+- A name not in the list (any other Ghostty theme) makes Neovim use Dayfox in light mode and Nightfox in dark mode.
 
 ## Troubleshooting
 
