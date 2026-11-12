@@ -1,0 +1,110 @@
+#!/usr/bin/env bash
+# Zen mode: centers a window's content in a column by adding an empty pad pane on each side.
+# Pads are full-height panes at both edges, marked with the pane option @zen_pad; the window carries @zen.
+# Usage: tmux-zen toggle <window id>   (turn zen on or off)
+#        tmux-zen fit <window id>      (resize the pads after the window size changed)
+#        tmux-zen unpad <window id>    (move focus out of a pad)
+#        tmux-zen cleanup <window id>  (close the window when only pads are left)
+# Option: @zen_width, the width of the centered column (default 120).
+set -euo pipefail
+
+pad_cmd="tail -f /dev/null" # macOS sleep has no "infinity"
+margin=20                   # below @zen_width + this, the window is too narrow for zen
+
+# Print the pane ids of the window's pads, one per line.
+pads() {
+  tmux list-panes -t "$1" -F '#{pane_id} #{@zen_pad}' | awk '$2 == 1 { print $1 }'
+}
+
+zen_width() {
+  local w
+  w="$(tmux display-message -p -t "$1" '#{@zen_width}')"
+  [[ "$w" =~ ^[0-9]+$ ]] && echo "$w" || echo 120
+}
+
+# Width of each pad: the window minus the column and the two borders, split in two.
+pad_width() {
+  local win="$1" w pad
+  w="$(tmux display-message -p -t "$win" '#{window_width}')"
+  pad=$(((w - $(zen_width "$win") - 2) / 2))
+  echo $((pad < 1 ? 1 : pad))
+}
+
+enable() {
+  local win="$1" w zw pad active left right
+  w="$(tmux display-message -p -t "$win" '#{window_width}')"
+  zw="$(zen_width "$win")"
+  if ((w < zw + margin)); then
+    tmux display-message "zen: window too narrow for $zw columns"
+    return 0
+  fi
+  pad="$(pad_width "$win")"
+  active="$(tmux display-message -p -t "$win" '#{pane_id}')"
+  # @zen first, so the layout hook leaves the border settings alone
+  tmux set -w -t "$win" @zen 1 \; \
+    set -w -t "$win" pane-border-lines spaces \; \
+    set -w -t "$win" pane-border-status off \; \
+    set -w -t "$win" pane-border-indicators off
+  # -d keeps the focus where it was
+  left="$(tmux split-window -P -F '#{pane_id}' -f -h -b -d -l "$pad" -t "$win" "$pad_cmd")"
+  right="$(tmux split-window -P -F '#{pane_id}' -f -h -d -l "$pad" -t "$win" "$pad_cmd")"
+  tmux set -p -t "$left" @zen_pad 1 \; select-pane -d -t "$left"
+  tmux set -p -t "$right" @zen_pad 1 \; select-pane -d -t "$right"
+  tmux select-pane -t "$active"
+  fit "$win"
+}
+
+disable() {
+  local win="$1" p
+  # @zen first, so the layout hook labels the panes again while the pads close
+  tmux set -wu -t "$win" @zen \; \
+    set -wu -t "$win" pane-border-lines \; \
+    set -wu -t "$win" pane-border-status \; \
+    set -wu -t "$win" pane-border-indicators
+  while read -r p; do
+    [[ -n "$p" ]] && tmux kill-pane -t "$p"
+  done < <(pads "$win")
+}
+
+# Zoomed windows are left alone: resizing a pane would unzoom them.
+fit() {
+  local win="$1" pad p
+  [[ "$(tmux display-message -p -t "$win" '#{@zen}#{window_zoomed_flag}')" == 10 ]] || return 0
+  pad="$(pad_width "$win")"
+  while read -r p; do
+    [[ -n "$p" ]] || continue
+    [[ "$(tmux display-message -p -t "$p" '#{pane_width}')" == "$pad" ]] || tmux resize-pane -t "$p" -x "$pad"
+  done < <(pads "$win")
+}
+
+# Focus goes back to the previous pane; if that is a pad too, to the first real pane.
+unpad() {
+  local win="$1" real
+  [[ "$(tmux display-message -p -t "$win" '#{@zen_pad}')" == 1 ]] || return 0
+  tmux select-pane -t "$win" -l 2>/dev/null || true
+  if [[ "$(tmux display-message -p -t "$win" '#{@zen_pad}')" == 1 ]]; then
+    real="$(tmux list-panes -t "$win" -F '#{pane_id} #{@zen_pad}' | awk '$2 != 1 { print $1; exit }')"
+    [[ -z "$real" ]] || tmux select-pane -t "$real"
+  fi
+}
+
+# The layout hook can run before tmux drops a closed pane, so the count is checked twice.
+cleanup() {
+  local win="$1" real try
+  for try in 1 2; do
+    [[ "$(tmux display-message -p -t "$win" '#{@zen}' 2>/dev/null)" == 1 ]] || return 0
+    real="$(tmux list-panes -t "$win" -F '#{@zen_pad}' | grep -vcx 1 || true)"
+    ((real == 0)) && break
+    ((try == 1)) && sleep 0.3
+  done
+  ((real > 0)) || tmux kill-window -t "$win" 2>/dev/null || true
+}
+
+[[ $# -eq 2 ]] || { echo "usage: tmux-zen toggle|fit|unpad|cleanup <window id>" >&2; exit 2; }
+case "$1" in
+  toggle) if [[ "$(tmux display-message -p -t "$2" '#{@zen}')" == 1 ]]; then disable "$2"; else enable "$2"; fi ;;
+  fit) fit "$2" ;;
+  unpad) unpad "$2" ;;
+  cleanup) cleanup "$2" ;;
+  *) echo "usage: tmux-zen toggle|fit|unpad|cleanup <window id>" >&2; exit 2 ;;
+esac
