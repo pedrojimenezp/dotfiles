@@ -388,7 +388,8 @@ remote_commit BRAVO-1/feat z.txt 9 fresh
 before="$(git -C "$AWT" rev-parse HEAD)"
 run "$CLONE" 201
 check "same-repo force-push: exit 1" "1" "$rc"
-contains "same-repo force-push: says what to do" "review-pr --done 201" "$out"
+contains "same-repo force-push: hint is a reset" "git -C $AWT reset --hard origin/BRAVO-1/feat, then rerun review-pr 201" "$out"
+check "same-repo force-push: no --done hint" "0" "$(grep -c -e "--done" <<<"$out")"
 check "same-repo force-push: HEAD unchanged" "$before" "$(git -C "$AWT" rev-parse HEAD)"
 run "$CLONE" --done 201
 check "done unpushed: exit 1" "1" "$rc"
