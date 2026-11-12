@@ -120,6 +120,34 @@ else
   check "read_config ignores an empty nvim key" test "$(lua_names)" = "Plain Light|TokyoNight Night"
 fi
 
+echo "list by brightness"
+FD="$ROOT/filter-themes" FC="$ROOT/filter-data"
+mkdir -p "$FD" "$FC/theme/themes"
+printf 'background = #101010\n' >"$FD/Night"
+printf 'background = #fafafa\n' >"$FD/Day"
+printf 'background = 808080\n' >"$FD/Gray Mid"      # luma 0.502: light; no leading #
+printf 'background = #7f7f7f\n' >"$FD/Gray Low"      # luma 0.498: dark
+printf 'foreground = #ffffff\n' >"$FD/No Background"
+printf 'selection-background = #ffffff\nbackground = #000000\n' >"$FD/Selection First"
+printf 'background = #ffffff\n' >"$FC/theme/themes/Cached Day"
+printf 'background = #ffffff\n' >"$FC/theme/themes/Night" # the bundle wins over the cache
+# a name with no local file comes from the cached GitHub listing (no bundle: use the cache dir only)
+filter_list() { THEME_GHOSTTY_DIRS="$FD" XDG_DATA_HOME="$FC" "$THEME" "$@" 2>&1; }
+names() { printf '%s\n' "$@"; }
+check "list prints every theme" test "$(filter_list list)" = "$(names "Cached Day" Day "Gray Low" "Gray Mid" Night "No Background" "Selection First")"
+check "list dark: dark and unclassifiable themes" test "$(filter_list list dark)" = "$(names "Gray Low" Night "No Background" "Selection First")"
+check "list light: light and unclassifiable themes" test "$(filter_list list light)" = "$(names "Cached Day" Day "Gray Mid" "No Background")"
+filter_fails() { ! filter_list list blue >/dev/null; }
+check "list rejects another argument" filter_fails
+check "_list is the same as list" test "$(filter_list _list dark)" = "$(filter_list list dark)"
+check "_list without a filter lists all" test "$(filter_list _list)" = "$(filter_list list)"
+# no bundle: names only in the GitHub listing show in both filtered lists; cached files are classified (Night is white here)
+mkdir -p "$FC/../filter-cache/theme"
+printf 'Remote Only\nCached Day\n' >"$ROOT/filter-cache/theme/list"
+nobundle() { THEME_GHOSTTY_DIRS="" XDG_DATA_HOME="$FC" XDG_CACHE_HOME="$ROOT/filter-cache" "$THEME" "$@" 2>&1; }
+check "no bundle: unknown name is in dark" test "$(nobundle list dark)" = "Remote Only"
+check "no bundle: unknown name is in light" test "$(nobundle list light)" = "$(names "Cached Day" Night "Remote Only")"
 echo
+
 echo "passed: $PASS, failed: $FAIL"
 [[ $FAIL -eq 0 ]]

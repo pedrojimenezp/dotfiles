@@ -1,6 +1,6 @@
 # Theme
 
-`theme` recolors the terminal, tmux, Neovim, bat and delta together. `tt`, `prefix t` and `<leader>ut` toggle light/dark; `theme pick [light|dark|nvim-light|nvim-dark]` previews themes live in fzf; `theme help` lists the rest.
+`theme` recolors the terminal, tmux, Neovim, bat and delta together. `tt`, `prefix t` and `<leader>ut` toggle light/dark; `theme pick [light|dark|nvim-light|nvim-dark]` previews themes live in fzf (only themes of the slot's brightness; Ctrl-A switches to all themes and back); `theme help` lists the rest.
 
 ## Two settings
 
@@ -12,7 +12,7 @@
 
 ## Where themes come from
 
-Names are from Ghostty's collection ([iTerm2-Color-Schemes](https://github.com/mbadolato/iTerm2-Color-Schemes)). Lookup: Ghostty's bundled themes, then `~/.local/share/theme/themes`, then a GitHub download (needs `curl`), so servers without Ghostty work. Without Ghostty, `theme list` uses the GitHub API (cached a day, at most 1000 names).
+Names are from Ghostty's collection ([iTerm2-Color-Schemes](https://github.com/mbadolato/iTerm2-Color-Schemes)). Lookup: Ghostty's bundled themes, then `~/.local/share/theme/themes`, then a GitHub download (needs `curl`), so servers without Ghostty work. Without Ghostty, `theme list` uses the GitHub API (cached a day, at most 1000 names). `theme list light` and `theme list dark` keep themes whose background has a perceived brightness (Rec. 601 luma) above or below 0.5. Names with no local file or no background are in both lists.
 
 ## How each tool follows
 
