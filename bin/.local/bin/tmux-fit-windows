@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# Resizes every window to the most recently active client's window size, then lets each window follow its clients again.
+# A window in a session no client is attached to keeps the size of its saved layout, so this gives it the terminal size.
+# Does nothing when no client is attached: windows are resized when a client attaches.
+# Usage: tmux-fit-windows
+set -euo pipefail
+
+# The window size of the latest client's session already excludes the status line.
+session="$(tmux list-clients -F '#{client_activity} #{session_id}' | sort -rn | head -n 1 | cut -d' ' -f2)"
+[[ -n "$session" ]] || exit 0
+read -r width height < <(tmux display-message -p -t "$session" '#{window_width} #{window_height}')
+
+# resize-window pins window-size to manual; unsetting it hands sizing back to the global value.
+tmux list-windows -a -F '#{session_id}:#{window_id}' | while read -r win; do
+  win="${win#*:}"
+  tmux resize-window -t "$win" -x "$width" -y "$height"
+  tmux set-option -wu -t "$win" window-size
+done

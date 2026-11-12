@@ -20,7 +20,7 @@ Machine-only options go in `~/.config/tmux/local.conf`. It is sourced after the 
 
 ## Sessions after a reboot
 
-continuum saves every 15 minutes and restores on server start: just run `tmux`. Saves hold layouts, folders and pane text; only `ssh` is restarted. Files are in `~/.local/share/tmux/resurrect/` (`last` points to the newest).
+continuum saves every 15 minutes and restores on server start: just run `tmux`. Saves hold layouts, folders and pane text; only `ssh` is restarted. Files are in `~/.local/share/tmux/resurrect/` (`last` points to the newest). After a restore, `tmux-fit-windows` resizes every window to the terminal (windows in sessions without a client keep their saved size otherwise).
 
 ## One session in two terminals
 
