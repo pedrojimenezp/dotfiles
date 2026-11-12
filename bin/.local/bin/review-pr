@@ -1,39 +1,116 @@
 #!/usr/bin/env bash
 # Opens a GitHub pull request in its own worktree and reviews it in Neovim's diffview.
-# Usage: review-pr <number>          (fetch the PR into worktrees/pr-<number> and run review against its base)
-#        review-pr --done <number>   (remove that worktree and its pr-<number> branch)
-# Works from any folder of the repo; the worktree lives under the main checkout. Rerunning fast-forwards it
-# to the PR's latest commit, and stops (touching nothing) on local edits or a force-pushed PR.
+# Usage: review-pr <number|url>         (fetch the PR into a worktree and run review against its base)
+#        review-pr --done <number|url>  (remove that worktree and its pr-<number> branch)
+# A number means the repo you are in. A URL (https://github.com/<owner>/<repo>/pull/<n>, optionally with /files,
+# /commits or a #fragment) is matched against the origin of the current repo, its superproject, and their submodules.
+# Single repo: <main checkout>/worktrees/pr-<n>. Submodule: <superproject main checkout>/worktrees/pr-<repo>-<n>/<Repo>.
+# Rerunning fast-forwards the worktree to the PR's latest commit, and stops (touching nothing) on local edits or a force-push.
 set -euo pipefail
 
-usage() { echo "usage: review-pr <number> | --done <number>" >&2; exit 2; }
+usage() { echo "usage: review-pr <number|url> | --done <number|url>" >&2; exit 2; }
 done_mode=0
 num=
+arg_ref= # the PR argument as given, for the hints
+want= # owner/repo in lowercase when a URL was given
+url_re='^https://github\.com/([^/]+)/([^/]+)/pull/([0-9]+)(/(files|commits))?/?(#.*)?$'
 for arg in "$@"; do
   case "$arg" in
-    -h | --help) sed -n '2,6p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h | --help) sed -n '2,8p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     --done) [[ $done_mode -eq 0 ]] || usage; done_mode=1 ;;
     -*) usage ;;
-    *) [[ -z "$num" && "$arg" =~ ^[0-9]+$ ]] || usage; num="$arg" ;;
+    *)
+      [[ -z "$num" ]] || usage
+      arg_ref="$arg"
+      if [[ "$arg" =~ ^[0-9]+$ ]]; then
+        num="$arg"
+      elif [[ "$arg" =~ $url_re ]]; then
+        want="$(printf '%s/%s' "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}" | tr '[:upper:]' '[:lower:]')"
+        num="${BASH_REMATCH[3]}"
+      else
+        usage
+      fi
+      ;;
   esac
 done
 [[ -n "$num" ]] || usage
 "$(dirname "$0")/dotfiles-log" review-pr >/dev/null 2>&1 || true
 
-main="$(git worktree list --porcelain 2>/dev/null | sed -n "1s/^worktree //p" || true)"
-[[ -n "$main" ]] || { echo "review-pr: not in a git repo" >&2; exit 1; }
-wt="$main/worktrees/pr-$num"
+# Prints the main checkout of the repo that contains $1 (the first entry of its worktree list).
+main_checkout() { command git -C "$1" worktree list --porcelain 2>/dev/null | sed -n '1s/^worktree //p' || true; }
+# Succeeds when remote URL $1 is github.com/$want, in https or ssh form, with or without .git.
+url_matches() {
+  local u="${1%/}" rc=0
+  u="${u%.git}"
+  case "$u" in *github.com[:/]*) u="${u#*github.com[:/]}" ;; *) return 1 ;; esac
+  shopt -s nocasematch # no subprocess per URL: this runs once per submodule
+  [[ "$u" == "$want" ]] || rc=1
+  shopt -u nocasematch
+  return "$rc"
+}
+origin_matches() { url_matches "$(command git -C "$1" config --get remote.origin.url 2>/dev/null)"; }
+# Prints the initialized submodules of the repo at $1, one path per line. Those whose recorded
+# .gitmodules url already matches come first, so a match is found without reading every origin.
+submodules() {
+  local top="$1" name url p
+  [[ -f "$top/.gitmodules" ]] || return 0
+  while read -r name url; do
+    name="${name#submodule.}"
+    name="${name%.url}"
+    url_matches "$url" || continue
+    p="$(command git config -f "$top/.gitmodules" "submodule.$name.path" || true)"
+    [[ -n "$p" && -e "$top/$p/.git" ]] && echo "$top/$p"
+  done < <(command git config -f "$top/.gitmodules" --get-regexp '^submodule\..*\.url$' || true)
+  { command git config -f "$top/.gitmodules" --get-regexp '^submodule\..*\.path$' || true; } |
+    while read -r _ p; do [[ -e "$top/$p/.git" ]] && echo "$top/$p"; done
+  return 0
+}
+# Prints the repos to try for a URL, in order: this repo, its superproject, then submodules of each.
+candidates() {
+  local cur="$1" sup
+  echo "$cur"
+  sup="$(command git -C "$cur" rev-parse --show-superproject-working-tree)"
+  [[ -z "$sup" ]] || echo "$sup"
+  [[ -z "$sup" ]] || submodules "$sup"
+  submodules "$cur"
+}
+
+cur="$(command git rev-parse --show-toplevel 2>/dev/null || true)"
+[[ -n "$cur" ]] || { echo "review-pr: not in a git repo" >&2; exit 1; }
+repo="$cur"
+if [[ -n "$want" ]]; then
+  repo=
+  while read -r d; do
+    if origin_matches "$d"; then repo="$d"; break; fi
+  done < <(candidates "$cur")
+  [[ -n "$repo" ]] || { echo "review-pr: no local clone of $want here (looked in $cur and its submodules)" >&2; exit 1; }
+fi
+
+super="$(command git -C "$repo" rev-parse --show-superproject-working-tree)"
 branch="pr-$num"
-git() { command git -C "$main" "$@"; }
+if [[ -n "$super" ]]; then
+  repo_dir="$(basename "$repo")"
+  repo_slug="$(printf '%s' "$repo_dir" | tr '[:upper:]' '[:lower:]')"
+  wt_parent="$(main_checkout "$super")/worktrees/pr-$repo_slug-$num"
+  wt="$wt_parent/$repo_dir"
+else
+  repo="$(main_checkout "$repo")"
+  wt_parent=
+  wt="$repo/worktrees/pr-$num"
+fi
+git() { command git -C "$repo" "$@"; }
+gh_repo=()
+[[ -z "$want" ]] || gh_repo=(-R "$want")
 
 if [[ $done_mode -eq 1 ]]; then
   echo "Removing worktree $wt"
   git worktree remove "$wt"
   echo "  removed"
+  [[ -z "$wt_parent" ]] || rmdir "$wt_parent" 2>/dev/null || true
   echo "Deleting branch $branch"
   git branch -D "$branch"
-  if [[ -n "${TMUX:-}" ]] && tmux list-windows -F '#{window_name}' | grep -qx "review:pr-$num"; then
-    echo "The tmux window review:pr-$num is still open: close it yourself."
+  if [[ -n "${TMUX:-}" ]] && tmux list-windows -F '#{window_name}' | grep -qx "review:$(basename "$wt")"; then
+    echo "The tmux window review:$(basename "$wt") is still open: close it yourself."
   fi
   exit 0
 fi
@@ -52,7 +129,7 @@ if [[ ! -d "$wt" ]]; then
     git branch -f "$branch" "$sha" # a leftover branch with no commits of its own moves to the PR head
   else
     echo "review-pr: branch $branch has commits that PR $num does not; nothing was changed." >&2
-    echo "  Delete it with: git branch -D $branch (or rename it with: git branch -m $branch <new-name>), then rerun review-pr $num" >&2
+    echo "  Delete it with: git branch -D $branch (or rename it with: git branch -m $branch <new-name>), then rerun review-pr $arg_ref" >&2
     exit 1
   fi
   git worktree add -q "$wt" "$branch"
@@ -61,19 +138,19 @@ else
   echo "Updating worktree $wt"
   if [[ -n "$(command git -C "$wt" status --porcelain)" ]]; then
     echo "review-pr: $wt has uncommitted changes; nothing was changed." >&2
-    echo "  Save or drop them, or run: review-pr --done $num, then rerun review-pr $num" >&2
+    echo "  Save or drop them, or run: review-pr --done $arg_ref, then rerun review-pr $arg_ref" >&2
     exit 1
   fi
   if ! command git -C "$wt" merge -q --ff-only "$sha" >/dev/null 2>&1; then
     echo "review-pr: $branch cannot fast-forward to ${sha:0:9} (the PR was force-pushed); nothing was changed." >&2
-    echo "  Run: review-pr --done $num, then rerun review-pr $num" >&2
+    echo "  Run: review-pr --done $arg_ref, then rerun review-pr $arg_ref" >&2
     exit 1
   fi
   echo "  now at ${sha:0:9}"
 fi
 
 echo "Looking up the PR's base branch"
-base="$(cd "$wt" && gh pr view "$num" --json baseRefName -q .baseRefName)"
+base="$(cd "$wt" && gh pr view ${gh_repo[@]+"${gh_repo[@]}"} "$num" --json baseRefName -q .baseRefName)"
 [[ -n "$base" ]] || { echo "review-pr: gh returned no base for PR $num" >&2; exit 1; }
 git fetch -q origin "$base"
 echo "  base $base"
