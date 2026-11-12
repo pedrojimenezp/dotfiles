@@ -1,8 +1,6 @@
 -- GitHub-style diff colors for any colorscheme: Diff* groups get a background and never a
 -- foreground, so syntax highlighting shows through. The tints are the Normal background blended
--- with the scheme's red and green. A scheme colour that is too dull (HSL saturation below
--- min_saturation) is replaced by the mode's GitHub colour from `fallback`, so tints always read
--- as red or green. Each colour is judged on its own.
+-- with the scheme's red and green; one duller than min_saturation is replaced by its `fallback`.
 --   DiffAdd         added line (green); DiffAddOld is the same line as seen on the old side (red)
 --   DiffChange*     changed line, DiffText* the changed words inside it; Old = red, New = green
 --   DiffDelete      filler where the other side has lines: a faint gap, drawn with blank fillchars
@@ -19,7 +17,7 @@ local strength = { -- blend amount: whole line, changed words, filler gap
   dark = { line = 0.20, text = 0.40, gap = 0.07 },
 }
 
-local min_saturation = 0.32 -- HSL; Dayfox green is 0.29, base16 greens 0.34 and up
+local min_saturation = 0.32 -- HSL; below it a tint reads as grey
 
 local function to_hex(n) return n and string.format("#%06x", n) or nil end
 
