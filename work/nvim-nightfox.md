@@ -4,7 +4,7 @@
 Nightfox family as the light/dark theme for terminal and Neovim, using the real nightfox.nvim colorscheme.
 
 ## Plan
-Add the plugin, map the seven fox names in `plugin_scheme`, set the pair (Dayfox/Nightfox), drop the nvim_* keys, verify headless, update docs.
+Add the plugin, map the seven fox names in `plugin_scheme`, set the pair (Dawnfox/Nightfox), drop the nvim_* keys, verify headless, update docs.
 
 ## Done
 - Plugin spec, name mapping, pair in `theme/.config/theme/config`, docs/theme.md.

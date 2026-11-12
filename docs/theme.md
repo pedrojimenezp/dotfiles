@@ -4,7 +4,7 @@
 
 ## Two settings
 
-- **The pair**, tracked: `theme/.config/theme/config` names one light and one dark theme (defaults `GitHub Light Default` and `TokyoNight Night`; the tracked pair is `Dayfox` and `Nightfox`). A pick edits this file through the link: commit it so every machine gets it.
+- **The pair**, tracked: `theme/.config/theme/config` names one light and one dark theme (defaults `GitHub Light Default` and `TokyoNight Night`). A pick edits this file through the link: commit it so every machine gets it.
 - **A Neovim pair**, optional, in the same file: `nvim_light` and `nvim_dark`. In each mode Neovim uses its `nvim_<mode>` name when set, otherwise the pair's name. Only Neovim reads these keys; the terminal, tmux and the rest ignore them. See [Neovim only](#neovim-only).
 - **The mode**, per machine: `auto`, `light` or `dark` in `~/.local/state/theme`. `auto` follows macOS; on Linux it means the terminal's own colors.
 
