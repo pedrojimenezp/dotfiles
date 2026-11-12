@@ -1,7 +1,7 @@
 -- Colors that follow the dotfiles theme pair (~/.config/theme/config).
 -- 'background' picks the slot; the slot's name picks the scheme (nvim_light/nvim_dark, when set,
 -- replace the terminal's name for that slot): TokyoNight -> tokyonight.nvim,
--- GitHub -> github-nvim-theme, anything else -> mini.base16 from the theme file.
+-- GitHub -> github-nvim-theme, the Nightfox family -> nightfox.nvim, anything else -> mini.base16 from the theme file.
 -- g:colors_name is cleared after loading, or Neovim would reload that scheme itself on a
 -- 'background' change and fight the other slot. g:dotfiles_theme holds the name instead.
 local M = {}
@@ -132,7 +132,9 @@ local function base16(path)
   return true
 end
 
--- Colorscheme for a "TokyoNight ..." or "GitHub ..." name, or nil.
+local foxes = { nightfox = true, dayfox = true, dawnfox = true, duskfox = true, nordfox = true, terafox = true, carbonfox = true }
+
+-- Colorscheme for a "TokyoNight ...", "GitHub ..." or Nightfox family name, or nil.
 local function plugin_scheme(name)
   local tokyo = name:match("^TokyoNight%s*(%a*)$")
   if tokyo then
@@ -142,6 +144,7 @@ local function plugin_scheme(name)
   end
   if name == "GitHub" then return "github_light" end -- Ghostty's plain "GitHub" theme is light
   if name:match("^GitHub ") then return (name:lower():gsub("%s+", "_")) end -- GitHub Light Default -> github_light_default
+  if foxes[name:lower()] then return name:lower() end -- Dayfox -> dayfox
   return nil
 end
 

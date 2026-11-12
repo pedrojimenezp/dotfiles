@@ -4,7 +4,7 @@
 
 ## Two settings
 
-- **The pair**, tracked: `theme/.config/theme/config` names one light and one dark theme (defaults `GitHub Light Default` and `TokyoNight Night`). A pick edits this file through the link: commit it so every machine gets it.
+- **The pair**, tracked: `theme/.config/theme/config` names one light and one dark theme (defaults `GitHub Light Default` and `TokyoNight Night`; the tracked pair is `Dayfox` and `Nightfox`). A pick edits this file through the link: commit it so every machine gets it.
 - **A Neovim pair**, optional, in the same file: `nvim_light` and `nvim_dark`. In each mode Neovim uses its `nvim_<mode>` name when set, otherwise the pair's name. Only Neovim reads these keys; the terminal, tmux and the rest ignore them. See [Neovim only](#neovim-only).
 - **The mode**, per machine: `auto`, `light` or `dark` in `~/.local/state/theme`. `auto` follows macOS; on Linux it means the terminal's own colors.
 
@@ -21,7 +21,7 @@ Names are from Ghostty's collection ([iTerm2-Color-Schemes](https://github.com/m
 - **Ghostty:** `theme sync` writes `~/.config/ghostty/theme.conf` (`theme = light:<a>,dark:<b>`, so Ghostty follows macOS itself), copies downloaded themes to `~/.config/ghostty/themes`, and sends SIGUSR2 to reload.
 - **iTerm2:** `theme sync` writes the Dotfiles Dynamic Profile ([terminals.md](terminals.md#iterm2)).
 - **tmux:** the status line uses palette color names.
-- **Neovim:** `TokyoNight ...` uses tokyonight.nvim, `GitHub ...` github-nvim-theme, anything else is built with `mini.base16` from the theme file (close, not exact). Open instances update on `<leader>ut` and on focus, including after a change to the Neovim keys.
+- **Neovim:** `TokyoNight ...` uses tokyonight.nvim, `GitHub ...` github-nvim-theme, the seven Nightfox names (`Nightfox`, `Dayfox`, `Dawnfox`, `Duskfox`, `Nordfox`, `Terafox`, `Carbonfox`) nightfox.nvim, anything else is built with `mini.base16` from the theme file (close, not exact). Open instances update on `<leader>ut` and on focus, including after a change to the Neovim keys.
 - **bat and delta:** the `ansi` theme, so they use the terminal's 16 colors.
 
 `theme sync` runs from `install.sh`, `theme set` and `theme pick`. Its output is generated: never edit or commit it.
@@ -35,7 +35,7 @@ Keep a terminal pair and give Neovim another one. Light/dark stays shared: `them
 - `theme set nvim-light --clear` (or `nvim-dark`) removes the key, so Neovim follows the terminal again.
 - `theme status` lists the Neovim picks when they are set.
 
-Names are checked like any other (`theme list`). Only `TokyoNight Night|Storm|Moon|Day` and `GitHub ...` names get a real Neovim colorscheme. Any other name falls back to `mini.base16`, which is close but not exact. These names work well: `TokyoNight Night`, `TokyoNight Storm`, `TokyoNight Moon`, `TokyoNight Day`, `GitHub Light Default`, `GitHub Dark Default`, and the other `GitHub ...` variants in `theme list`.
+Names are checked like any other (`theme list`). Only `TokyoNight Night|Storm|Moon|Day`, `GitHub ...` and the Nightfox names get a real Neovim colorscheme. Any other name falls back to `mini.base16`, which is close but not exact. These names work well: `TokyoNight Night`, `TokyoNight Storm`, `TokyoNight Moon`, `TokyoNight Day`, `GitHub Light Default`, `GitHub Dark Default`, `Nightfox`, `Dayfox` and the other Nightfox names, and the other `GitHub ...` variants in `theme list`.
 
 ## Troubleshooting
 
