@@ -19,8 +19,23 @@ return {
     { "<leader>/", function() require("telescope.builtin").current_buffer_fuzzy_find() end, desc = "Fuzzy search in buffer" },
   },
   config = function()
+    -- Picker width in columns: 95% of the window under 180 columns, 80% above.
+    local function picker_width(_, max_columns)
+      return math.floor(max_columns * (max_columns < 180 and 0.95 or 0.8))
+    end
+
     require("telescope").setup({
-      defaults = { file_ignore_patterns = { "^.git/", "node_modules/" } },
+      defaults = {
+        file_ignore_patterns = { "^.git/", "node_modules/" },
+        layout_strategy = "flex",
+        layout_config = {
+          flip_columns = 120, -- side by side from 120 columns, stacked below
+          width = picker_width,
+          height = 0.95,
+          horizontal = { preview_width = 0.5 },
+        },
+        path_display = { "filename_first" },
+      },
       pickers = { find_files = { hidden = true } },
     })
     pcall(require("telescope").load_extension, "fzf") -- only if fzf-native built
