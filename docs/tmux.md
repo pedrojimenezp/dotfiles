@@ -68,6 +68,8 @@ tmux copies through OSC 52, so turn on iTerm2's "Applications in terminal may ac
 
 ## Status bar
 
+The bar is a soft tint of the theme's background, written by [`theme`](theme.md#how-each-tool-follows) to `~/.local/state/theme-tmux.conf` and read by `tmux.conf` on load; with no file it uses the terminal background.
+
 | Indicator | Meaning |
 | --- | --- |
 | Session block yellow | Prefix pressed, waiting for a key |

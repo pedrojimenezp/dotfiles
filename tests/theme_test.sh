@@ -176,4 +176,51 @@ nobundle() { THEME_GHOSTTY_DIRS="" XDG_DATA_HOME="$FC" XDG_CACHE_HOME="$ROOT/fil
 check "no bundle: unknown name is in dark" test "$(nobundle list dark)" = "Remote Only"
 check "no bundle: unknown name is in light" test "$(nobundle list light)" = "$(names "Cached Day" Night "Remote Only")"
 
+echo "tmux status tint"
+# Real colors of Rose Pine (dark) and GitHub Light Default; blends checked by hand: 8% and 6% toward the foreground
+printf 'background = #191724\nforeground = #e0def4\n' >"$THEME_GHOSTTY_DIRS/Tint Dark"
+printf 'background = #ffffff\nforeground = #1f2328\n' >"$THEME_GHOSTTY_DIRS/Tint Light"
+TINT_FILE="$XDG_STATE_HOME/theme-tmux.conf"
+printf 'light = Tint Light\ndark = Tint Dark\n' >"$CONFIG"
+"$THEME" dark >/dev/null 2>&1
+check "dark theme: saved tint is 8% toward the foreground" grep -qxF 'set -g status-style "bg=#292735,fg=default"' "$TINT_FILE"
+"$THEME" light >/dev/null 2>&1
+check "light theme: saved tint is 6% toward the foreground" grep -qxF 'set -g status-style "bg=#f2f2f2,fg=default"' "$TINT_FILE"
+"$THEME" toggle >/dev/null 2>&1
+check "toggle updates the tint" grep -qxF 'set -g status-style "bg=#292735,fg=default"' "$TINT_FILE"
+"$THEME" auto >/dev/null 2>&1
+check "auto removes the tint" test ! -e "$TINT_FILE"
+"$THEME" dark >/dev/null 2>&1
+"$THEME" apply >/dev/null 2>&1
+check "apply keeps the tint" test -e "$TINT_FILE"
+
+# A private tmux server: theme updates the server named by TMUX; tmux.conf reads the saved file
+if command -v tmux >/dev/null; then
+  REAL_TMUX="$(command -v tmux)"
+  TD="$(mktemp -d /tmp/tx.XXXX)"
+  trap 'env -u TMUX "$REAL_TMUX" -S "$TD/s" kill-server 2>/dev/null || true; rm -rf "$ROOT" "$TD"' EXIT
+  SOCK="$TD/s"
+  T() { env -u TMUX "$REAL_TMUX" -S "$SOCK" "$@"; }
+  mkdir -p "$TD/bin" "$HOME/.local"
+  ln -s "$XDG_STATE_HOME" "$HOME/.local/state" # tmux.conf reads ~/.local/state
+  printf '#!/bin/sh\nexec env -u TMUX "%s" -S "%s" "$@"\n' "$REAL_TMUX" "$SOCK" >"$TD/bin/tmux" # theme's own tmux calls reach only the private server
+  chmod +x "$TD/bin/tmux"
+  CONF="$SRC/tmux/.config/tmux/tmux.conf"
+  start_server() { T kill-server 2>/dev/null || true; T -f "$CONF" new-session -d -x 80 -y 24 -s t >/dev/null 2>&1 || true; }
+
+  "$THEME" dark >/dev/null 2>&1
+  start_server
+  check_eq "tmux.conf applies the saved tint" "bg=#292735,fg=default" "$(T show -gv status-style)"
+  "$THEME" light >/dev/null 2>&1
+  check_eq "theme alone leaves a running server as it was" "bg=#292735,fg=default" "$(T show -gv status-style)"
+  TMUX="$SOCK,0,0" PATH="$TD/bin:$PATH" "$THEME" light >/dev/null 2>&1
+  check_eq "theme inside tmux updates that server" "bg=#f2f2f2,fg=default" "$(T show -gv status-style)"
+  TMUX="$SOCK,0,0" PATH="$TD/bin:$PATH" "$THEME" auto >/dev/null 2>&1
+  check_eq "auto inside tmux resets the bar" "bg=default,fg=default" "$(T show -gv status-style)"
+  rm -f "$TINT_FILE"
+  start_server
+  check_eq "no saved tint: bg=default" "bg=default,fg=default" "$(T show -gv status-style)"
+  T kill-server 2>/dev/null || true
+fi
+
 summary

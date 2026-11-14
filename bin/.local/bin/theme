@@ -13,6 +13,7 @@ CACHE_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/theme/themes"
 LIST_CACHE="${XDG_CACHE_HOME:-$HOME/.cache}/theme/list"
 GHOSTTY_CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/ghostty"
 NVIM_LIST="${THEME_NVIM_LIST:-${XDG_CONFIG_HOME:-$HOME/.config}/nvim/themes.tsv}" # original Neovim themes: name, colorscheme, brightness, [nvim]
+TMUX_TINT_FILE="${XDG_STATE_HOME:-$HOME/.local/state}/theme-tmux.conf" # sourced by tmux.conf
 ITERM_TEMPLATE="${XDG_CONFIG_HOME:-$HOME/.config}/iterm/dotfiles-profile.plist"
 ITERM_PROFILE="$HOME/Library/Application Support/iTerm2/DynamicProfiles/dotfiles.plist"
 UPSTREAM="mbadolato/iTerm2-Color-Schemes" # holds Ghostty's theme collection
@@ -391,6 +392,46 @@ emit() {
   fi
 }
 
+# --- tmux status bar tint ---
+
+# Print "#rrggbb": bg ("rrggbb") blended toward fg by a per-mille amount, like nvim's diff_colors.
+blend_hex() {
+  local bg=$1 fg=$2 amount=$3 out="#" i x y
+  for i in 0 2 4; do
+    x=$((16#${bg:i:2})) y=$((16#${fg:i:2}))
+    out+="$(printf '%02x' $(((x * 1000 + (y - x) * amount + 500) / 1000)))"
+  done
+  echo "$out"
+}
+
+# Print the status bar color for a theme name: 8% toward the foreground on a dark background,
+# 6% on a light one (Rec. 601 luma above 0.5).
+tmux_tint() {
+  local file luma r g b
+  file="$(theme_file "$1")" || return 1
+  parse_theme "$file" || return 1
+  r=$((16#${T_BG:0:2})) g=$((16#${T_BG:2:2})) b=$((16#${T_BG:4:2}))
+  luma=$(((299 * r + 587 * g + 114 * b) / 1000))
+  blend_hex "$T_BG" "$T_FG" "$((luma > 127 ? 60 : 80))"
+}
+
+# Save the tint for tmux.conf and update the tmux server named by $TMUX. A mode without known
+# colors (auto resets to the terminal's own) removes it, so the bar falls back to bg=default.
+apply_tmux_tint() {
+  local tint=""
+  [[ $1 == auto ]] || tint="$(tmux_tint "$(config_get "$1")")" || tint=""
+  if [[ -n $tint ]]; then
+    mkdir -p "$(dirname "$TMUX_TINT_FILE")"
+    printf 'set -g status-style "bg=%s,fg=default"\n' "$tint" >"$TMUX_TINT_FILE.tmp"
+    mv "$TMUX_TINT_FILE.tmp" "$TMUX_TINT_FILE"
+  else
+    rm -f "$TMUX_TINT_FILE"
+  fi
+  if [[ -n ${TMUX:-} ]]; then
+    tmux set -g status-style "bg=${tint:-default},fg=default" 2>/dev/null || true
+  fi
+}
+
 # Apply a mode: dark, light or auto.
 apply_state() {
   local seqs                                        # sequences, built first so errors stop early
@@ -399,6 +440,7 @@ apply_state() {
     *) seqs="$(palette_sequences "$(config_get "$1")")" || return 1 ;;
   esac
   printf '%s\n' "$seqs" | emit
+  apply_tmux_tint "$1"
   if [[ -n ${TMUX:-} ]]; then
     tmux refresh-client -S 2>/dev/null || true
   fi

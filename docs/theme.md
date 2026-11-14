@@ -20,7 +20,7 @@ Names are from Ghostty's collection ([iTerm2-Color-Schemes](https://github.com/m
 - **New local shells** run `theme apply --no-download` for a saved dark or light, so an offline start never waits. They skip SSH and tmux, where the terminal is already colored.
 - **Ghostty:** `theme sync` writes `~/.config/ghostty/theme.conf` (`theme = light:<a>,dark:<b>`, so Ghostty follows macOS itself), copies downloaded themes to `~/.config/ghostty/themes`, and sends SIGUSR2 to reload.
 - **iTerm2:** `theme sync` writes the Dotfiles Dynamic Profile ([terminals.md](terminals.md#iterm2)).
-- **tmux:** the status line uses palette color names.
+- **tmux:** the status line uses palette color names. Its bar is the theme background blended 8% (6% on light themes) toward the foreground, saved in `~/.local/state/theme-tmux.conf` and set on the tmux server `theme` runs in (`$TMUX`); other servers read it on start or `prefix r`. `auto` removes it, so the bar blends into the panes.
 - **Neovim:** a name in the [original Neovim themes](#original-neovim-themes) loads its own colorscheme; any other name loads Dayfox (light) or Nightfox (dark). Open instances update on `<leader>ut` and on focus, including after a change to the Neovim keys.
 - **bat and delta:** the `ansi` theme, so they use the terminal's 16 colors.
 
