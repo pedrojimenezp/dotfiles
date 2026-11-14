@@ -7,13 +7,13 @@ Apply the agreed Neovim audit changes: built-in gr* LSP keys, gopls staticcheck 
 Edit lsp.lua, editor.lua, options.lua, keymaps.lua, treesitter.lua and docs/nvim.md; test headless; run tests/run.sh.
 
 ## Done
-All edits and docs. Testing in progress.
+All edits and docs; headless checks and tests/run.sh pass.
 
 ## Where we stopped
-Headless testing.
+Finished; ready for review.
 
 ## Next step
-Run Lazy sync, load checks and tests/run.sh; commit.
+Review and merge.
 
 ## How to test
 Headless nvim with XDG_CONFIG_HOME pointing at a symlink to nvim/.config/nvim; `bash tests/run.sh`.
