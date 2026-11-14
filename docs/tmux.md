@@ -38,7 +38,7 @@ continuum saves every 15 minutes and restores on server start: just run `tmux`. 
 - A custom name: rename the session afterwards with tmux's `prefix $`.
 - `SESSIONIZER_TMUX_ARGS` passes extra tmux options, such as `-L sock`.
 
-Project missing? `tmux-sessionizer --list` prints `label<TAB>path` for every candidate. An old `~/.config/sessionizer/config`, `SESSIONIZER_EXCLUDE` or `SESSIONIZER_DEPTH` is ignored.
+Project missing? `tmux-sessionizer --list` prints `label<TAB>path` for every candidate.
 
 ## Popups
 

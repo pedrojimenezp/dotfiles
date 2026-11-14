@@ -6,7 +6,7 @@ The installer never uses sudo and never upgrades tools. It renames any file it w
 
 ## macOS
 
-1. `xcode-select --install`, and [Homebrew](https://brew.sh). Homebrew installs only `mise`, `stow`, `btop`, `pngpaste`, `chafa`, `skhd-zig` and the apps (into `~/Applications`); mise installs the rest.
+1. `xcode-select --install`, and [Homebrew](https://brew.sh). Homebrew installs only what mise can't provide, plus the apps (into `~/Applications`): see [tools.md](tools.md).
 2. Clone and run:
    ```sh
    git clone https://github.com/pedrojimenezp/dotfiles ~/dotfiles
@@ -53,7 +53,7 @@ brew upgrade mise    # macOS (a plain brew upgrade upgrades everything)
 mise self-update     # Linux
 ```
 
-The zsh tool cache rebuilds when a tool's version changes.
+The zsh tool cache refreshes by itself: see [zsh.md](zsh.md#caches).
 
 ## Per-machine files
 
@@ -95,6 +95,6 @@ stow runs with `--no-folding`, so folders like `~/.config/ghostty` stay real and
 - **`zsh compinit: insecure directories`**: a completion folder is group- or world-writable. `install.sh` runs `chmod go-w` on Homebrew's, but `brew` can restore the bits: `compaudit`, then `chmod go-w` each path. A path owned by another user still prompts: check it first.
 - **stow conflict**: a real file blocks a link. Rename it and rerun.
 - **tmux plugin missing**: `prefix I`.
-- **Shell acts strange after a change**: `rm -rf ~/.cache/zsh && exec zsh`.
+- **Shell acts strange after a change**: see [zsh.md](zsh.md#troubleshooting).
 - **Icons are boxes**: the terminal font isn't a Nerd Font ([terminals.md](terminals.md)).
 - **`--with-claude` "could not clone"**: share the GitHub key as in [server.md](server.md#share-the-github-key).

@@ -32,10 +32,9 @@ Claude Code on a server can't read the Mac's clipboard. Copy an image, focus a t
 
 ### Setup, once
 
-1. `./install.sh` installs `skhd-zig` and `pngpaste` and links `skhdrc` and the script.
+1. `./install.sh` installs the tools it needs ([tools.md](tools.md)) and links `skhdrc` and the script.
 2. `skhd --install-service && skhd --start-service`.
 3. System Settings > Privacy & Security > **Accessibility** > turn **skhd** on (or **+** and `~/Applications/skhd.app`). Then `skhd --restart-service` if needed.
-4. Delete any old **Image to server** shortcut in the Shortcuts app: it takes the same key.
 
 ### How it picks the server
 

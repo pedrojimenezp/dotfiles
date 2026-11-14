@@ -48,9 +48,10 @@ A shared connection keeps what the server read at login: after a `chsh` or a new
 
 ## 2. On the server, once
 
+First the system packages, as in [install.md](install.md#linux-desktop) step 1 (skip `xz-utils`: only a desktop installs the font). Then:
+
 ```sh
 ssh my-ec2
-sudo apt-get update && sudo apt-get install -y zsh git curl unzip stow libatomic1
 git clone https://github.com/pedrojimenezp/dotfiles ~/dotfiles
 cd ~/dotfiles && ./install.sh --with-claude <git-url>
 sudo chsh -s /usr/bin/zsh "$USER"
@@ -106,7 +107,7 @@ The status clock picks up `TZ` only on restart: `tmux kill-server`, then `tssh m
 
 Each user has their own home, tools, tmux server and dotfiles clone; only the apt packages are shared.
 
-- **Admin, once:** the `apt-get` line above. **Per user:** `sudo adduser <name> && sudo chsh -s /usr/bin/zsh <name>`.
+- **Admin, once:** the system packages (step 2). **Per user:** `sudo adduser <name> && sudo chsh -s /usr/bin/zsh <name>`.
 - **Each user**, no sudo: clone and `./install.sh`. The admin runs `sudo apt-get upgrade`.
 - A first login may show "This is the Z Shell configuration function for new users": press `q`. If you created a `~/.zshrc` there, `install.sh` backs it up.
 - mise tools take about 1.3 GB per user.
@@ -115,7 +116,6 @@ Each user has their own home, tools, tmux server and dotfiles clone; only the ap
 
 - **`tssh` says tmux not found:** the login shell isn't zsh. Run the `chsh` step, then `ssh -O exit <user>@<host>` if you share connections, and reconnect.
 - **Unknown tmux options after login, or install ends with "logins start the system tmux":** bash is still the login shell, so it starts apt's `/usr/bin/tmux`. `chsh`, log out and in, then `tmux kill-server`.
-- **`git pull` says "Permission denied (publickey)":** an old git config sent all GitHub traffic over SSH. Pull or rerun `./install.sh`; the current one uses SSH for pushes only.
 - **`git push` or `--with-claude` "Permission denied (publickey)":** if `echo $SSH_AUTH_SOCK` prints a path, the key isn't in the laptop's agent ([steps 2-4](#share-the-github-key)); if empty, add `ForwardAgent yes`. Then rerun `./install.sh --with-claude <git-url>`.
 - **Ghostty prompts alternate between laptop and server, or keys go nowhere after a drop:** a leftover ssh master. Close the tab, then `ssh -O exit <host>`.
 - **Wrong icons or colors:** the laptop's terminal font or profile. On a Linux laptop, `fc-cache -f` and restart the terminal.
