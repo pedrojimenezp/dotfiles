@@ -9,10 +9,10 @@ return {
       "mason-org/mason-lspconfig.nvim",
       "WhoIsSethDaniel/mason-tool-installer.nvim",
       "saghen/blink.cmp",
-      { "b0o/SchemaStore.nvim", lazy = true }, -- JSON/YAML schema catalog, required by the jsonls and yamlls settings
+      { "b0o/SchemaStore.nvim", lazy = true }, -- JSON/YAML schema catalog
     },
     config = function()
-      -- Neovim maps grn, gra, grr, gri, grt, gO and K. Telescope replaces gd, grr, gri, grt and gO.
+      -- Neovim maps grn, gra, grr, gri, grt, gO and K. Telescope pickers replace grr, gri, grt and gO, and take gd.
       -- No bare gr map: it would delay the gr* defaults.
       vim.api.nvim_create_autocmd("LspAttach", {
         group = vim.api.nvim_create_augroup("user_lsp_attach", { clear = true }),
@@ -68,6 +68,8 @@ return {
           "gofumpt", "goimports", "prettierd", "stylua",
         },
       })
+      -- The plugin installs on VimEnter, which has already passed when this loads on the first buffer.
+      if vim.v.vim_did_enter == 1 then require("mason-tool-installer").run_on_start() end
 
       if vim.fn.executable("zls") == 1 then vim.lsp.enable("zls") end
     end,

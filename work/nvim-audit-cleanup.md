@@ -7,7 +7,7 @@ Apply the agreed Neovim audit changes: built-in gr* LSP keys, gopls staticcheck 
 Edit lsp.lua, editor.lua, options.lua, keymaps.lua, treesitter.lua and docs/nvim.md; test headless; run tests/run.sh.
 
 ## Done
-All edits and docs; headless checks and tests/run.sh pass.
+All edits and docs; headless checks and tests/run.sh pass. Review fixes: run_on_start when lazy-loaded after VimEnter, comment edits.
 
 ## Where we stopped
 Finished; ready for review.
