@@ -4,6 +4,7 @@
 set -euo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$REPO/common.sh"
 REPO_REAL="$(cd "$REPO" && pwd -P)"
 STAMP="$(date +%Y%m%d-%H%M%S)"
 DRY=0
@@ -79,12 +80,6 @@ run() {
   fi
 }
 
-PACKAGES=(zsh nvim tmux vim git lazygit starship mise bin theme)
-
-if [[ "$OSTYPE" == darwin* ]]; then
-  PACKAGES+=(iterm skhd)
-fi
-
 # Step 1: Homebrew (macOS only; Linux gets its tools from mise).
 if [[ "$OSTYPE" == darwin* ]]; then
   # A fresh SSH login (bash) has no brew on PATH.
@@ -120,15 +115,8 @@ MSG
   fi
 fi
 
-# Ghostty is optional: link its config only if the app or binary exists.
-HAS_GHOSTTY=0
-for app in "$HOME/Applications/Ghostty.app" /Applications/Ghostty.app; do # Brewfile appdir first
-  [[ -d $app ]] && HAS_GHOSTTY=1
-done
-command -v ghostty >/dev/null 2>&1 && HAS_GHOSTTY=1 # Linux package on PATH
-if [[ $HAS_GHOSTTY -eq 1 ]]; then
-  PACKAGES+=(ghostty)
-fi
+PACKAGES=()
+while IFS= read -r pkg; do PACKAGES+=("$pkg"); done < <(packages_here)
 
 # True if $1 resolves (through any symlinks) to a file inside this repo.
 is_repo_link() {

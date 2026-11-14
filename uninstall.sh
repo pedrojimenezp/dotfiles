@@ -5,18 +5,20 @@
 set -euo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$REPO/common.sh"
 HOME_REAL="$(cd "$HOME" && pwd -P)"
 DRY=0
 ASSUME_YES=0
 WITH_CLAUDE=0
-CLAUDE_DIR="$HOME/.config/claude-shared"            # same path as install.sh
+CLAUDE_DIR="$HOME/.config/claude-shared"
 CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}"
 DATA="${XDG_DATA_HOME:-$HOME/.local/share}"
 STATE="${XDG_STATE_HOME:-$HOME/.local/state}"
 CACHE="${XDG_CACHE_HOME:-$HOME/.cache}"
 
-# Same packages as install.sh, plus the macOS and Ghostty ones: a package with no links does nothing.
-PACKAGES=(zsh nvim tmux vim git lazygit starship mise bin theme iterm skhd ghostty)
+# Every package, on any machine: a package with no links does nothing.
+PACKAGES=()
+while IFS= read -r pkg; do PACKAGES+=("$pkg"); done < <(packages_all)
 
 REMOVED=()
 RESTORED=()

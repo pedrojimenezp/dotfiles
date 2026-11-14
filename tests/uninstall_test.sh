@@ -6,7 +6,10 @@ set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
 SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)" # the repo under test (working tree, committed or not)
-PKGS=(zsh nvim tmux vim git lazygit starship mise bin theme)
+REPO="$SRC"
+source "$SRC/common.sh"
+PKGS=()
+while IFS= read -r pkg; do PKGS+=("$pkg"); done < <(packages_all)
 ROOT="$(mktemp -d)"
 trap 'rm -rf "$ROOT"' EXIT
 export GIT_CONFIG_NOSYSTEM=1 GIT_TERMINAL_PROMPT=0

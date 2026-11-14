@@ -80,7 +80,7 @@ To restore one file: `ls ~/.zshrc.backup-*`, then `rm ~/.zshrc && mv ~/.zshrc.ba
 
 ## Layout
 
-Each top-level folder is a stow package mirroring `$HOME` (`git/.config/git/config` → `~/.config/git/config`). `iterm` and `skhd` are linked on macOS only, `ghostty` when Ghostty is installed. To add a package, add it to `PACKAGES` in `install.sh` and `uninstall.sh`.
+Each top-level folder is a stow package mirroring `$HOME` (`git/.config/git/config` → `~/.config/git/config`). `iterm` and `skhd` are linked on macOS only, `ghostty` when Ghostty is installed. `common.sh` (repo root, outside every package) lists the packages and decides which apply: add a folder and it is installed, uninstalled and tested.
 
 stow runs with `--no-folding`, so folders like `~/.config/ghostty` stay real and generated files (`theme.conf`) never land in the repo. tmux plugins install on a private, throwaway tmux server, so a running tmux is never touched.
 
