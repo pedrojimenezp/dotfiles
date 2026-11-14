@@ -4,7 +4,7 @@ Config: `tmux/.config/tmux/tmux.conf`. Keys: `prefix ?` (this config, plugins, t
 
 ## Requirements
 
-tmux 3.5 or newer (`extended-keys-format`), installed by mise. Never use apt's tmux: it is older and errors on unknown options. If a login still starts `/usr/bin/tmux`, switch the login shell to zsh and run `tmux kill-server`.
+tmux 3.7 or newer, installed by mise (`mise up tmux` on older machines). Never use apt's tmux: it is older and errors on unknown options. If a login still starts `/usr/bin/tmux`, switch the login shell to zsh and run `tmux kill-server`.
 
 ## Change a key or option
 
@@ -90,6 +90,6 @@ tmux copies through OSC 52, so turn on iTerm2's "Applications in terminal may ac
 
 ## Troubleshooting
 
-- **Unknown options on start:** tmux older than 3.5, see [Requirements](#requirements).
+- **Unknown options on start:** tmux older than 3.7, see [Requirements](#requirements).
 - **A plugin is missing:** `prefix I`.
 - **`Cmd+K` does nothing:** the pane runs vim or nvim, by design.
