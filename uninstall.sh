@@ -57,20 +57,11 @@ safe_rm() {
   fi
 }
 
-# Print where the symlink $1 finally points, without readlink -f (not on macOS). Fails if the folder is gone.
-link_target() {
-  local l="$1" t dir
-  t="$(readlink "$l")" || return 1
-  case "$t" in /*) ;; *) t="$(dirname "$l")/$t" ;; esac # stow writes relative links
-  dir="$(cd "$(dirname "$t")" 2>/dev/null && pwd -P)" || return 1
-  echo "$dir/$(basename "$t")"
-}
-
 # True if the symlink $1 points inside the folder $2 (physical path).
 link_points_into() {
   local target
   [[ -L "$1" ]] || return 1
-  target="$(link_target "$1")" || return 1
+  target="$(realpath "$1" 2>/dev/null)" || return 1
   [[ "$target" == "$2"/* ]]
 }
 
