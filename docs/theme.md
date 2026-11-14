@@ -37,10 +37,10 @@ Keep a terminal pair and give Neovim another one. Light/dark stays shared: `them
 
 ### Original Neovim themes
 
-`nvim/.config/nvim/themes.tsv` lists the themes that have their own Neovim colorscheme: TokyoNight, GitHub, the seven Nightfox names, Kanagawa (Wave, Dragon, Lotus), Rose Pine (Rose Pine, Moon, Dawn), Catppuccin (Latte, Frappe, Macchiato, Mocha) and Cyberdream. Both the script and Neovim read that one file; each line is `name`, `colorscheme`, `light|dark` and, for Neovim-only names, `nvim`. Add a theme by adding a line (and its plugin in `lua/plugins/theme.lua`).
+`nvim/.config/nvim/themes.tsv` lists the themes that have their own Neovim colorscheme: TokyoNight, GitHub, the seven Nightfox names, Kanagawa (Wave, Dragon, Lotus), Rose Pine (Rose Pine, Moon, Dawn), Catppuccin (Latte, Frappe, Macchiato, Mocha), Cyberdream, Xcode (five), Atom One (Dark, Light), OneDark (Darker, Cool, Deep, Warm, Warmer), Nova (Dark and Light, each in default, Dim and Soft) and 734 (Dark, Light). Both the script and Neovim read that one file; each line is `name`, `colorscheme`, `light|dark` and, for Neovim-only names, `nvim`. Add a theme by adding a line (and its plugin in `lua/plugins/theme.lua`).
 
 - `theme list nvim [light|dark]` prints the names.
-- **Cyberdream** and **Cyberdream Light** are not in Ghostty's collection, so only `nvim-light` and `nvim-dark` accept them; the terminal slots refuse them. The picker previews them as a note, without recoloring the terminal.
+- **Cyberdream**, **OneDark** (Darker, Cool, Deep, Warm, Warmer), **Nova** and **734** (and their Light/Dim/Soft variants) are not in Ghostty's collection, so only `nvim-light` and `nvim-dark` accept them; the terminal slots refuse them. The picker previews them as a note, without recoloring the terminal.
 - A name not in the list (any other Ghostty theme) makes Neovim use Dayfox in light mode and Nightfox in dark mode.
 
 ## Troubleshooting

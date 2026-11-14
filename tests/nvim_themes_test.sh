@@ -22,7 +22,7 @@ if ! command -v nvim >/dev/null; then
   exit 0
 fi
 
-# Plugin folder for a colorscheme name.
+# Plugin folder for a themes.tsv colorscheme value.
 plugin_for() {
   case $1 in
     tokyonight-*) echo tokyonight.nvim ;;
@@ -32,11 +32,15 @@ plugin_for() {
     rose-pine*) echo rose-pine ;;
     catppuccin-*) echo catppuccin ;;
     cyberdream*) echo cyberdream.nvim ;;
+    xcode*) echo vim-colors-xcode ;;
+    onedark-*) echo onedark.nvim ;;
+    nova-*) echo nova.nvim ;;
+    734*) echo 734 ;;
   esac
 }
 
 RTP="$SRC/nvim/.config/nvim"
-for d in tokyonight.nvim github-nvim-theme nightfox.nvim kanagawa.nvim rose-pine catppuccin cyberdream.nvim; do
+for d in tokyonight.nvim github-nvim-theme nightfox.nvim kanagawa.nvim rose-pine catppuccin cyberdream.nvim vim-colors-xcode onedark.nvim nova.nvim 734; do
   [[ -d "$REAL_LAZY/$d" ]] && RTP="$RTP,$REAL_LAZY/$d"
 done
 
@@ -45,6 +49,7 @@ done
 # against its listed brightness.
 LUA_LOAD='
 local want, bg = vim.env.WANT_SCHEME, vim.env.WANT_BG
+want = want:match("^onedark%-") and "onedark" or want:match("^nova%-") and "nova" or want -- one colorscheme, many styles
 local seen = {}
 vim.api.nvim_create_autocmd("ColorScheme", { callback = function(a) seen[#seen + 1] = a.match end })
 local theme = require("config.theme")
@@ -77,6 +82,30 @@ while IFS=$'\t' read -r name scheme bg _; do
   out="$(run_load "$name" "$scheme" "$bg")"
   if [[ $out == ok ]]; then ok "$name -> $scheme ($bg)"; else bad "$name -> $scheme ($bg): $out"; fi
 done <"$LIST"
+
+# Styles of one plugin colorscheme must differ: the style set through setup() has to take effect.
+echo "styles of one colorscheme"
+LUA_STYLES='
+local names = vim.split(vim.env.WANT_NAMES, ",")
+local seen, bgs = {}, {}
+for _, name in ipairs(names) do
+  vim.o.background = "dark"
+  require("config.theme").read_config = function() return { light = name, dark = name } end
+  require("config.theme").load()
+  local bg = vim.api.nvim_get_hl(0, { name = "Normal" }).bg
+  bgs[#bgs + 1] = string.format("%06x", bg or 0)
+  seen[vim.g.dotfiles_theme] = true
+end
+local uniq = {}
+for _, b in ipairs(bgs) do uniq[b] = true end
+io.stdout:write(vim.tbl_count(uniq) == #bgs and "ok" or "same Normal bg: " .. table.concat(bgs, " "))
+'
+for pair in "onedark.nvim|Atom One Dark,OneDark Darker,OneDark Deep,OneDark Warm" "nova.nvim|Nova Dark,Nova Dark Dim,Nova Dark Soft"; do
+  plugin="${pair%%|*}"; names="${pair#*|}"
+  if [[ ! -d "$REAL_LAZY/$plugin" ]]; then echo "  skip $plugin (not installed)"; continue; fi
+  out="$(WANT_NAMES="$names" nvim --headless -u NONE -i NONE --cmd "set rtp^=$RTP" -c "lua $LUA_STYLES" -c "qa!" 2>&1 | tr -d '\r' | tail -n 1)"
+  if [[ $out == ok ]]; then ok "$plugin styles differ"; else bad "$plugin: $out"; fi
+done
 
 # Unlisted name: Dayfox in light, Nightfox in dark.
 echo "unlisted names"

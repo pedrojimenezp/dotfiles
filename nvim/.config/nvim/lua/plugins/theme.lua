@@ -31,4 +31,20 @@ return {
     name = "catppuccin",
     lazy = true,
   },
+  {
+    "lunacookies/vim-colors-xcode",
+    lazy = true,
+  },
+  {
+    "navarasu/onedark.nvim",
+    lazy = true,
+  },
+  {
+    "zanglg/nova.nvim",
+    lazy = true,
+  },
+  {
+    "Paulo-Camacho/734",
+    lazy = true,
+  },
 }

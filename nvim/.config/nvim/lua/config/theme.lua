@@ -74,6 +74,18 @@ local function plugin_scheme(name)
   -- Catppuccin picks the flavour from 'background' when it differs from the one loaded last.
   local flavour = theme.scheme:match("^catppuccin%-(%a+)$")
   if flavour then require("catppuccin").setup({ background = { light = flavour, dark = flavour } }) end
+  -- OneDark and Nova have one colorscheme each: the style (or theme and variant) comes from the value.
+  local onedark = theme.scheme:match("^onedark%-(%a+)$")
+  if onedark then
+    require("onedark").setup({ style = onedark })
+    vim.o.background = theme.background -- onedark switches to its light style whenever 'background' is light
+    return "onedark"
+  end
+  local nova_theme, nova_variant = theme.scheme:match("^nova%-(%a+)%-?(%a*)$")
+  if nova_theme then
+    require("nova").setup({ theme = nova_theme, variant = nova_variant ~= "" and nova_variant or "default" })
+    return "nova"
+  end
   return theme.scheme
 end
 

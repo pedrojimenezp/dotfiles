@@ -33,3 +33,23 @@ Catppuccin Macchiato	catppuccin-macchiato	dark
 Catppuccin Mocha	catppuccin-mocha	dark
 Cyberdream	cyberdream	dark	nvim
 Cyberdream Light	cyberdream-light	light	nvim
+Xcode Light	xcodelight	light
+Xcode Dark	xcodedark	dark
+Xcode Light hc	xcodelighthc	light
+Xcode Dark hc	xcodedarkhc	dark
+Xcode WWDC	xcodewwdc	dark
+Atom One Dark	onedark-dark	dark
+Atom One Light	onedark-light	light
+OneDark Darker	onedark-darker	dark	nvim
+OneDark Cool	onedark-cool	dark	nvim
+OneDark Deep	onedark-deep	dark	nvim
+OneDark Warm	onedark-warm	dark	nvim
+OneDark Warmer	onedark-warmer	dark	nvim
+Nova Dark	nova-dark	dark	nvim
+Nova Dark Dim	nova-dark-dim	dark	nvim
+Nova Dark Soft	nova-dark-soft	dark	nvim
+Nova Light	nova-light	light	nvim
+Nova Light Dim	nova-light-dim	light	nvim
+Nova Light Soft	nova-light-soft	light	nvim
+734 Dark	734	dark	nvim
+734 Light	734-light	light	nvim
