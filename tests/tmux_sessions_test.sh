@@ -65,6 +65,11 @@ check_eq "list: parent-level feature" "1" "$(grep -cF "feat-b  [parent]"$'\t'"$R
 check_eq "list: hidden and node_modules skipped" "0" "$(grep -cE 'hidden|node_modules' <<<"$list")"
 check_eq "list: features come before repos" "feat" "$(head -1 <<<"$list" | cut -c1-4)"
 
+mkdir -p "$ROOT/proj/aaa-empty/.git" "$ROOT/proj/aaa-empty/worktrees"
+elist="$(env HOME="$HOME" SESSIONIZER_DIRS="$ROOT/proj" bash "$BIN/tmux-sessionizer" --list)"
+check_eq "list: empty worktrees/ does not cut the list" "1" "$(grep -cF "$ROOT/proj/repo1"$'\t' <<<"$elist")"
+check_eq "list: repo with an empty worktrees/ is listed" "1" "$(grep -cF "$ROOT/proj/aaa-empty"$'\t' <<<"$elist")"
+
 echo "== tmux-sessionizer zoxide entries"
 mkdir -p "$ROOT/here" "$HOME/zdir"
 printf '#!/bin/sh\nprintf "%%s\\n" "%s" "%s" "%s" "%s"\n' "$ROOT/proj/repo1" "$ROOT/here" "$ROOT/nope" "$HOME/zdir" >"$STUBS/zoxide"
@@ -92,6 +97,14 @@ pick "" "$ROOT/typed1" >/dev/null
 check_eq "typed existing path: used as typed" "$ROOT/typed1" "$(path_of typed1)"
 pick "" "~/zdir" >/dev/null
 check_eq "typed ~ path: expanded, session reused" "1" "$(T list-sessions -F '#{session_name}' | grep -cx zdir)"
+mkdir -p "$ROOT/typed2" "$ROOT/row2"
+pick "row2"$'\t'"$ROOT/row2" "$ROOT/typed2" >/dev/null
+check_eq "typed folder beats a selected row" "$ROOT/typed2" "$(path_of typed2)"
+check_eq "typed folder beats a selected row: row not opened" "missing" "$(path_of row2)"
+pick "~/zdir"$'\t'"$HOME/zdir" "~" >/dev/null
+check_eq "typed ~ beats a selected row" "$HOME" "$(path_of "$(basename "$HOME")")"
+pick "row2"$'\t'"$ROOT/row2" "row" >/dev/null
+check_eq "plain text query: selected row wins" "$ROOT/row2" "$(path_of row2)"
 pick "" "$ROOT/nonexistent" >/dev/null
 check_eq "typed missing folder: no session" "missing" "$(path_of nonexistent)"
 msg="$(env HOME="$HOME" SESSIONIZER_DIRS="$ROOT/none" PATH="$ZPATH" FZF_PICK="" FZF_QUERY="$ROOT/nonexistent" bash "$BIN/tmux-sessionizer" 2>&1 >/dev/null || true)"

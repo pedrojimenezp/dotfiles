@@ -3,7 +3,8 @@
 # Usage: tmux-sessionizer [dir]   (without an argument, pick from the roots; see docs/tmux.md)
 #        tmux-sessionizer --list  (print "label<TAB>path" for each candidate and exit)
 # Candidates, in order: features, repos, then zoxide's folders (when zoxide exists) not already listed.
-# In the picker, typing a path that is not in the list uses it as typed (a leading ~ is expanded).
+# In the picker, a typed path (starting with / or ~, a leading ~ is expanded) that is an existing folder
+# wins over the selected row; any other query uses the selected row, else the typed text as a path.
 # Folder convention: <repo>/worktrees/<branch> or <parent>/worktrees/<feature>/<project>;
 # any <x>/worktrees/<feature> is a feature session. No git calls.
 # Roots: SESSIONIZER_DIRS (space separated) if set; otherwise ~/projects (deep search) plus the repos
@@ -36,7 +37,12 @@ fi
 list_candidates() {
   local p d f w feats="" repos=""
   add_features() { # $1 = a worktrees/ folder
-    for f in "$1"/*/; do [[ -d "$f" ]] && { f="${f%/}"; w="${1%/*}"; feats+="${f##*/}  [${w##*/}]"$'\t'"$f"$'\n'; }; done
+    for f in "$1"/*/; do
+      [[ -d "$f" ]] || continue # an empty worktrees/ leaves the glob unexpanded
+      f="${f%/}"
+      w="${1%/*}"
+      feats+="${f##*/}  [${w##*/}]"$'\t'"$f"$'\n'
+    done
   }
   if ((${#roots[@]})); then # find with no path would search the current directory
     while IFS= read -r p; do
@@ -55,11 +61,11 @@ list_candidates() {
       d="${d%/}"
       [[ -e "$d/.git" ]] || continue
       repos+="$d"$'\t'"$d"$'\n'
-      [[ -d "$d/worktrees" ]] && add_features "$d/worktrees"
+      if [[ -d "$d/worktrees" ]]; then add_features "$d/worktrees"; fi
     done
   fi
   local known=$'\n' z label zoxide_rows="" # known: the listed paths, one per line, to skip duplicates
-  while IFS=$'\t' read -r _ p; do [[ -n "$p" ]] && known+="$p"$'\n'; done <<<"$feats$repos"
+  while IFS=$'\t' read -r _ p; do if [[ -n "$p" ]]; then known+="$p"$'\n'; fi; done <<<"$feats$repos"
   if command -v zoxide >/dev/null 2>&1; then
     while IFS= read -r z; do
       [[ -d "$z" && "$known" != *$'\n'"$z"$'\n'* ]] || continue
@@ -85,21 +91,23 @@ elif [[ $# -eq 1 ]]; then
 else
   # --print-query prints the typed query first, then the selected line (if any). {2} is the path field.
   out="$(list_candidates | fzf --print-query --prompt='project> ' --delimiter=$'\t' --with-nth=1 \
-    --header='Enter: pick | type a path not in the list to use it | Esc: cancel' \
+    --header='Enter: pick | type a folder path (/... or ~...) to use it | Esc: cancel' \
     --preview='ls -1Ap {2} 2>/dev/null | head -50' --preview-window=right:40% || true)"
   query="$(sed -n 1p <<<"$out")"
   line="$(sed -n 2p <<<"$out")"
-  if [[ -n "$line" ]]; then
+  chosen="$query"
+  tilde='~' # a typed ~ is not expanded by the shell
+  if [[ "$chosen" == "$tilde" ]]; then
+    chosen="$HOME"
+  elif [[ "$chosen" == "$tilde"/* ]]; then
+    chosen="$HOME/${chosen#"$tilde"/}"
+  fi
+  if [[ "$query" == [/~]* && -d "$chosen" ]]; then
+    : # a typed folder beats the selected row
+  elif [[ -n "$line" ]]; then
     chosen="${line#*$'\t'}"
   else
-    chosen="$query"
     [[ -n "$chosen" ]] || exit 0
-    tilde='~' # a typed ~ is not expanded by the shell
-    if [[ "$chosen" == "$tilde" ]]; then
-      chosen="$HOME"
-    elif [[ "$chosen" == "$tilde"/* ]]; then
-      chosen="$HOME/${chosen#"$tilde"/}"
-    fi
     [[ -d "$chosen" ]] || { no_such_folder "$chosen"; exit 0; }
   fi
   selected="$(CDPATH='' cd -- "$chosen" && pwd -P)"
