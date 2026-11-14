@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Append one "<epoch> <tool>" line to the usage log; never fails.
-# Internal: not listed in dotfiles-help.
+# Internal: run by other scripts or hooks, not by hand.
 # Usage: dotfiles-log <tool>
 #        dotfiles-log --path   print the log file
 #        dotfiles-log --root   print the repo root, following the stow link back into the repo

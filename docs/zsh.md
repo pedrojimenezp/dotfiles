@@ -6,7 +6,7 @@ Config: `zsh/.zshrc`, plain zsh with no framework. Aliases, keys and functions: 
 
 ## Per-machine settings
 
-`~/.zshrc.local` loads near the end, untracked and globally git-ignored: secrets, machine paths and aliases, `TZ` and `HOST_LABEL` on a server. `~/.zshenv` loads before `.zshrc`, for things needed early (`PATH`, `HISTFILE`). `~/.config/claude-shared/claude.sh` loads only if present.
+`~/.zshrc.local` loads near the end, untracked and globally git-ignored: secrets, machine paths and aliases, `TZ` and `HOST_LABEL` on a server, and `HISTFILE` to move the history (`.zshrc` sets it first). `~/.zshenv` loads before `.zshrc`, for things needed early (`PATH`). `~/.config/claude-shared/claude.sh` loads only if present.
 
 Optional settings:
 
