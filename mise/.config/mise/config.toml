@@ -6,7 +6,7 @@ go = "latest"
 
 # --- Editor and terminal ---
 neovim = "latest"
-tmux = "latest"  # tmux.conf needs 3.5+, newer than apt ships
+tmux = "latest"  # tmux.conf needs 3.7+, newer than apt ships
 starship = "latest"
 
 # --- Shell productivity ---

@@ -11,15 +11,15 @@ Drop tmux.conf settings that equal tmux 3.7 defaults; min tmux is now 3.7.
 - tmux.conf and docs/tmux.md edited and verified on a private server (defaults unchanged); tests pass.
 
 ## Where we stopped
-Batch 1 done. More items may be added.
+Batch 1 done; install.sh and mise comment moved to 3.7. More items may be added.
 
 ## Next step
-Wait for more items. Not done: install.sh (line ~360) and mise config comment still say 3.5+.
+Wait for more items.
 
 ## How to test
 Load the config on a private tmux server (-S temp socket); check escape-time 10, monitor-bell on, bell-action any, visual-bell off, automatic-rename on, C-v rectangle-toggle in copy-mode-vi; run `bash tests/run.sh`.
 
 ## Open questions
-Bump the 3.5 check in install.sh and the mise comment to 3.7?
+None.
 
 Updated: 2026-11-13 by personal@Pedros-MacBook-Pro-M4

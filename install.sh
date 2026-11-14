@@ -357,7 +357,7 @@ suggest_login_shell() {
   echo "With SSH connection sharing (ControlMaster), also run 'ssh -O exit <user>@<host>' (the same destination you ssh to) on your laptop, or reconnecting keeps the old shell."
   local sys_ver
   sys_ver="$(/usr/bin/tmux -V 2>/dev/null | sed -n 's/^tmux \([0-9]*\.[0-9]*\).*/\1/p')"
-  if [[ -n "$sys_ver" ]] && (( ${sys_ver%%.*} < 3 || ( ${sys_ver%%.*} == 3 && ${sys_ver#*.} < 5 ) )); then # tmux.conf needs 3.5+
+  if [[ -n "$sys_ver" ]] && (( ${sys_ver%%.*} < 3 || ( ${sys_ver%%.*} == 3 && ${sys_ver#*.} < 7 ) )); then # tmux.conf needs 3.7+
     echo "Until then, bash does not put mise's tools on PATH, so logins start the system tmux $sys_ver and tmux.conf shows errors."
     echo "After switching, stop the old server with: tmux kill-server"
   fi
