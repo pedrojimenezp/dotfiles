@@ -23,11 +23,9 @@ opt.timeoutlen = 400 -- which-key's menu waits after Space; this limits only seq
 opt.expandtab = true
 opt.tabstop = 2
 opt.shiftwidth = 2
-opt.smartindent = true
 opt.mouse = "a"
 opt.list = true
 opt.listchars = { tab = "» ", trail = "·", nbsp = "␣" }
-opt.completeopt = { "menu", "menuone", "noselect" }
 opt.confirm = true
 
 -- OSC 52 over SSH so yanks reach the local machine.

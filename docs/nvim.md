@@ -21,7 +21,9 @@ Needs Neovim 0.12+, `git` and network on the first start, the `tree-sitter` CLI 
 - **Clipboard**: yanks go to the system clipboard, over SSH through OSC 52. Paste uses nvim's own register, because terminals often block OSC 52 reads.
 - **Format on save** (1.5 s timeout) with conform; `<leader>cf` formats the buffer on demand; LSP formatting when no formatter is set. `:ConformInfo` shows what applies.
 - **Lint** with nvim-lint: golangci-lint (Go), shellcheck (sh).
-- **oil** handles `nvim .` and `-`; neo-tree is only a sidebar (`<leader>fe`). oil edits the file system as text (rename, move, delete); the sidebar stays open and shows where you are. It shows dotfiles but hides `.git`, `.zig-cache` and `zig-out`.
+- **neo-tree** is the only file explorer: `nvim .` opens it in the current window, `<leader>fe` toggles it as a sidebar on the current file. It shows dotfiles but hides `.git`, `.zig-cache` and `zig-out`.
+- **LSP keys** are Neovim's defaults (`grn` rename, `gra` code action, `grr`, `gri`, `grt`, `gO`, `K`); Telescope shows `gd`, `grr`, `gri`, `grt` and `gO`. `<leader>uh` toggles inlay hints; `<C-w>d` shows the diagnostic under the cursor.
+- **JSON and YAML** servers get their schemas from SchemaStore.nvim.
 - **`timeoutlen` is 0.4 s**: it only affects sequences without a which-key menu.
 - **Go** uses real tabs of width 4; everything else 2 spaces.
 - **Plugin update checks are off**: update with `:Lazy` then `U`.
@@ -44,8 +46,8 @@ Needs Neovim 0.12+, `git` and network on the first start, the `tree-sitter` CLI 
 
 ## Add a language
 
-1. Server: its Mason name in `ensure_installed` of `mason-lspconfig` in `lua/plugins/lsp.lua`; settings with `vim.lsp.config("name", { ... })`. A server not in Mason: install with mise, then `vim.lsp.enable("name")` behind `vim.fn.executable("name") == 1`.
-2. Formatter: `formatters_by_ft` in `lua/plugins/format.lua` and `mason-tool-installer`'s `ensure_installed`. Linter: `linters_by_ft` in the same file.
+1. Server: its lspconfig name in the one `ensure_installed` list of `mason-tool-installer` in `lua/plugins/lsp.lua`; settings with `vim.lsp.config("name", { ... })`. A server not in Mason: install with mise, then `vim.lsp.enable("name")` behind `vim.fn.executable("name") == 1`.
+2. Formatter: `formatters_by_ft` in `lua/plugins/format.lua` and the same `ensure_installed` list. Linter: `linters_by_ft` in the same file.
 3. Colors: the parser name in `parsers` in `lua/plugins/treesitter.lua`.
 
 ## Plain Vim
@@ -57,4 +59,4 @@ Needs Neovim 0.12+, `git` and network on the first start, the `tree-sitter` CLI 
 - **Plugins or parsers fail on first start:** check `git` and `curl`, run `mise install` (ripgrep, fd, tree-sitter), then `:checkhealth`.
 - **Telescope fuzzy matching slow or missing:** install a C compiler and `make`, then `:Lazy build telescope-fzf-native.nvim`.
 - **`Alt+j` / `Alt+k` do nothing:** the terminal needs Option as Alt ([terminals.md](terminals.md)).
-- **No language help:** `:checkhealth vim.lsp`, then `:Mason`.
+- **No language help:** `:checkhealth vim.lsp` (attached servers and their logs), then `:Mason`.

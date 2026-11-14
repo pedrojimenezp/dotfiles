@@ -8,6 +8,7 @@ return {
     local parsers = {
       "go", "gomod", "typescript", "tsx", "javascript", "json", "yaml", "bash", "zig",
       "lua", "markdown", "markdown_inline", "dockerfile", "vim", "vimdoc", "query",
+      "toml", "gitcommit", "git_config", "git_rebase", "diff",
     } -- vim, vimdoc, query: needed for Lua and help files
     require("nvim-treesitter").install(parsers)
 

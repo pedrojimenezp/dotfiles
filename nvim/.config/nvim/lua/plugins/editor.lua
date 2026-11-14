@@ -31,22 +31,15 @@ return {
         { "<leader>c", group = "Code" },
         { "<leader>g", group = "Git" },
         { "<leader>h", group = "Hunks" },
-        { "<leader>d", group = "Diagnostics/symbols" },
+        { "<leader>d", group = "Diagnostics" },
         { "<leader>u", group = "UI" },
       },
     },
   },
   {
-    "stevearc/oil.nvim",
-    lazy = false, -- so `nvim <dir>` opens oil
-    dependencies = { "nvim-tree/nvim-web-devicons" },
-    opts = { view_options = { show_hidden = true } },
-    keys = { { "-", "<cmd>Oil<CR>", desc = "Open parent directory (oil)" } },
-  },
-  {
     "nvim-neo-tree/neo-tree.nvim",
     branch = "v3.x",
-    cmd = "Neotree",
+    lazy = false, -- must load at startup to open directories passed to nvim
     dependencies = {
       "nvim-lua/plenary.nvim",
       "nvim-tree/nvim-web-devicons",
@@ -57,7 +50,7 @@ return {
       window = { mappings = { ["<space>"] = "none" } }, -- keep Space as the leader in the tree
       filesystem = {
         follow_current_file = { enabled = true },
-        hijack_netrw_behavior = "disabled", -- directories open in oil
+        hijack_netrw_behavior = "open_current",
         filtered_items = {
           visible = true,
           hide_dotfiles = false,

@@ -25,7 +25,6 @@ map("n", "N", "Nzzzv", { desc = "Previous search result (centered)" })
 map("n", "<leader>w", "<cmd>write<CR>", { desc = "Save file" })
 map("n", "<leader>q", "<cmd>quit<CR>", { desc = "Quit window" })
 
-map("n", "<leader>e", vim.diagnostic.open_float, { desc = "Show diagnostic" })
 map("n", "<leader>dq", vim.diagnostic.setloclist, { desc = "Diagnostics to location list" })
 
 -- `theme` recolors the terminal; the 'background' change then loads the other slot.
