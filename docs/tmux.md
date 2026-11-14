@@ -66,6 +66,10 @@ Project missing? `tmux-sessionizer --list` prints `label<TAB>path` for every can
 
 `prefix T` adds a full-height shell pane on each side of the window, both in the current pane's folder; the center keeps `@zen_width` (same option as zen) and the sides share the rest. Focus stays where it was. A window narrower than `@zen_width` + 40 shows a message and is left alone. The new panes are ordinary panes: close one with `exit`, and `prefix Z` still works afterwards.
 
+## Tmux inside tmux (`F12`)
+
+Over `ssh`, a second tmux with the same `Ctrl+Space` prefix would never see its keys. `F12` switches the local tmux off for that session: the prefix and every root key (`Ctrl+h/j/k/l` too) go to the pane, so the tmux inside gets them all. The status bar dims and shows a red **OFF** badge. `F12` again restores the prefix, key table and bar. For a single key, `prefix Ctrl+Space` sends the prefix on without switching off.
+
 ## Copying (iTerm2)
 
 tmux copies through OSC 52, so turn on iTerm2's "Applications in terminal may access clipboard" (Settings > General > Selection). Drag, double- or triple-click copies. `Option` + drag bypasses tmux, for example across split panes.
@@ -80,6 +84,7 @@ The bar is a soft tint of the theme's background, written by [`theme`](theme.md#
 | 🔔 after a window | Bell rang (Claude Code needs you); clears when you open it |
 | 🔍 after a window | Zoomed pane |
 | Magenta **●account** | A pane in that window runs Claude on that account; only on other windows, shortened to **●p** below 120 columns (`@claude_label_min_width`) |
+| Red **OFF** badge, dim bar | Keys off (`F12`): every key goes to the pane |
 | Red **SSH** badge | The tmux server runs over SSH; shows `user@host` |
 
 - Account marks come from the `claude` shell function in the private Claude config, which sets the pane option `@claude_account`. Test by hand: `tmux set -p @claude_account niche`, clear with `tmux set -pu @claude_account`.
