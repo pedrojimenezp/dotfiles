@@ -72,7 +72,7 @@ check_eq "list: repo with an empty worktrees/ is listed" "1" "$(grep -cF "$ROOT/
 
 echo "== tmux-sessionizer zoxide entries"
 mkdir -p "$ROOT/here" "$HOME/zdir"
-printf '#!/bin/sh\nprintf "%%s\\n" "%s" "%s" "%s" "%s"\n' "$ROOT/proj/repo1" "$ROOT/here" "$ROOT/nope" "$HOME/zdir" >"$STUBS/zoxide"
+printf '#!/bin/sh\nprintf "%%s\\n" "%s" "%s" "%s" "%s" "%s"\n' "$ROOT/proj/repo1" "$ROOT/here" "$ROOT/nope" "$HOME/zdir" "$HOME" >"$STUBS/zoxide"
 chmod +x "$STUBS/zoxide"
 ZPATH="$STUBS:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin" # the Homebrew dirs are listed so the script adds nothing ahead of the stubs
 zlist="$(env HOME="$HOME" PATH="$ZPATH" SESSIONIZER_DIRS="$ROOT/proj" bash "$BIN/tmux-sessionizer" --list)"
@@ -83,6 +83,8 @@ check_eq "zoxide: missing folder dropped" "0" "$(grep -c nope <<<"$zlist")"
 check_eq "zoxide: entries come after repos" "$HOME/zdir" "$(tail -1 <<<"$zlist" | cut -f2)"
 check_eq "list: every line is label<TAB>path" "0" "$(awk -F'\t' 'NF != 2' <<<"$zlist" | wc -l | tr -d ' ')"
 nolist="$(env HOME="$HOME" PATH="/usr/bin:/bin" SESSIONIZER_DIRS="$ROOT/proj" bash "$BIN/tmux-sessionizer" --list)"
+check_eq "home: listed once as ~, even when zoxide returns it" "1" "$(grep -cxF '~'$'\t'"$HOME" <<<"$zlist")"
+check_eq "home: after repos, before zoxide rows" "$ROOT/proj/repo1,~,$ROOT/here" "$(awk -F'\t' -v r="$ROOT/proj/repo1" '$2==r||$1=="~"||$2==h {printf "%s%s", s, ($1=="~"?"~":$2); s=","}' h="$ROOT/here" <<<"$zlist")"
 check_eq "no zoxide: list has no zoxide entries" "0" "$(grep -c zdir <<<"$nolist")"
 
 echo "== tmux-sessionizer picker"

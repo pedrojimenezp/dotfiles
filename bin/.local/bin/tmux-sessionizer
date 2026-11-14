@@ -2,7 +2,7 @@
 # Pick a project folder or feature worktree with fzf and open (or switch to) a tmux session for it.
 # Usage: tmux-sessionizer [dir]   (without an argument, pick from the roots; see docs/tmux.md)
 #        tmux-sessionizer --list  (print "label<TAB>path" for each candidate and exit)
-# Candidates, in order: features, repos, then zoxide's folders (when zoxide exists) not already listed.
+# Candidates, in order: features, repos, the home folder (~), then zoxide's folders (when zoxide exists) not already listed.
 # In the picker, a typed path (starting with / or ~, a leading ~ is expanded) that is an existing folder
 # wins over the selected row; any other query uses the selected row, else the typed text as a path.
 # Folder convention: <repo>/worktrees/<branch> or <parent>/worktrees/<feature>/<project>;
@@ -66,6 +66,11 @@ list_candidates() {
   fi
   local known=$'\n' z label zoxide_rows="" # known: the listed paths, one per line, to skip duplicates
   while IFS=$'\t' read -r _ p; do if [[ -n "$p" ]]; then known+="$p"$'\n'; fi; done <<<"$feats$repos"
+  local home_row=""
+  if [[ "$known" != *$'\n'"$HOME"$'\n'* ]]; then # the home folder is always a candidate
+    known+="$HOME"$'\n'
+    home_row="~"$'\t'"$HOME"$'\n'
+  fi
   if command -v zoxide >/dev/null 2>&1; then
     while IFS= read -r z; do
       [[ -d "$z" && "$known" != *$'\n'"$z"$'\n'* ]] || continue
@@ -75,7 +80,7 @@ list_candidates() {
       zoxide_rows+="$label"$'\t'"$z"$'\n'
     done < <(zoxide query -l 2>/dev/null || true)
   fi
-  printf '%s%s%s' "$feats" "$repos" "$zoxide_rows"
+  printf '%s%s%s%s' "$feats" "$repos" "$home_row" "$zoxide_rows"
 }
 
 # Tells the user that a typed path is not a folder: a tmux message inside tmux, stderr otherwise.
