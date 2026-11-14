@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # Pick a project folder or feature worktree with fzf and open (or switch to) a tmux session for it.
-# Usage: tmux-sessionizer [dir]   (without an argument, pick from the roots; see docs/tmux.md)
+# Usage: tmux-sessionizer [--name <name>] [dir]   (without a dir, pick from the roots; see docs/tmux.md)
 #        tmux-sessionizer --list  (print "label<TAB>path" for each candidate and exit)
+# --name <name>: open a new session with exactly that name (cleaned like a folder name) in the chosen folder,
+# even when another session already uses it; an existing session with that name is switched to, not recreated.
 # Candidates, in order: features, repos, the home folder (~), then zoxide's folders (when zoxide exists) not already listed.
 # In the picker, a typed path (starting with / or ~, a leading ~ is expanded) that is an existing folder
 # wins over the selected row; any other query uses the selected row, else the typed text as a path.
@@ -91,11 +93,23 @@ no_such_folder() {
 if [[ "${1:-}" == "--list" ]]; then
   list_candidates
   exit 0
-elif [[ $# -eq 1 ]]; then
+fi
+
+custom_name="" # set by --name
+if [[ "${1:-}" == "--name" ]]; then
+  custom_name="$(clean "${2:-}")"
+  [[ "$custom_name" != - ]] || custom_name="" # a name of only separators is empty
+  [[ -n "$custom_name" ]] || exit 0
+  shift 2
+fi
+
+if [[ $# -eq 1 ]]; then
   selected="$(CDPATH='' cd -- "$1" && pwd -P)" # absolute and symlink-free, so '.' is not named '-'
 else
   # --print-query prints the typed query first, then the selected line (if any). {2} is the path field.
-  out="$(list_candidates | fzf --print-query --prompt='project> ' --delimiter=$'\t' --with-nth=1 \
+  prompt='project> '
+  [[ -z "$custom_name" ]] || prompt="folder for $custom_name> "
+  out="$(list_candidates | fzf --print-query --prompt="$prompt" --delimiter=$'\t' --with-nth=1 \
     --header='Enter: pick | type a folder path (/... or ~...) to use it | Esc: cancel' \
     --preview='ls -1Ap {2} 2>/dev/null | head -50' --preview-window=right:40% || true)"
   query="$(sed -n 1p <<<"$out")"
@@ -127,10 +141,19 @@ else
   extra="$(basename "$parent")"
 fi
 
-# Reuse a session already started in this folder; popup sessions share the path, never switch into one.
-found="$(tm list-sessions -F '#{session_name}'$'\t''#{session_path}' 2>/dev/null |
-  awk -F'\t' -v p="$selected" '$1 !~ /^_popup_/ && $2 == p { print $1; exit }' || true)"
-if [[ -n "$found" ]]; then
+# --name: the name is final, with no folder lookup and no suffix.
+# Otherwise reuse a session already started in this folder; popup sessions share the path, never switch into one.
+found=""
+if [[ -z "$custom_name" ]]; then
+  found="$(tm list-sessions -F '#{session_name}'$'\t''#{session_path}' 2>/dev/null |
+    awk -F'\t' -v p="$selected" '$1 !~ /^_popup_/ && $2 == p { print $1; exit }' || true)"
+fi
+if [[ -n "$custom_name" ]]; then
+  name="$custom_name"
+  if tm has-session -t "=$name" 2>/dev/null; then
+    if [[ -n "${TMUX:-}" ]]; then tm display-message "session $name already exists"; else echo "session $name already exists" >&2; fi
+  fi
+elif [[ -n "$found" ]]; then
   name="$found"
 elif tm has-session -t "=$name" 2>/dev/null; then
   # Name taken by another folder: add the owner folder, then a counter until the name is free.

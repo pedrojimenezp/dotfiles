@@ -26,7 +26,7 @@ continuum saves every 15 minutes and restores on server start: just run `tmux`. 
 
 `tmux new-session -t '=<session>' -s <session>-view` opens a grouped session: it shares the windows but each terminal keeps its own current window. Add `\; set destroy-unattached on` and the view disappears on detach. Reattach to a kept view with `tmux attach -t '=<session>-view'`.
 
-## Project sessions (`prefix f`)
+## Project sessions (`prefix f`, `prefix N`)
 
 `tmux-sessionizer` lists folders and switches to a session for the one you pick, creating it if needed. Outside tmux it attaches; `tmux-sessionizer <dir>` skips the list.
 
@@ -35,7 +35,7 @@ continuum saves every 15 minutes and restores on server start: just run `tmux`. 
 - **Roots:** `SESSIONIZER_DIRS` (space separated) if set; otherwise `~/projects` plus `~/<name>` repos with `.git` and their `worktrees/*`. Add more in `~/.zshrc.local`: `export SESSIONIZER_DIRS="$HOME/projects $HOME/development"`.
 - **Skipped:** the roots, hidden folders, `node_modules`, and anything inside `worktrees/`. No git calls: folder names only.
 - **Names:** the folder name, with `.`, `:`, `/` and spaces turned into `-`. A folder that already has a session reuses it. A name taken by another folder gets `-<owner>` (the folder that holds `worktrees/`, else the parent), then `-2`, `-3`... until the name is free.
-- A custom name: rename the session afterwards with tmux's `prefix $`.
+- **Your own name:** `prefix N` asks for a session name, then shows the same picker. The folder you pick gets a new session with exactly that name (cleaned like a folder name), even when another session already uses the folder. A session with that name already existing is switched to, with a message. Esc or an empty name cancels. The same from a shell: `tmux-sessionizer --name <name> [dir]`.
 - `SESSIONIZER_TMUX_ARGS` passes extra tmux options, such as `-L sock`.
 
 Project missing? `tmux-sessionizer --list` prints `label<TAB>path` for every candidate.

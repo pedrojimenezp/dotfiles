@@ -112,4 +112,36 @@ check_eq "typed missing folder: no session" "missing" "$(path_of nonexistent)"
 msg="$(env HOME="$HOME" SESSIONIZER_DIRS="$ROOT/none" PATH="$ZPATH" FZF_PICK="" FZF_QUERY="$ROOT/nonexistent" bash "$BIN/tmux-sessionizer" 2>&1 >/dev/null || true)"
 check_eq "typed missing folder outside tmux: message on stderr" "no such folder: $ROOT/nonexistent" "$msg"
 
+echo "== tmux-sessionizer --name"
+# named <name> [dir]: --name run with TMUX faked; without a dir the picker stub answers
+named() {
+  env HOME="$HOME" TMUX=fake SESSIONIZER_TMUX_ARGS="-S $SOCK" SESSIONIZER_DIRS="$ROOT/none" PATH="$ZPATH" FZF_PICK="${FZF_PICK:-}" ${FZF_QUERY+FZF_QUERY="$FZF_QUERY"} bash "$BIN/tmux-sessionizer" --name "$@" >/dev/null 2>&1 || true
+}
+mkdir -p "$ROOT/shared"
+sess "$ROOT/shared"
+FZF_PICK="shared"$'\t'"$ROOT/shared" named "my-name"
+check_eq "name: new session in the picked folder" "$ROOT/shared" "$(path_of my-name)"
+check_eq "name: session already on that folder untouched" "$ROOT/shared" "$(path_of shared)"
+before="$(T list-sessions | wc -l | tr -d ' ')"
+FZF_PICK="row2"$'\t'"$ROOT/row2" named "my-name"
+check_eq "name: existing name creates nothing" "$before" "$(T list-sessions | wc -l | tr -d ' ')"
+check_eq "name: existing name keeps its folder" "$ROOT/shared" "$(path_of my-name)"
+msg="$(env HOME="$HOME" SESSIONIZER_TMUX_ARGS="-S $SOCK" SESSIONIZER_DIRS="$ROOT/none" PATH="$ZPATH" bash "$BIN/tmux-sessionizer" --name my-name "$ROOT/shared" 2>&1 </dev/null >/dev/null || true)"
+check_eq "name: existing name outside tmux: message on stderr" "session my-name already exists" "$(head -1 <<<"$msg")"
+named "it's a name.x:y" "$ROOT/row2"
+check_eq "name: quote kept, spaces dots and colons become dashes" "$ROOT/row2" "$(path_of "it's-a-name-x-y")"
+named "dir arg" "$ROOT/typed1"
+check_eq "name: dir argument skips the picker" "$ROOT/typed1" "$(path_of dir-arg)"
+before="$(T list-sessions | wc -l | tr -d ' ')"
+named ""
+named "   "
+check_eq "name: empty name exits without a session" "$before" "$(T list-sessions | wc -l | tr -d ' ')"
+FZF_PICK="" FZF_QUERY="" named "nothing-picked"
+check_eq "name: nothing picked creates nothing" "missing" "$(path_of nothing-picked)"
+
+echo "== tmux.conf binding"
+CONF="$SRC/tmux/.config/tmux/tmux.conf"
+check_eq "prefix N: bound with a note" "1" "$(grep -cE '^bind -N "[^"]+" N command-prompt' "$CONF")"
+check_eq "prefix N: runs the sessionizer with --name" "1" "$(grep -c 'tmux-sessionizer --name' "$CONF")"
+
 summary
