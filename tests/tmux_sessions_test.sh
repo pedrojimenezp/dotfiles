@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# shellcheck disable=SC2016
-# Tests tmux-sessionizer and tmux-new-session on a private tmux socket with TMUX unset, a temp HOME and a stub
+# shellcheck disable=SC2016,SC2088
+# Tests tmux-sessionizer on a private tmux socket with TMUX unset, a temp HOME and a stub
 # fzf. Run: bash tests/tmux_sessions_test.sh. Exits non-zero when a check fails.
 set -euo pipefail
 
@@ -27,7 +27,7 @@ check() { # check "<description>" "<expected>" "<actual>"
 BIN="$SRC/bin/.local/bin"
 STUBS="$ROOT/stubs"
 mkdir -p "$STUBS"
-# tmux wrapper: every call of tmux-new-session goes to the private server
+# tmux wrapper: every call of the scripts goes to the private server
 printf '#!/bin/sh\nunset TMUX\nexec "%s" -S "%s" "$@"\n' "$(command -v tmux)" "$SOCK" >"$STUBS/tmux"
 # fzf stub: prints the query line (empty), then $FZF_PICK, like --print-query
 printf '#!/bin/sh\ncat >/dev/null\n[ -n "${FZF_QUERY+x}" ] && echo "$FZF_QUERY" || echo\n[ -n "${FZF_PICK:-}" ] && echo "$FZF_PICK"\nexit 0\n' >"$STUBS/fzf"
@@ -68,32 +68,37 @@ check "list: parent-level feature" "1" "$(grep -cF "feat-b  [parent]"$'\t'"$ROOT
 check "list: hidden and node_modules skipped" "0" "$(grep -cE 'hidden|node_modules' <<<"$list")"
 check "list: features come before repos" "feat" "$(head -1 <<<"$list" | cut -c1-4)"
 
-echo "== tmux-new-session --list"
-mkdir -p "$ROOT/here" "$ROOT/other"
-nlist="$(env HOME="$HOME" PATH="$STUBS:/usr/bin:/bin" SESSIONIZER_DIRS="$ROOT/proj" bash "$BIN/tmux-new-session" --list "$ROOT/here")"
-check "new-session list: pane path first" "$ROOT/here" "$(head -1 <<<"$nlist")"
-nlist="$(env HOME="$HOME" PATH="$STUBS:/usr/bin:/bin" bash "$BIN/tmux-new-session" --list "$ROOT/nope")"
-check "new-session list: missing folders dropped" "0" "$(grep -c nope <<<"$nlist")"
-nlist="$(env HOME="$HOME" PATH="$STUBS:/usr/bin:/bin" bash "$BIN/tmux-new-session" --list "$ROOT/here" 2>/dev/null)"
-check "new-session list: no duplicates" "1" "$(grep -cxF "$ROOT/here" <<<"$nlist")"
+echo "== tmux-sessionizer zoxide entries"
+mkdir -p "$ROOT/here" "$HOME/zdir"
+printf '#!/bin/sh\nprintf "%%s\\n" "%s" "%s" "%s" "%s"\n' "$ROOT/proj/repo1" "$ROOT/here" "$ROOT/nope" "$HOME/zdir" >"$STUBS/zoxide"
+chmod +x "$STUBS/zoxide"
+ZPATH="$STUBS:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin" # the Homebrew dirs are listed so the script adds nothing ahead of the stubs
+zlist="$(env HOME="$HOME" PATH="$ZPATH" SESSIONIZER_DIRS="$ROOT/proj" bash "$BIN/tmux-sessionizer" --list)"
+check "zoxide: folder listed with its path" "1" "$(grep -cF "$ROOT/here"$'\t'"$ROOT/here" <<<"$zlist")"
+check "zoxide: folder under HOME shown with ~" "1" "$(grep -cF '~/zdir'$'\t'"$HOME/zdir" <<<"$zlist")"
+check "zoxide: repo already listed is not repeated" "1" "$(grep -cxF "$ROOT/proj/repo1"$'\t'"$ROOT/proj/repo1" <<<"$zlist")"
+check "zoxide: missing folder dropped" "0" "$(grep -c nope <<<"$zlist")"
+check "zoxide: entries come after repos" "$HOME/zdir" "$(tail -1 <<<"$zlist" | cut -f2)"
+check "list: every line is label<TAB>path" "0" "$(awk -F'\t' 'NF != 2' <<<"$zlist" | wc -l | tr -d ' ')"
+nolist="$(env HOME="$HOME" PATH="/usr/bin:/bin" SESSIONIZER_DIRS="$ROOT/proj" bash "$BIN/tmux-sessionizer" --list)"
+check "no zoxide: list has no zoxide entries" "0" "$(grep -c zdir <<<"$nolist")"
 
-echo "== tmux-new-session creates sessions"
-# run_new <name> <fzf pick> [fzf query]: runs the script on the private server; the name travels in @new_session_name
-run_new() {
-  T set -g @new_session_name "$1"
-  env HOME="$HOME" PATH="$STUBS:/usr/bin:/bin" FZF_PICK="$2" ${3+FZF_QUERY="$3"} bash "$BIN/tmux-new-session" "$ROOT" >/dev/null 2>&1 || true
+echo "== tmux-sessionizer picker"
+# pick <fzf pick line> [fzf query]: runs the picker with TMUX faked; fzf stub prints the query, then the pick
+pick() {
+  env HOME="$HOME" TMUX=fake SESSIONIZER_TMUX_ARGS="-S $SOCK" SESSIONIZER_DIRS="$ROOT/none" PATH="$ZPATH" FZF_PICK="$1" ${2+FZF_QUERY="$2"} bash "$BIN/tmux-sessionizer" >/dev/null 2>&1 || true
 }
-run_new "my.proj:1" "$ROOT/here"
-check "name cleaned of dots and colons" "$ROOT/here" "$(path_of my-proj-1)"
-run_new "" "$ROOT/other"
-check "empty name: folder basename" "$ROOT/other" "$(path_of other)"
-check "name option cleared after use" "" "$(T show -gv @new_session_name 2>/dev/null || true)"
-run_new "my.proj:1" "$ROOT/other"
-check "existing name: no second session" "1" "$(T list-sessions -F '#{session_name}' | grep -cx 'my-proj-1')"
-run_new "typed" "" "$ROOT/nonexistent"
-check "typed missing folder: no session" "missing" "$(path_of typed)"
-run_new "typed" "" "$ROOT/here"
-check "typed existing path: used as typed" "$ROOT/here" "$(path_of typed)"
+pick "~/zdir"$'\t'"$HOME/zdir" >/dev/null
+check "picked zoxide entry: session in that folder" "$HOME/zdir" "$(path_of zdir)"
+mkdir -p "$ROOT/typed1"
+pick "" "$ROOT/typed1" >/dev/null
+check "typed existing path: used as typed" "$ROOT/typed1" "$(path_of typed1)"
+pick "" "~/zdir" >/dev/null
+check "typed ~ path: expanded, session reused" "1" "$(T list-sessions -F '#{session_name}' | grep -cx zdir)"
+pick "" "$ROOT/nonexistent" >/dev/null
+check "typed missing folder: no session" "missing" "$(path_of nonexistent)"
+msg="$(env HOME="$HOME" SESSIONIZER_DIRS="$ROOT/none" PATH="$ZPATH" FZF_PICK="" FZF_QUERY="$ROOT/nonexistent" bash "$BIN/tmux-sessionizer" 2>&1 >/dev/null || true)"
+check "typed missing folder outside tmux: message on stderr" "no such folder: $ROOT/nonexistent" "$msg"
 
 echo
 echo "passed: $PASS, failed: $FAIL"

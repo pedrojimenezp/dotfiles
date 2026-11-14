@@ -2,12 +2,21 @@
 # Pick a project folder or feature worktree with fzf and open (or switch to) a tmux session for it.
 # Usage: tmux-sessionizer [dir]   (without an argument, pick from the roots; see docs/tmux.md)
 #        tmux-sessionizer --list  (print "label<TAB>path" for each candidate and exit)
+# Candidates, in order: features, repos, then zoxide's folders (when zoxide exists) not already listed.
+# In the picker, typing a path that is not in the list uses it as typed (a leading ~ is expanded).
 # Folder convention: <repo>/worktrees/<branch> or <parent>/worktrees/<feature>/<project>;
 # any <x>/worktrees/<feature> is a feature session. No git calls.
 # Roots: SESSIONIZER_DIRS (space separated) if set; otherwise ~/projects (deep search) plus the repos
 # directly in ~ (and their worktrees/). Repos deeper in ~ need SESSIONIZER_DIRS.
 # SESSIONIZER_TMUX_ARGS adds tmux options, e.g. "-L sock" for a separate server.
 set -euo pipefail
+
+# A popup may start without the Homebrew, user or mise paths.
+# Adds the existing folders that are not in PATH yet.
+for d in /usr/local/bin /opt/homebrew/bin "$HOME/.local/bin" "$HOME/.local/share/mise/shims"; do
+  [[ ":$PATH:" == *":$d:"* || ! -d "$d" ]] || PATH="$d:$PATH" # each added folder goes first, so the last in this list wins
+done
+export PATH
 
 read -r -a tmux_args <<<"${SESSIONIZER_TMUX_ARGS:-}"
 tm() { tmux ${tmux_args[@]+"${tmux_args[@]}"} "$@"; }
@@ -49,7 +58,23 @@ list_candidates() {
       [[ -d "$d/worktrees" ]] && add_features "$d/worktrees"
     done
   fi
-  printf '%s%s' "$feats" "$repos"
+  local known=$'\n' z label zoxide_rows="" # known: the listed paths, one per line, to skip duplicates
+  while IFS=$'\t' read -r _ p; do [[ -n "$p" ]] && known+="$p"$'\n'; done <<<"$feats$repos"
+  if command -v zoxide >/dev/null 2>&1; then
+    while IFS= read -r z; do
+      [[ -d "$z" && "$known" != *$'\n'"$z"$'\n'* ]] || continue
+      known+="$z"$'\n'
+      label="$z"
+      [[ "$z" == "$HOME" || "$z" == "$HOME"/* ]] && label="~${z#"$HOME"}"
+      zoxide_rows+="$label"$'\t'"$z"$'\n'
+    done < <(zoxide query -l 2>/dev/null || true)
+  fi
+  printf '%s%s%s' "$feats" "$repos" "$zoxide_rows"
+}
+
+# Tells the user that a typed path is not a folder: a tmux message inside tmux, stderr otherwise.
+no_such_folder() {
+  if [[ -n "${TMUX:-}" ]]; then tm display-message "no such folder: $1"; else echo "no such folder: $1" >&2; fi
 }
 
 if [[ "${1:-}" == "--list" ]]; then
@@ -58,9 +83,26 @@ if [[ "${1:-}" == "--list" ]]; then
 elif [[ $# -eq 1 ]]; then
   selected="$(CDPATH='' cd -- "$1" && pwd -P)" # absolute and symlink-free, so '.' is not named '-'
 else
-  line="$(list_candidates | fzf --prompt='project> ' --delimiter=$'\t' --with-nth=1 || true)"
-  [[ -n "$line" ]] || exit 0
-  selected="$(CDPATH='' cd -- "${line#*$'\t'}" && pwd -P)"
+  # --print-query prints the typed query first, then the selected line (if any). {2} is the path field.
+  out="$(list_candidates | fzf --print-query --prompt='project> ' --delimiter=$'\t' --with-nth=1 \
+    --header='Enter: pick | type a path not in the list to use it | Esc: cancel' \
+    --preview='ls -1Ap {2} 2>/dev/null | head -50' --preview-window=right:40% || true)"
+  query="$(sed -n 1p <<<"$out")"
+  line="$(sed -n 2p <<<"$out")"
+  if [[ -n "$line" ]]; then
+    chosen="${line#*$'\t'}"
+  else
+    chosen="$query"
+    [[ -n "$chosen" ]] || exit 0
+    tilde='~' # a typed ~ is not expanded by the shell
+    if [[ "$chosen" == "$tilde" ]]; then
+      chosen="$HOME"
+    elif [[ "$chosen" == "$tilde"/* ]]; then
+      chosen="$HOME/${chosen#"$tilde"/}"
+    fi
+    [[ -d "$chosen" ]] || { no_such_folder "$chosen"; exit 0; }
+  fi
+  selected="$(CDPATH='' cd -- "$chosen" && pwd -P)"
 fi
 "$(dirname "$0")/dotfiles-log" tmux-sessionizer >/dev/null 2>&1 || true
 

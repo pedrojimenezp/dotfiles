@@ -31,9 +31,11 @@ continuum saves every 15 minutes and restores on server start: just run `tmux`. 
 `tmux-sessionizer` lists folders and switches to a session for the one you pick, creating it if needed. Outside tmux it attaches; `tmux-sessionizer <dir>` skips the list.
 
 - **Features first**, as `feature  [x]`: any `<x>/worktrees/<feature>` folder (up to 4 levels deep). Then **repos**: any folder with `.git` (up to 3 levels).
+- **Then zoxide's folders** (when `zoxide` is installed), skipping any already listed; the preview shows the folder's files. Type a path that is not in the list to use it (`~` works); a missing folder shows "no such folder".
 - **Roots:** `SESSIONIZER_DIRS` (space separated) if set; otherwise `~/projects` plus `~/<name>` repos with `.git` and their `worktrees/*`. Add more in `~/.zshrc.local`: `export SESSIONIZER_DIRS="$HOME/projects $HOME/development"`.
 - **Skipped:** the roots, hidden folders, `node_modules`, and anything inside `worktrees/`. No git calls: folder names only.
 - **Names:** the folder name, with `.`, `:`, `/` and spaces turned into `-`. A folder that already has a session reuses it. A name taken by another folder gets `-<owner>` (the folder that holds `worktrees/`, else the parent), then `-2`, `-3`... until the name is free.
+- A custom name: rename the session afterwards with tmux's `prefix $`.
 - `SESSIONIZER_TMUX_ARGS` passes extra tmux options, such as `-L sock`.
 
 Project missing? `tmux-sessionizer --list` prints `label<TAB>path` for every candidate. An old `~/.config/sessionizer/config`, `SESSIONIZER_EXCLUDE` or `SESSIONIZER_DEPTH` is ignored.
