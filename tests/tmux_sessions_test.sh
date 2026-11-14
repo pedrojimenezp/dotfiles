@@ -33,7 +33,10 @@ printf '#!/bin/sh\nunset TMUX\nexec "%s" -S "%s" "$@"\n' "$(command -v tmux)" "$
 printf '#!/bin/sh\ncat >/dev/null\n[ -n "${FZF_QUERY+x}" ] && echo "$FZF_QUERY" || echo\n[ -n "${FZF_PICK:-}" ] && echo "$FZF_PICK"\nexit 0\n' >"$STUBS/fzf"
 chmod +x "$STUBS"/*
 T() { env -u TMUX tmux -S "$SOCK" "$@"; }
-T -f /dev/null new-session -d -s keeper -c "$ROOT" # keeps the server alive
+# Panes run sleep, not a shell: a shell writes its history into $HOME while the server dies, which can
+# race with the rm in cleanup ("Directory not empty").
+T -f /dev/null new-session -d -s keeper -c "$ROOT" 'exec sleep 3600' # keeps the server alive
+T set -g default-command 'exec sleep 3600'
 
 # sessionizer <dir>: TMUX is faked so it creates the session detached; switch-client then fails, which is fine.
 sess() {

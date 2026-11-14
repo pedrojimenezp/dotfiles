@@ -11,7 +11,7 @@ Drop tmux.conf settings that equal tmux 3.7 defaults; min tmux is now 3.7.
 - tmux.conf and docs/tmux.md edited and verified on a private server (defaults unchanged); tests pass.
 
 ## Where we stopped
-Batch 1 done; install.sh and mise comment moved to 3.7. Item 2: prefix N and tmux-new-session removed; tmux-sessionizer gained zoxide entries, typed paths and preview; tests extended. Item 3: @pane_program defined once in tmux.conf. Item 4: C-\\ bindings removed. More items may be added.
+Batch 1 done; install.sh and mise comment moved to 3.7. Item 2: prefix N and tmux-new-session removed; tmux-sessionizer gained zoxide entries, typed paths and preview; tests extended. Item 3: @pane_program defined once in tmux.conf. Item 4: C-\\ bindings removed. Fixed flaky tmux_sessions_test (shell history written during cleanup). More items may be added.
 
 ## Next step
 Wait for more items.
