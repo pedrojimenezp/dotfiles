@@ -216,7 +216,7 @@ download_theme() {
   return 1
 }
 
-# Print the path of a theme file: Ghostty bundles (as sync_ghostty), then the cache, then a download.
+# Print the path of a theme file: Ghostty bundles, then the cache, then a download.
 theme_file() {
   local name=$1
   check_name "$name"
@@ -504,13 +504,9 @@ set_theme() {
   else
     theme_file "$name" >/dev/null || exit 1         # check (and fetch) before writing anything
   fi
-  if [[ $key == nvim_* ]]; then
-    config_set "$key" "$name"
-    echo "$slot theme: $name (commit $CONFIG_FILE in your dotfiles repo to keep it)" >&2
-    return 0
-  fi
-  config_set "$slot" "$name"
+  config_set "$key" "$name"
   echo "$slot theme: $name (commit $CONFIG_FILE in your dotfiles repo to keep it)" >&2
+  [[ $key != nvim_* ]] || return 0
   sync_all || exit 1
   apply_state "$(read_state)"
 }
@@ -703,7 +699,7 @@ ARG1="${ARGS[0]:-}"
 ARG2="${ARGS[1]:-}"
 if ((${#ARGS[@]} > 2)); then ARG2="${ARGS[*]:1}"; fi  # unquoted names with spaces: join the words
 
-# Log only runs a person starts (keys, tt); apply, status and the rest run by themselves.
+# Log only the commands that change or pick a theme; apply, status and the rest are not counted.
 case $CMD in dark | light | auto | toggle | pick | set) "$(dirname "$0")/dotfiles-log" theme >/dev/null 2>&1 || true ;; esac
 
 case $CMD in

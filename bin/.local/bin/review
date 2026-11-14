@@ -43,7 +43,6 @@ while [[ $# -gt 0 ]]; do
   shift
 done
 "$(dirname "$0")/dotfiles-log" review >/dev/null 2>&1 || true
-dir="$(cd "$dir" && pwd)"
 
 # toplevel_of <folder>: the physical top level of the repo containing <folder>, or nothing.
 toplevel_of() { (cd "$1" && git rev-parse --show-toplevel 2>/dev/null) || true; }

@@ -8,8 +8,6 @@ brew "btop"                    # mise has no macOS build
 brew "pngpaste"
 brew "chafa"                   # mise has no build
 
-tap "jackielii/tap"
-
 cask "ghostty"
 cask "font-monaspice-nerd-font"
 cask "jackielii/tap/skhd-zig"

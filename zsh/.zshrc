@@ -43,8 +43,7 @@ export LESS='-R -F -X'
 command -v delta >/dev/null 2>&1 && export GH_PAGER="delta -s"
 
 # --- Go ---
-export GOPATH="$HOME/go"
-path+=("$GOPATH/bin")                    # after ~/.local/bin so those win
+path+=("$HOME/go/bin")                    # after ~/.local/bin so those win
 
 # --- OS-specific ---
 case $OSTYPE in
@@ -66,7 +65,7 @@ case $OSTYPE in
 esac
 
 # --- History ---
-HISTFILE="$HOME/.zsh_history"
+HISTFILE=${HISTFILE:-$HOME/.zsh_history}
 HISTSIZE=100000
 SAVEHIST=100000
 setopt SHARE_HISTORY
@@ -74,7 +73,7 @@ setopt HIST_IGNORE_ALL_DUPS
 setopt HIST_FIND_NO_DUPS
 setopt HIST_IGNORE_SPACE
 setopt HIST_REDUCE_BLANKS
-setopt EXTENDED_HISTORY                   # timestamps; dotfiles-usage needs them
+setopt EXTENDED_HISTORY                   # timestamp on each entry
 setopt HIST_FCNTL_LOCK                    # no waits on a stale .LOCK file
 
 # --- Shell options ---
@@ -82,7 +81,7 @@ setopt AUTO_CD
 setopt INTERACTIVE_COMMENTS
 setopt NO_BEEP
 bindkey -e
-# Cmd-K relies on this outside tmux
+# Clears the screen and the scrollback
 clear-screen-and-scrollback() {
   printf '\e[3J'
   zle clear-screen
