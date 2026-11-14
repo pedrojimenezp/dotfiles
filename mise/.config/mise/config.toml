@@ -7,15 +7,15 @@ go = "latest"
 # --- Editor and terminal ---
 neovim = "latest"
 tmux = "latest"  # tmux.conf needs 3.7+, newer than apt ships
-starship = "latest"
+starship = "latest"  # indirect
 
 # --- Shell productivity ---
-fzf = "latest"
+fzf = "latest"  # indirect
 zoxide = "latest"
 eza = "latest"
 bat = "latest"
-ripgrep = "latest"
-fd = "latest"
+ripgrep = "latest"  # indirect
+fd = "latest"  # indirect
 jq = "latest"
 yq = "latest"
 btop = { version = "latest", os = ["linux"] }  # no macOS build; the Brewfile has it
@@ -23,19 +23,19 @@ tealdeer = "latest"
 hyperfine = "latest"
 
 # --- Git and containers ---
-delta = "latest"
+delta = "latest"  # indirect
 lazygit = "latest"
 lazydocker = "latest"
 gh = "latest"
-git-lfs = "latest"  # the git config requires it
+git-lfs = "latest"  # indirect: the git config requires it
 
 # --- Languages and dev tools ---
 zig = "0.17.0"
-zls = "0.17.0"  # must match zig
-shellcheck = "latest"
-shfmt = "latest"
-tree-sitter = "latest"  # nvim-treesitter (main) compiles parsers with it
-golangci-lint = "latest"
+zls = "0.17.0"  # indirect: must match zig
+shellcheck = "latest"  # indirect
+shfmt = "latest"  # indirect
+tree-sitter = "latest"  # indirect: nvim-treesitter (main) compiles parsers with it
+golangci-lint = "latest"  # indirect
 
 # --- Markdown ---
 mermaid-ascii = "latest"

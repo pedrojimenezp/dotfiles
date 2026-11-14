@@ -2,6 +2,9 @@
 # Count how often each tool of these dotfiles was used lately, to decide what to remove.
 # Usage: dotfiles-usage [week|2weeks|month]   (uses per tool and last use; default week)
 # Tools: Brewfile brew entries, tools of the mise config, aliases in zsh/.zshrc, scripts in bin/.local/bin, and tssh. Nothing is listed by hand.
+# Indirect: a tool that other tools run has no command to count. Mark its line in the Brewfile or the mise config
+# with an end-of-line "# indirect" (or "# indirect: why"). Scripts with an "# Internal:" header line count as indirect.
+# Their last column says "indirect" instead of "← unused"; typed uses are still counted.
 # Source: ~/.zsh_history (needs EXTENDED_HISTORY). Scripts started by a key
 # do not reach history: every script that calls dotfiles-log logs "<epoch> <tool>" to usage.log, and is counted from that log only.
 # Approximate: counts the first word of each command and of each part of a pipe or && chain, after env vars and sudo.
@@ -17,17 +20,22 @@ esac
 
 # Tools: command names from the Brewfile and the mise config, where the command differs from the formula name or is no command at all.
 tools="tssh" # a zsh function, not a file; z and zi are only aliases of zoxide below
-while read -r name; do
+indirect=""
+while read -r name tag; do
   case "$name" in
-    tree-sitter|git-lfs|zls|shellcheck|shfmt|golangci-lint|pngpaste) continue ;; # helpers other programs run: no command to count
     ripgrep) name=rg ;; tealdeer) name=tldr ;; neovim) name=nvim ;; # command differs from formula
   esac
   tools="$tools $name"
+  [[ -z "$tag" ]] || indirect="$indirect $name"
 done < <({
-  sed -n 's/^brew "\([^"]*\)".*/\1/p' "$ROOT/Brewfile"
-  sed -n '/^\[tools\]/,/^\[/s/^\([A-Za-z0-9_-]*\) *=.*/\1/p' "$ROOT/mise/.config/mise/config.toml" # plain keys only: "github:..." backends are libraries or helpers
+  awk '/^brew "/ { split($0, a, "\""); print a[2], ($0 ~ /# indirect([^A-Za-z]|$)/ ? "indirect" : "") }' "$ROOT/Brewfile"
+  awk '/^\[tools\]/ { in_tools = 1; next } /^\[/ { in_tools = 0 } # plain keys only: "github:..." backends are libraries or helpers
+    in_tools && /^[A-Za-z0-9_-]+ *=/ { k = $0; sub(/ *=.*/, "", k); print k, ($0 ~ /# indirect([^A-Za-z]|$)/ ? "indirect" : "") }' "$ROOT/mise/.config/mise/config.toml"
 })
-for f in "$ROOT"/bin/.local/bin/*; do [[ ${f##*/} == dotfiles-log ]] || tools="$tools ${f##*/}"; done # the log helper itself is not a tool
+for f in "$ROOT"/bin/.local/bin/*; do
+  tools="$tools ${f##*/}"
+  ! grep -q '^# Internal:' "$f" || indirect="$indirect ${f##*/}"
+done
 logged="$(grep -lE '^[^#]*dotfiles-log"[),]* +"?[a-z]' "$ROOT"/bin/.local/bin/* | sed 's|.*/||' | tr '\n' ' ' || true)" # scripts that call dotfiles-log (key-launched): counted from the log only
 aliases="z=zoxide zi=zoxide $(grep -oE "alias [^= ]+='[^ ']+" "$ROOT/zsh/.zshrc" | sed "s/alias \(.*\)='\(.*\)/\1=\2/" | tr '\n' ' ')" # name=first word
 
@@ -41,7 +49,7 @@ offset=$(( ${zone:0:1}1 * (10#${zone:1:2} * 3600 + 10#${zone:3:2} * 60) ))
 
 printf '%-20s %5s  %s\n' tool uses "last used"
 { read_history; sed 's/^/L /' "$log" 2>/dev/null || true; } | LC_ALL=C awk -v days="$days" -v off="$offset" -v today="$(date +%Y-%m-%d)" \
-  -v tools="$tools" -v aliases="$aliases" -v logged="$logged" '
+  -v tools="$tools" -v indirect="$indirect" -v aliases="$aliases" -v logged="$logged" '
   function dn(y, m, d) { # days since 1970-01-01 of a calendar date
     y -= (m <= 2); era = int(y / 400); yoe = y - era * 400
     doy = int((153 * (m + (m > 2 ? -3 : 9)) + 2) / 5) + d - 1
@@ -54,6 +62,7 @@ printf '%-20s %5s  %s\n' tool uses "last used"
   BEGIN {
     n = split(tools, t, " "); for (i = 1; i <= n; i++) { tool[t[i]] = 1; uses[t[i]] = 0 }
     n = split(aliases, t, " "); for (i = 1; i <= n; i++) { split(t[i], kv, "="); if (kv[2] in tool) alias[kv[1]] = kv[2] } # only aliases of known tools
+    n = split(indirect, t, " "); for (i = 1; i <= n; i++) ind[t[i]] = 1
     n = split(logged, t, " "); for (i = 1; i <= n; i++) skip[t[i]] = 1
     split(today, d, "-"); today = dn(d[1] + 0, d[2] + 0, d[3] + 0)
   }
@@ -74,10 +83,11 @@ printf '%-20s %5s  %s\n' tool uses "last used"
     for (name in tool) {
       age = today - last[name]
       when = uses[name] == 0 ? "never" : age == 0 ? "today" : age == 1 ? "yesterday" : age " days ago"
-      printf "%d %s %s\n", uses[name], name, when
+      printf "%d %s %s %s\n", uses[name], name, (name in ind) ? "indirect" : "-", when
     }
-  }' | sort -k1,1nr -k2,2 | while read -r uses name when; do
-  mark=""; [[ "$uses" -gt 0 ]] || mark="  ← unused"
+  }' | sort -k1,1nr -k2,2 | while read -r uses name kind when; do
+  mark=""
+  if [[ "$kind" == indirect ]]; then mark="  indirect"; elif [[ "$uses" -eq 0 ]]; then mark="  ← unused"; fi
   printf '%-20s %5s  %s%s\n' "$name" "$uses" "$when" "$mark"
 done
 tilde="~"

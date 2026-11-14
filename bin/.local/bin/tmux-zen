@@ -102,7 +102,9 @@ cleanup() {
 
 [[ $# -eq 2 ]] || { echo "usage: tmux-zen toggle|fit|unpad|cleanup <window id>" >&2; exit 2; }
 case "$1" in
-  toggle) if [[ "$(tmux display-message -p -t "$2" '#{@zen}')" == 1 ]]; then disable "$2"; else enable "$2"; fi ;;
+  toggle)
+    "$(dirname "$0")/dotfiles-log" tmux-zen >/dev/null 2>&1 || true
+    if [[ "$(tmux display-message -p -t "$2" '#{@zen}')" == 1 ]]; then disable "$2"; else enable "$2"; fi ;;
   fit) fit "$2" ;;
   unpad) unpad "$2" ;;
   cleanup) cleanup "$2" ;;

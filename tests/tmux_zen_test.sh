@@ -44,6 +44,10 @@ check_eq "prefix Z runs tmux-zen toggle" "1" "$(T list-keys -T prefix | grep -c 
 check_eq "prefix Z has a note" "1" "$(T list-keys -N -T prefix | grep -c ' Z ')"
 check_eq "@zen_width defaults to 120" "120" "$(T show -gv @zen_width)"
 
+echo "== usage log"
+zen_log="$HOME/.local/state/dotfiles/usage.log"
+check_eq "nothing logged before the first toggle" "0" "$(cat "$zen_log" 2>/dev/null | grep -c ' tmux-zen$' || true)"
+
 echo "== too narrow"
 T resize-window -t "$W" -x 130
 zen toggle "$W"
@@ -54,6 +58,8 @@ T resize-window -t "$W" -x 300
 
 echo "== toggle on"
 zen toggle "$W"
+zen fit "$W"
+check_eq "each toggle is logged once, fit is not" "2" "$(grep -c ' tmux-zen$' "$zen_log")"
 check_eq "window marked" "1" "$(opt "$W" @zen)"
 check_eq "two pads" "2" "$(pads "$W" | wc -l | tr -d ' ')"
 check_eq "three panes" "3" "$(panes "$W" | wc -l | tr -d ' ')"

@@ -1,5 +1,5 @@
 # shellcheck shell=bash
-# Shared by install.sh, uninstall.sh and tests/. Source it with $REPO set to the repo root.
+# The stow package list and apt-style step output. Source it with $REPO set to the repo root.
 # It sits at the repo root, outside every stow package, so stow never links it.
 
 # Prints every stow package: each top-level folder except docs, tests, work notes, worktrees and hidden ones.

@@ -31,4 +31,4 @@ Only flowcharts (`graph`/`flowchart`) and `sequenceDiagram`; other types fail wi
 
 ## dotfiles-usage
 
-`dotfiles-usage [week|2weeks|month]` counts how often each tool ran, unused ones last, as removal candidates. What it counts and where the counts come from is in the header of `bin/.local/bin/dotfiles-usage`. Delete `~/.local/state/dotfiles/usage.log` to reset the script counts.
+`dotfiles-usage [week|2weeks|month]` counts how often each tool ran, unused ones last, as removal candidates. What it counts and where the counts come from is in the header of `bin/.local/bin/dotfiles-usage`. A tool that other tools run (a helper, a prompt, a pager) has nothing to count: end its line in the `Brewfile` or the mise config with `# indirect` (or `# indirect: why`) and it shows `indirect` instead of `← unused`. Scripts with an `# Internal:` header show it too. Delete `~/.local/state/dotfiles/usage.log` to reset the script counts.

@@ -5,8 +5,8 @@ cask_args appdir: "~/Applications" # per-user: casks never need admin rights
 brew "mise"
 brew "stow"
 brew "btop"                    # mise has no macOS build
-brew "pngpaste"
-brew "chafa"                   # mise has no build
+brew "pngpaste"                # indirect
+brew "chafa"                   # indirect: mise has no build
 
 cask "ghostty"
 cask "font-monaspice-nerd-font"

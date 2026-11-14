@@ -25,7 +25,7 @@ printf '#!/usr/bin/env bash\n# secret: plumbing\n# Internal: not listed in dotfi
 printf '#!/usr/bin/env python3\n"""Does py things.\n\nUsage: pytool [-x]  (the flag)\n"""\n' >"$FAKE/bin/.local/bin/pytool"
 cat >"$FAKE/Brewfile" <<'B'
 brew "ripgrep"
-brew "pngpaste"
+brew "pngpaste" # indirect
 brew "stow"
 brew "zsh-extra" # not a command
 cask "ghostty"
@@ -34,11 +34,13 @@ cat >"$FAKE/mise/.config/mise/config.toml" <<'B'
 [tools]
 neovim = "latest"
 eza = "latest"
-tree-sitter = "latest"
-shellcheck = "latest"
-shfmt = "latest"
-golangci-lint = "latest"
-git-lfs = "latest"
+tree-sitter = "latest"  # indirect: a helper
+shellcheck = "latest"  # indirect
+shfmt = "latest"  # indirect
+golangci-lint = "latest" # indirect
+git-lfs = "latest"  # indirect: the git config requires it
+fd = "latest"  # indirect, but also typed
+fzf = "latest"  # a plain comment: not a tag
 tealdeer = "latest"
 "github:x/y" = "latest"
 
@@ -78,7 +80,7 @@ hist="$ROOT/hist"
   echo ": $((now - day)):0;mykey"                # key-launched: history ignored
   echo ": $((now - day)):0;/usr/bin/plain"       # path stripped
   echo ": $((now - day)):0;g"                    # alias of a non-tool
-  echo ": $((now - day)):0;shellcheck x"         # skipped tool
+  echo ": $((now - day)):0;fd x"                 # indirect tool, typed once
 } >"$hist"
 mkdir -p "$XDG_STATE_HOME/dotfiles"
 printf '%s mykey\n%s mykey\n%s mykey\n' "$now" "$now" "$((now - 20 * day))" >"$XDG_STATE_HOME/dotfiles/usage.log"
@@ -113,9 +115,14 @@ check_eq "unknown period: exit 2" "2" "$rc"
 echo "== dotfiles-usage tool list"
 check_eq "ripgrep listed as rg" "1" "$(grep -c '^rg ' <<<"$w")"
 check_eq "neovim listed as nvim" "1" "$(grep -c '^nvim ' <<<"$w")"
-for skipped in tree-sitter shellcheck shfmt golangci-lint git-lfs pngpaste dotfiles-log; do
-  check_eq "skipped, never listed: $skipped" "0" "$(grep -c "^$skipped " <<<"$w")"
+for t in tree-sitter shellcheck shfmt golangci-lint git-lfs pngpaste dotfiles-log secret; do
+  check_eq "indirect tool shown as indirect: $t" "1" "$(grep -c "^$t .* indirect$" <<<"$w")"
+  check_eq "indirect tool is not marked unused: $t" "0" "$(grep -c "^$t .*unused" <<<"$w")"
 done
+check_eq "indirect tool keeps its typed count" "1" "$(grep -c '^fd  *1 .*indirect$' <<<"$w")"
+check_eq "a tag with a reason counts too" "1" "$(grep -c '^git-lfs .*indirect$' <<<"$w")"
+check_eq "an untagged tool is not indirect" "0" "$(grep -c '^eza .*indirect' <<<"$w")"
+check_eq "a comment that is not a tag does not count" "0" "$(grep -c '^fzf .*indirect' <<<"$w")"
 check_eq "tssh always listed" "1" "$(grep -c '^tssh ' <<<"$w")"
 check_eq "scripts of bin/ listed" "1" "$(grep -c '^mykey ' <<<"$w")"
 check_eq "github: backend keys not listed" "0" "$(grep -c 'github' <<<"$w")"
