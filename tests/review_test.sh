@@ -2,10 +2,9 @@
 # Tests bin/.local/bin/review with temp git repos and a stub nvim on PATH. Run: bash tests/review_test.sh
 # Never starts tmux. Exits non-zero when a check fails.
 set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
 SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)" # the repo under test
-PASS=0
-FAIL=0
 ROOT="$(cd "$(mktemp -d)" && pwd -P)" # resolved, so paths match what git prints
 trap 'rm -rf "$ROOT"' EXIT
 export GIT_CONFIG_NOSYSTEM=1 GIT_TERMINAL_PROMPT=0 HOME="$ROOT/home"
@@ -13,14 +12,6 @@ export GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@t GIT_COMMITTER_NAME=t GIT_COMMITTER
 mkdir -p "$HOME"
 unset TMUX
 
-ok() { PASS=$((PASS + 1)); echo "  ok   $1"; }
-bad() { FAIL=$((FAIL + 1)); echo "  FAIL $1"; }
-check() { # check "<description>" "<expected>" "<actual>"
-  if [[ "$2" == "$3" ]]; then ok "$1"; else bad "$1 (expected: $2, got: $3)"; fi
-}
-contains() { # contains "<description>" "<needle>" "<haystack>"
-  case "$3" in *"$2"*) ok "$1" ;; *) bad "$1 (missing: $2 in: $3)" ;; esac
-}
 
 STUBS="$ROOT/stubs"
 mkdir -p "$STUBS"
@@ -57,8 +48,8 @@ contains "feature folder: api line" "api: branch feature, base origin/main, 1 ch
 contains "feature folder: api command" "cd $ROOT/feat/api && nvim -c \"DiffviewOpen $mb\"" "$out"
 contains "feature folder: web falls back to origin/master" "web: branch master, base origin/master, 0 changed files, 0 untracked" "$out"
 contains "feature folder: web without changes is skipped" "no changes: nothing to open" "$out"
-check "feature folder: only api has a command" "1" "$(grep -c 'nvim -c' <<<"$out")"
-check "feature folder: notes is not listed" "0" "$(grep -c '^notes' <<<"$out")"
+check_eq "feature folder: only api has a command" "1" "$(grep -c 'nvim -c' <<<"$out")"
+check_eq "feature folder: notes is not listed" "0" "$(grep -c '^notes' <<<"$out")"
 
 # Base argument: a short name prefers origin/<name>, then the local ref; dir and base come in either order.
 git -C "$ROOT/feat/api" branch -q dev main
@@ -78,7 +69,7 @@ out="$(run --print origin/main "$ROOT/feat/api")"
 contains "full ref name as base" "api: branch feature, base origin/main," "$out"
 rc=0
 out="$(PATH="$STUBS:$PATH" bash "$SCRIPT" --print nope "$ROOT/feat/api" 2>&1)" || rc=$?
-check "unknown base: exit 1" "1" "$rc"
+check_eq "unknown base: exit 1" "1" "$rc"
 contains "unknown base: message" "review: no branch 'nope' in any repo" "$out"
 # Feature folder where only api has the base: web is skipped with a message, api is reviewed.
 out="$(run --print dev "$ROOT/feat")"
@@ -86,17 +77,17 @@ contains "multi repo: repo with the base" "api: branch feature, base origin/dev,
 contains "multi repo: repo without the base is skipped" "web: branch master, no branch 'dev': skipped" "$out"
 rc=0
 PATH="$STUBS:$PATH" bash "$SCRIPT" --print dev dev "$ROOT/feat" >/dev/null 2>&1 || rc=$?
-check "two bases: usage error" "2" "$rc"
+check_eq "two bases: usage error" "2" "$rc"
 
 rc=0
 PATH="$STUBS:$PATH" bash "$SCRIPT" --name >/dev/null 2>&1 || rc=$?
-check "--name without a value: usage error" "2" "$rc"
+check_eq "--name without a value: usage error" "2" "$rc"
 
 # -u: the gitsigns unified panel with the same merge-base; the default stays diffview.
 uni="nvim -c \"lua require('gitsigns').diff('$mb', nil, { diff = 'unified' })\""
 out="$(run --print -u "$ROOT/feat/api")"
 contains "-u: gitsigns command" "cd $ROOT/feat/api && $uni" "$out"
-check "-u: no diffview" "0" "$(grep -c DiffviewOpen <<<"$out")"
+check_eq "-u: no diffview" "0" "$(grep -c DiffviewOpen <<<"$out")"
 contains "default: still diffview" "DiffviewOpen $mb" "$(run --print "$ROOT/feat/api")"
 out="$(run --print -u dev "$ROOT/feat/api")"
 contains "-u base dir: origin/dev" "base origin/dev," "$out"
@@ -107,7 +98,7 @@ contains "dir base -u: gitsigns command" "diff = 'unified'" "$out"
 out="$(run --print dev -u "$ROOT/feat/api")"
 contains "base -u dir: gitsigns command" "diff = 'unified'" "$out"
 contains "-h mentions -u" "-u opens gitsigns" "$(run -h)"
-check "-u, single repo, no tmux: opens nvim" "nvim -c lua require('gitsigns').diff('$mb', nil, { diff = 'unified' })" "$(run -u "$ROOT/feat/api" | tail -1)"
+check_eq "-u, single repo, no tmux: opens nvim" "nvim -c lua require('gitsigns').diff('$mb', nil, { diff = 'unified' })" "$(run -u "$ROOT/feat/api" | tail -1)"
 
 # Uncommitted edit to a tracked file counts as changed.
 echo more >>"$ROOT/feat/api/a.txt"
@@ -131,7 +122,7 @@ done
 out="$(run --print "$ROOT/outer/worktrees/feat")"
 contains "nested feature folder: api listed" "cd $ROOT/outer/worktrees/feat/api && nvim" "$out"
 contains "nested feature folder: web listed" "cd $ROOT/outer/worktrees/feat/web && nvim" "$out"
-check "nested feature folder: outer repo not listed" "0" "$(grep -c '^outer' <<<"$out")"
+check_eq "nested feature folder: outer repo not listed" "0" "$(grep -c '^outer' <<<"$out")"
 
 # Top level of a repo that also holds a nested repo folder: that repo, not the nested one.
 mkrepo "$ROOT/top" main
@@ -139,31 +130,29 @@ echo t >"$ROOT/top/t.txt"
 mkrepo "$ROOT/top/inner" main
 out="$(run --print "$ROOT/top")"
 contains "top level with nested repo: reviews the top repo" "top: branch main" "$out"
-check "top level with nested repo: inner not listed" "0" "$(grep -c '^inner' <<<"$out")"
+check_eq "top level with nested repo: inner not listed" "0" "$(grep -c '^inner' <<<"$out")"
 
 # Subfolder of a single repo: that repo.
 mkdir -p "$ROOT/top/src/deep"
 contains "subfolder of a single repo: reviews the repo" "cd $ROOT/top && nvim" "$(run --print "$ROOT/top/src/deep")"
 
 # Single repo, outside tmux: exec nvim in the repo.
-check "single repo, no tmux: opens nvim" "nvim -c DiffviewOpen $mb" "$(run "$ROOT/feat/api" | tail -1)"
+check_eq "single repo, no tmux: opens nvim" "nvim -c DiffviewOpen $mb" "$(run "$ROOT/feat/api" | tail -1)"
 
 # Several repos with changes, outside tmux: prints the commands and exits 0.
 echo w >"$ROOT/feat/web/w.txt"
 out="$(PATH="$STUBS:$PATH" bash "$SCRIPT" "$ROOT/feat" 2>&1)"
 rc=0
 PATH="$STUBS:$PATH" bash "$SCRIPT" --name x "$ROOT/feat" >/dev/null 2>&1 || rc=$?
-check "--name with several repos: exit 2" "2" "$rc"
+check_eq "--name with several repos: exit 2" "2" "$rc"
 contains "several repos, no tmux: hint" "Not in tmux: run one of the commands above" "$out"
-check "several repos, no tmux: nvim not started" "0" "$(grep -c '^nvim ' <<<"$out")"
+check_eq "several repos, no tmux: nvim not started" "0" "$(grep -c '^nvim ' <<<"$out")"
 
 # Folder with no repos: error, exit 1.
 mkdir -p "$ROOT/empty/plain"
 rc=0
 out="$(PATH="$STUBS:$PATH" bash "$SCRIPT" --print "$ROOT/empty" 2>&1)" || rc=$?
-check "no repos: exit 1" "1" "$rc"
+check_eq "no repos: exit 1" "1" "$rc"
 contains "no repos: message" "review: no git repo in $ROOT/empty" "$out"
 
-echo
-echo "passed: $PASS, failed: $FAIL"
-[[ $FAIL -eq 0 ]]
+summary

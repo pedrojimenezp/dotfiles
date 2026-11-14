@@ -2,20 +2,14 @@
 # Tests bin/.local/bin/tmux-lazygit with stub lazygit and fzf on PATH. Run: bash tests/tmux_lazygit_test.sh
 # Exits non-zero when a check fails.
 set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
 SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)" # the repo under test
-PASS=0
-FAIL=0
 ROOT="$(mktemp -d)"
 trap 'rm -rf "$ROOT"' EXIT
 export GIT_CONFIG_NOSYSTEM=1 GIT_TERMINAL_PROMPT=0 HOME="$ROOT/home" # the run logs to ~/.local/state
 mkdir -p "$HOME"
 
-ok() { PASS=$((PASS + 1)); echo "  ok   $1"; }
-bad() { FAIL=$((FAIL + 1)); echo "  FAIL $1"; }
-check() { # check "<description>" "<expected>" "<actual>"
-  if [[ "$2" == "$3" ]]; then ok "$1"; else bad "$1 (expected: $2, got: $3)"; fi
-}
 
 # Stub lazygit prints its arguments; stub fzf prints $FZF_PICK (nothing when unset).
 STUBS="$ROOT/stubs"
@@ -35,16 +29,16 @@ run() {
 }
 
 mkdir -p "$ROOT/repo/.git" "$ROOT/repo/sub" "$ROOT/repo/nested/.git"
-check "repo: opens in the folder" "lazygit -p $ROOT/repo" "$(run "$ROOT/repo")"
-check "subfolder of a repo: opens in the folder" "lazygit -p $ROOT/repo/sub" "$(run "$ROOT/repo/sub")"
+check_eq "repo: opens in the folder" "lazygit -p $ROOT/repo" "$(run "$ROOT/repo")"
+check_eq "subfolder of a repo: opens in the folder" "lazygit -p $ROOT/repo/sub" "$(run "$ROOT/repo/sub")"
 
 mkdir -p "$ROOT/one/api/.git" "$ROOT/one/docs"
-check "one repo below: opens it" "lazygit -p $ROOT/one/api" "$(run "$ROOT/one")"
+check_eq "one repo below: opens it" "lazygit -p $ROOT/one/api" "$(run "$ROOT/one")"
 
 mkdir -p "$ROOT/wt/web" "$ROOT/wt/api/.git" "$ROOT/wt/notes"
 echo "gitdir: /elsewhere" >"$ROOT/wt/web/.git" # a worktree has a .git file
-check "several repos: opens the pick" "lazygit -p $ROOT/wt/web" "$(run "$ROOT/wt" FZF_PICK=web)"
-check "several repos: no pick exits quietly" "" "$(run "$ROOT/wt")"
+check_eq "several repos: opens the pick" "lazygit -p $ROOT/wt/web" "$(run "$ROOT/wt" FZF_PICK=web)"
+check_eq "several repos: no pick exits quietly" "" "$(run "$ROOT/wt")"
 
 # Without fzf on PATH the script prints the repos and a hint.
 mkdir -p "$ROOT/nofzf"
@@ -57,8 +51,6 @@ case "$out" in
 esac
 
 mkdir -p "$ROOT/empty/plain"
-check "no repos below: opens lazygit as is" "lazygit -p $ROOT/empty" "$(run "$ROOT/empty")"
+check_eq "no repos below: opens lazygit as is" "lazygit -p $ROOT/empty" "$(run "$ROOT/empty")"
 
-echo
-echo "passed: $PASS, failed: $FAIL"
-[[ $FAIL -eq 0 ]]
+summary

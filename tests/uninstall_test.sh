@@ -3,23 +3,15 @@
 # Tests uninstall.sh against a temp HOME that holds a clone of this repo. Run: bash tests/uninstall_test.sh
 # Needs git and stow.
 set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
 SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)" # the repo under test (working tree, committed or not)
 PKGS=(zsh nvim tmux vim git lazygit starship mise bin theme)
-PASS=0
-FAIL=0
 ROOT="$(mktemp -d)"
 trap 'rm -rf "$ROOT"' EXIT
 export GIT_CONFIG_NOSYSTEM=1 GIT_TERMINAL_PROMPT=0
 export GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@example.com GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@example.com
 
-ok() { PASS=$((PASS + 1)); echo "  ok   $1"; }
-bad() { FAIL=$((FAIL + 1)); echo "  FAIL $1"; }
-check() { # check "<description>" <test command...>
-  local desc="$1"
-  shift
-  if "$@"; then ok "$desc"; else bad "$desc"; fi
-}
 gone() { [[ ! -e "$1" && ! -L "$1" ]]; }
 has_text() { [[ "$(cat "$1" 2>/dev/null)" == "$2" ]]; }
 is_link() { [[ -L "$1" ]]; }
@@ -150,6 +142,4 @@ check "failing uninstall: clone kept" test -d "$c"
 check "failing uninstall: reported as skipped" grep -q "its install.sh --uninstall failed" "$ROOT/claude6.out"
 check "summary prints Removed (n)" grep -q "^Removed (" "$ROOT/claude6.out"
 
-echo
-echo "passed: $PASS, failed: $FAIL"
-[[ $FAIL -eq 0 ]]
+summary

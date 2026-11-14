@@ -2,20 +2,12 @@
 # Tests zsh/.zshrc settings in a temp HOME. Run: bash tests/zshrc_test.sh
 # Exits non-zero when a check fails. Needs zsh.
 set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
 SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)" # the repo under test
-PASS=0
-FAIL=0
 ROOT="$(mktemp -d)"
 trap 'rm -rf "$ROOT"' EXIT
 
-ok() { PASS=$((PASS + 1)); echo "  ok   $1"; }
-bad() { FAIL=$((FAIL + 1)); echo "  FAIL $1"; }
-check() { # check "<description>" <test command...>
-  local desc="$1"
-  shift
-  if "$@"; then ok "$desc"; else bad "$desc"; fi
-}
 
 if ! command -v zsh >/dev/null; then
   echo "zsh not installed: skipped"
@@ -39,6 +31,4 @@ zrun 'true' >/dev/null || true
 check "cache file written" test -s "$ROOT/cache/zsh/fzf.__zsh.zsh"
 check "stale cache temp file removed" test ! -e "$ROOT/cache/zsh/fzf.__zsh.zsh.12345"
 
-echo
-echo "passed: $PASS, failed: $FAIL"
-[[ $FAIL -eq 0 ]]
+summary

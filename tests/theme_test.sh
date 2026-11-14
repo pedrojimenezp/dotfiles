@@ -2,11 +2,10 @@
 # Tests the nvim_light/nvim_dark keys of bin/.local/bin/theme and nvim's config/theme.lua in a
 # temp HOME. Offline: themes come from a fake Ghostty folder. Run: bash tests/theme_test.sh
 set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 unset TMUX # theme refreshes tmux clients; never reach a real server
 
 SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)" # the repo under test
-PASS=0
-FAIL=0
 ROOT="$(mktemp -d)"
 trap 'rm -rf "$ROOT"' EXIT
 export GIT_CONFIG_NOSYSTEM=1 GIT_TERMINAL_PROMPT=0
@@ -19,13 +18,6 @@ mkdir -p "$HOME" "$XDG_CONFIG_HOME/theme" "$XDG_CONFIG_HOME/ghostty" "$XDG_STATE
 THEME="$SRC/bin/.local/bin/theme"
 CONFIG="$XDG_CONFIG_HOME/theme/config"
 
-ok() { PASS=$((PASS + 1)); echo "  ok   $1"; }
-bad() { FAIL=$((FAIL + 1)); echo "  FAIL $1"; }
-check() { # check "<description>" <test command...>
-  local desc="$1"
-  shift
-  if "$@"; then ok "$desc"; else bad "$desc"; fi
-}
 
 for n in "Plain Light" "Plain Dark" "Other Light" "Other Dark" "GitHub Light Default" "TokyoNight Night"; do
   printf 'background = #101010\nforeground = #e0e0e0\n' >"$THEME_GHOSTTY_DIRS/$n"
@@ -183,7 +175,5 @@ printf 'Remote Only\nCached Day\n' >"$ROOT/filter-cache/theme/list"
 nobundle() { THEME_GHOSTTY_DIRS="" XDG_DATA_HOME="$FC" XDG_CACHE_HOME="$ROOT/filter-cache" "$THEME" "$@" 2>&1; }
 check "no bundle: unknown name is in dark" test "$(nobundle list dark)" = "Remote Only"
 check "no bundle: unknown name is in light" test "$(nobundle list light)" = "$(names "Cached Day" Night "Remote Only")"
-echo
 
-echo "passed: $PASS, failed: $FAIL"
-[[ $FAIL -eq 0 ]]
+summary

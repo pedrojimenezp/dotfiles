@@ -4,11 +4,10 @@
 # are skipped when not installed; the saturation fallback sets the highlight groups directly.
 # Run: bash tests/nvim_diff_colors_test.sh
 set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
 SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 REAL_LAZY="${XDG_DATA_HOME:-$HOME/.local/share}/nvim/lazy"
-PASS=0
-FAIL=0
 ROOT="$(mktemp -d)"
 trap 'rm -rf "$ROOT"' EXIT
 export GIT_CONFIG_NOSYSTEM=1 GIT_TERMINAL_PROMPT=0
@@ -16,8 +15,6 @@ export HOME="$ROOT/home"
 export XDG_CONFIG_HOME="$ROOT/config" XDG_STATE_HOME="$ROOT/state" XDG_DATA_HOME="$ROOT/data" XDG_CACHE_HOME="$ROOT/cache"
 mkdir -p "$HOME" "$XDG_CONFIG_HOME/theme" "$XDG_STATE_HOME"
 
-ok() { PASS=$((PASS + 1)); echo "  ok   $1"; }
-bad() { FAIL=$((FAIL + 1)); echo "  FAIL $1"; }
 
 if ! command -v nvim >/dev/null; then
   echo "nvim not installed: skipped"
@@ -158,6 +155,4 @@ else
   if [[ "$out" == *ok ]]; then ok "unified panel lists committed, uncommitted and untracked files; groups are background-only"; else bad "gitsigns unified: $out"; fi
 fi
 
-echo
-echo "passed: $PASS, failed: $FAIL"
-[[ $FAIL -eq 0 ]]
+summary

@@ -4,10 +4,9 @@
 # pgrep sit first on PATH, a git wrapper fakes GitHub clones, THEME_NO_RELOAD=1 keeps Ghostty alone, and stdin
 # is /dev/null. Run: bash tests/install_test.sh
 set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
 SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)" # the repo under test
-PASS=0
-FAIL=0
 ROOT="$(mktemp -d)"
 trap 'rm -rf "$ROOT"' EXIT
 export GIT_CONFIG_NOSYSTEM=1 GIT_TERMINAL_PROMPT=0
@@ -38,13 +37,6 @@ exec "$REAL_GIT" "\$@"
 G
 chmod +x "$STUBS"/*
 
-ok() { PASS=$((PASS + 1)); echo "  ok   $1"; }
-bad() { FAIL=$((FAIL + 1)); echo "  FAIL $1"; }
-check() { # check "<description>" <test command...>
-  local desc="$1"
-  shift
-  if "$@"; then ok "$desc"; else bad "$desc"; fi
-}
 
 # Runs install.sh with the given flags; sets OUT (stdout and stderr) and RC (exit code).
 run_install() {
@@ -152,6 +144,4 @@ check "failed download: install continues with exit 0" bash -c '[[ $1 -eq 0 ]] &
 check "failed download: warning printed" grep -qF "Warning: font install failed, re-run install.sh to retry" <<<"$FONT_OUT"
 check "failed download: partial font folder removed" bash -c '[[ ! -e "$1/.local/share/fonts/MonaspaceNerdFont" ]]' _ "$font_home"
 
-echo
-echo "passed: $PASS, failed: $FAIL"
-[[ $FAIL -eq 0 ]]
+summary

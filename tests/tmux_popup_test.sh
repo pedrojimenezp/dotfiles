@@ -4,10 +4,9 @@
 # on PATH sends every call to that server and fakes the client: display-message -c reads the current session
 # from a file and switch-client writes it. Run: bash tests/tmux_popup_test.sh
 set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
 SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)" # the repo under test
-PASS=0
-FAIL=0
 ROOT="$(cd "$(mktemp -d)" && pwd -P)"
 SOCK="$ROOT/tmux.sock"
 cleanup() {
@@ -19,11 +18,6 @@ export GIT_CONFIG_NOSYSTEM=1 GIT_TERMINAL_PROMPT=0 HOME="$ROOT/home"
 mkdir -p "$HOME"
 unset TMUX
 
-ok() { PASS=$((PASS + 1)); echo "  ok   $1"; }
-bad() { FAIL=$((FAIL + 1)); echo "  FAIL $1"; }
-check() { # check "<description>" "<expected>" "<actual>"
-  if [[ "$2" == "$3" ]]; then ok "$1"; else bad "$1 (expected: $2, got: $3)"; fi
-}
 
 CUR="$ROOT/current-session"
 STUBS="$ROOT/stubs"
@@ -61,13 +55,13 @@ mk_popup _popup_shell_alpha "$alpha_id"
 mk_popup _popup_shell_orphan '$99'
 mk_popup _popup_shell_restored
 pop cleanup
-check "cleanup: popup with a live parent stays" "1" "$(T list-sessions -F '#{session_name}' | grep -cx _popup_shell_alpha)"
-check "cleanup: popup whose parent is gone is killed" "0" "$(T list-sessions -F '#{session_name}' | grep -cx _popup_shell_orphan)"
-check "cleanup: popup without a parent mark is killed" "0" "$(T list-sessions -F '#{session_name}' | grep -cx _popup_shell_restored)"
-check "cleanup: normal sessions untouched" "alpha beta gamma " "$(names | tr ' ' '\n' | grep -v '^_popup_' | tr '\n' ' ')"
+check_eq "cleanup: popup with a live parent stays" "1" "$(T list-sessions -F '#{session_name}' | grep -cx _popup_shell_alpha)"
+check_eq "cleanup: popup whose parent is gone is killed" "0" "$(T list-sessions -F '#{session_name}' | grep -cx _popup_shell_orphan)"
+check_eq "cleanup: popup without a parent mark is killed" "0" "$(T list-sessions -F '#{session_name}' | grep -cx _popup_shell_restored)"
+check_eq "cleanup: normal sessions untouched" "alpha beta gamma " "$(names | tr ' ' '\n' | grep -v '^_popup_' | tr '\n' ' ')"
 T kill-session -t beta
 pop cleanup
-check "cleanup: parent killed later takes nothing else" "1" "$(T list-sessions -F '#{session_name}' | grep -cx _popup_shell_alpha)"
+check_eq "cleanup: parent killed later takes nothing else" "1" "$(T list-sessions -F '#{session_name}' | grep -cx _popup_shell_alpha)"
 T new-session -d -s beta -c "$ROOT"
 
 echo "== next and prev skip popup sessions"
@@ -76,13 +70,13 @@ last="$(T list-sessions -F '#{session_name}' | grep -v '^_popup_' | tail -1)"
 echo "$first" >"$CUR"
 pop next client
 nxt="$(cat "$CUR")"
-check "next: moves to another normal session" "0" "$([[ "$nxt" != "$first" && "$nxt" != _popup_* ]] && echo 0 || echo 1)"
+check_eq "next: moves to another normal session" "0" "$([[ "$nxt" != "$first" && "$nxt" != _popup_* ]] && echo 0 || echo 1)"
 echo "$last" >"$CUR"
 pop next client
-check "next: wraps to the first normal session" "$first" "$(cat "$CUR")"
+check_eq "next: wraps to the first normal session" "$first" "$(cat "$CUR")"
 echo "$first" >"$CUR"
 pop prev client
-check "prev: wraps to the last normal session" "$last" "$(cat "$CUR")"
+check_eq "prev: wraps to the last normal session" "$last" "$(cat "$CUR")"
 # put a popup session between two normal ones in list order and step across it
 T new-session -d -s _popup_shell_mid -c "$ROOT"
 for s in $(T list-sessions -F '#{session_name}'); do
@@ -102,16 +96,14 @@ echo "== only popup sessions are left"
 for s in alpha beta gamma; do T kill-session -t "$s" 2>/dev/null || true; done
 echo _popup_shell_alpha >"$CUR"
 pop next client
-check "no normal session: next stays" "_popup_shell_alpha" "$(cat "$CUR")"
+check_eq "no normal session: next stays" "_popup_shell_alpha" "$(cat "$CUR")"
 
 echo "== usage errors"
 rc=0
 pop bogus >/dev/null 2>&1 || rc=$?
-check "unknown command: exit 2" "2" "$rc"
+check_eq "unknown command: exit 2" "2" "$rc"
 rc=0
 pop next >/dev/null 2>&1 || rc=$?
-check "next without a client: exit 2" "2" "$rc"
+check_eq "next without a client: exit 2" "2" "$rc"
 
-echo
-echo "passed: $PASS, failed: $FAIL"
-[[ $FAIL -eq 0 ]]
+summary
