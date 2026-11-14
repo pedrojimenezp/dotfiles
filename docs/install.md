@@ -86,7 +86,7 @@ stow runs with `--no-folding`, so folders like `~/.config/ghostty` stay real and
 
 ## Troubleshooting
 
-`install.sh` keeps no log file; rerun with `--dry-run` to see the plan.
+`install.sh` keeps no log file; rerun with `--dry-run` to see the plan. Both scripts print like apt: a `==>` line when a step starts, the tool's output, a result line, a blank line. A step that stays silent for 10s prints `still running (10s)`, then every 10s. A `[dry-run]` result line means nothing happened.
 
 - **"Missing: ..."** (Linux): run the `apt-get` line it prints.
 - **"Homebrew was not found."**: install it, open a new shell, rerun.

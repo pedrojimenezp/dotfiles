@@ -92,16 +92,27 @@ if [[ "$OSTYPE" == darwin* ]]; then
     done
   fi
   if command -v brew >/dev/null 2>&1; then
-    echo "==> Installing Homebrew packages"
+    step "Installing Homebrew packages"
     # Upgrades are a separate, deliberate `brew upgrade`.
-    run brew bundle --no-upgrade --file="$REPO/Brewfile" || echo "Warning: brew bundle failed; run 'brew bundle' later" >&2
+    if run brew bundle --no-upgrade --file="$REPO/Brewfile"; then
+      finish "Homebrew packages installed"
+    else
+      echo "Warning: brew bundle failed; run 'brew bundle' later" >&2
+      finish "Homebrew packages: brew bundle failed"
+    fi
     # compinit prompts about group/other-writable completion dirs, which brew can recreate.
-    echo "==> Removing group/other write from Homebrew's zsh completion dirs (chmod go-w)"
+    step "Removing group/other write from Homebrew's zsh completion dirs (chmod go-w)"
     BREW_SHARE="$(brew --prefix)/share"
+    CHMODDED=0
     for d in "$BREW_SHARE" "$BREW_SHARE/zsh" "$BREW_SHARE/zsh/site-functions"; do
-      [[ -d $d && -O $d ]] && run chmod go-w "$d"
+      if [[ -d $d && -O $d ]]; then
+        run chmod go-w "$d"
+        CHMODDED=$((CHMODDED + 1))
+      fi
     done
+    finish "Changed $CHMODDED folders"
   else
+    step "Installing Homebrew packages"
     cat <<'MSG'
 Homebrew was not found. Install it first (this script never uses sudo):
   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
@@ -109,12 +120,14 @@ Then follow the "Next steps" it prints to add brew to your PATH, and run this sc
 MSG
     if [[ $DRY -eq 1 ]]; then # a preview still shows the rest of the plan
       echo "[dry-run] continuing without Homebrew" >&2
+      finish "Skipped: Homebrew not found"
     else
       exit 1
     fi
   fi
 fi
 
+# Packages that apply here (after Homebrew, which can install Ghostty).
 PACKAGES=()
 while IFS= read -r pkg; do PACKAGES+=("$pkg"); done < <(packages_here)
 
@@ -126,16 +139,18 @@ is_repo_link() {
 }
 
 # Move a real file (not one of our links) out of the way.
+BACKED_UP=0
 backup() {
   local path="$1"
   if [[ -e "$path" || -L "$path" ]] && ! is_repo_link "$path"; then
     echo "backup: $path -> $path.backup-$STAMP"
     run mv "$path" "$path.backup-$STAMP"
+    BACKED_UP=$((BACKED_UP + 1))
   fi
 }
 
 # Step 2: back up every file a package would link, so stow never conflicts.
-echo "==> Backing up existing files"
+step "Backing up existing files"
 for pkg in "${PACKAGES[@]}"; do
   while IFS= read -r -d '' file; do
     rel="${file#"$REPO/$pkg/"}"
@@ -146,54 +161,73 @@ done
 if [[ " ${PACKAGES[*]} " == *" git "* ]]; then
   backup "$HOME/.gitconfig"
 fi
+finish "Backed up $BACKED_UP files"
 
 # Step 3: link the packages.
-echo "==> Linking packages: ${PACKAGES[*]}"
+step "Linking packages: ${PACKAGES[*]}"
 if ! command -v stow >/dev/null 2>&1 && [[ $DRY -eq 0 ]]; then
   echo "stow is required and was not found. Install it (brew install stow, or apt-get install stow) and run this script again." >&2
   exit 1
 fi
 # --no-folding: generated files (Ghostty theme.conf) stay out of the repo
 run stow --restow --no-folding --dir="$REPO" --target="$HOME" "${PACKAGES[@]}"
+finish "Linked ${#PACKAGES[@]} packages"
 
-# Step 3b: install mise if missing (per user, no sudo), then every tool of its config.
+# Step 4: install mise if missing (per user, no sudo), then every tool of its config.
 export PATH="$HOME/.local/bin:$PATH"
 if ! command -v mise >/dev/null 2>&1; then
-  echo "==> Installing mise into ~/.local/bin"
-  run sh -c 'curl -fsSL https://mise.run | sh' || echo "Warning: could not install mise; run it again later" >&2
+  step "Installing mise into ~/.local/bin"
+  if with_heartbeat run sh -c 'curl -fsSL https://mise.run | sh'; then
+    finish "mise installed"
+  else
+    echo "Warning: could not install mise; run it again later" >&2
+    finish "mise: install failed"
+  fi
 fi
+step "Installing tools with mise"
 if command -v mise >/dev/null 2>&1; then
-  echo "==> Installing tools with mise"
-  run mise install || echo "Warning: some mise tools failed; run 'mise install' later" >&2
+  if run mise install; then
+    finish "mise tools installed"
+  else
+    echo "Warning: some mise tools failed; run 'mise install' later" >&2
+    finish "mise tools: install failed"
+  fi
   # Later steps (tmux plugins) need the mise tools on PATH.
   [[ $DRY -eq 1 ]] || eval "$(mise env -s bash)" || true
 else
-  echo "==> Skipping mise install: mise not found"
+  finish "Skipped: mise not found"
 fi
 
-# Step 3b1: zsh plugins as git clones, the same on every OS.
+# Step 5: zsh plugins as git clones, the same on every OS.
 ZSH_PLUGIN_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/zsh-plugins"
+PLUGINS_OK=0
+PLUGINS_FAILED=0
 clone_plugin() { # $1 = folder name, $2 = GitHub repo path
   local dir="$ZSH_PLUGIN_DIR/$1"
   if [[ -d "$dir/.git" ]]; then
-    run git -C "$dir" pull --ff-only --quiet || echo "Warning: could not update $1; keeping it as it is" >&2 # offline or local edits
+    if with_heartbeat run git -C "$dir" pull --ff-only --quiet; then # offline or local edits fail the pull
+      PLUGINS_OK=$((PLUGINS_OK + 1))
+    else
+      echo "Warning: could not update $1; keeping it as it is" >&2
+      PLUGINS_FAILED=$((PLUGINS_FAILED + 1))
+    fi
+  elif with_heartbeat run git clone --depth 1 --quiet "https://github.com/$2" "$dir"; then
+    PLUGINS_OK=$((PLUGINS_OK + 1))
   else
-    run git clone --depth 1 --quiet "https://github.com/$2" "$dir" || echo "Warning: could not clone $1" >&2
+    echo "Warning: could not clone $1" >&2
+    PLUGINS_FAILED=$((PLUGINS_FAILED + 1))
   fi
 }
-echo "==> Installing zsh plugins in $ZSH_PLUGIN_DIR"
+step "Installing zsh plugins in $ZSH_PLUGIN_DIR"
 run mkdir -p "$ZSH_PLUGIN_DIR"
 clone_plugin zsh-autosuggestions zsh-users/zsh-autosuggestions
 clone_plugin zsh-syntax-highlighting zsh-users/zsh-syntax-highlighting
 clone_plugin zsh-completions zsh-users/zsh-completions
 clone_plugin fzf-tab Aloxaf/fzf-tab
+finish "zsh plugins installed or updated: $PLUGINS_OK, failed: $PLUGINS_FAILED"
 
-# Step 4: tmux plugin manager.
+# Step 6: tmux plugin manager, then the plugins.
 TPM="$HOME/.config/tmux/plugins/tpm"
-if [[ ! -d "$TPM" ]] && command -v git >/dev/null 2>&1; then
-  echo "==> Cloning TPM"
-  run git clone --depth 1 https://github.com/tmux-plugins/tpm "$TPM"
-fi
 # TPM reads TMUX_PLUGIN_MANAGER_PATH from a tmux server (set-environment in tmux.conf). A server that is already
 # running (or the one we are inside) started before the config was linked, so it lacks the variable. Run the
 # whole install on a private server instead: its own TMUX_TMPDIR socket, TMUX unset, killed at the end.
@@ -202,41 +236,48 @@ install_tmux_plugins() {
   if [[ $DRY -eq 1 ]]; then tmp="<temp dir>"; else tmp="$(mktemp -d)" || return 1; fi
   local -a priv=(env -u TMUX TMUX_TMPDIR="$tmp") # TPM's tmux calls inherit this and hit the private server
   run "${priv[@]}" tmux new-session -d -s dotfiles-tpm || rc=1
-  [[ $rc -eq 0 ]] && { run "${priv[@]}" "$TPM/bin/install_plugins" || rc=1; }
+  [[ $rc -eq 0 ]] && { with_heartbeat run "${priv[@]}" "$TPM/bin/install_plugins" || rc=1; }
   run "${priv[@]}" tmux -S "$tmp/tmux-$(id -u)/default" kill-server || true # by socket path: only the private server dies
   [[ $DRY -eq 1 ]] || rm -rf "$tmp"
   return "$rc"
 }
 TMUX_PLUGINS_OK=0
+step "Installing tmux plugins"
+if [[ ! -d "$TPM" ]] && command -v git >/dev/null 2>&1; then
+  with_heartbeat run git clone --depth 1 https://github.com/tmux-plugins/tpm "$TPM" || echo "Warning: could not clone TPM" >&2
+fi
 if [[ ( -x "$TPM/bin/install_plugins" || $DRY -eq 1 ) ]] && { command -v tmux >/dev/null 2>&1 || [[ $DRY -eq 1 ]]; }; then
-  echo "==> Installing tmux plugins"
   if install_tmux_plugins; then
     TMUX_PLUGINS_OK=1
+    finish "tmux plugins installed"
   else
     echo "Warning: tmux plugin install failed; press prefix + I in tmux" >&2
+    finish "tmux plugins: install failed"
   fi
 else
-  echo "==> Skipping tmux plugins: tmux or TPM not found"
+  finish "Skipped: tmux or TPM not found"
 fi
 
-# Step 5: Nerd Font for Linux desktop terminals (Ghostty and macOS need nothing).
+# Step 7: Nerd Font for Linux desktop terminals (Ghostty and macOS need nothing).
 install_font() {
   local dir="$HOME/.local/share/fonts/${NERD_FONT}NerdFont" tmp
+  step "Installing ${NERD_FONT} Nerd Font"
   # grep -c reads all input, so fc-list never gets SIGPIPE under pipefail
   if [[ "$(fc-list | grep -ci "${NERD_FONT_FAMILY}.* Nerd Font")" -gt 0 ]] || [[ -n "$(ls -A "$dir" 2>/dev/null)" ]]; then
+    finish "Already installed"
     return 0
   fi
-  echo "==> Installing ${NERD_FONT} Nerd Font"
-  if [[ $DRY -eq 1 ]]; then tmp="<tmpdir>"; else tmp="$(mktemp -d)" || return 0; fi
+  if [[ $DRY -eq 1 ]]; then tmp="<tmpdir>"; else tmp="$(mktemp -d)" || { finish "Skipped: no temp folder"; return 0; }; fi
   # A failure must not stop the install: drop the partial folder so the next run retries.
-  if ! {
-    run curl -fsSL -o "$tmp/font.tar.xz" "https://github.com/ryanoasis/nerd-fonts/releases/latest/download/${NERD_FONT}.tar.xz" &&
-      run mkdir -p "$dir" &&
-      run tar -xJf "$tmp/font.tar.xz" -C "$dir" &&
-      run fc-cache -f
-  }; then
+  if with_heartbeat run curl -fsSL -o "$tmp/font.tar.xz" "https://github.com/ryanoasis/nerd-fonts/releases/latest/download/${NERD_FONT}.tar.xz" &&
+    run mkdir -p "$dir" &&
+    with_heartbeat run tar -xJf "$tmp/font.tar.xz" -C "$dir" &&
+    run fc-cache -f; then
+    finish "${NERD_FONT} Nerd Font installed"
+  else
     echo "Warning: font install failed, re-run install.sh to retry" >&2
     [[ $DRY -eq 1 ]] || rm -rf "$dir"
+    finish "Nerd Font: install failed"
   fi
   [[ $DRY -eq 1 ]] || rm -rf "$tmp"
   return 0
@@ -244,23 +285,30 @@ install_font() {
 
 if [[ "$OSTYPE" == linux* ]]; then
   if [[ -z "${DISPLAY:-}${WAYLAND_DISPLAY:-}" ]]; then # headless: the local terminal renders fonts
-    echo "==> Skipping Nerd Font: no graphical session (headless server)"
+    step "Installing ${NERD_FONT} Nerd Font"
+    finish "Skipped: no graphical session (headless server)"
   elif command -v fc-cache >/dev/null 2>&1 && command -v fc-list >/dev/null 2>&1; then
     install_font
   else
-    echo "==> Skipping Nerd Font: fontconfig (fc-cache, fc-list) not found"
+    step "Installing ${NERD_FONT} Nerd Font"
+    finish "Skipped: fontconfig (fc-cache, fc-list) not found"
   fi
 fi
 
-# Step 5b: Ghostty and iTerm theme files.
-echo "==> Generating terminal theme files (theme sync)"
+# Step 8: Ghostty and iTerm theme files.
+step "Generating terminal theme files (theme sync)"
 # offline or unknown theme: must not stop the install
-run "$REPO/bin/.local/bin/theme" sync || echo "Warning: theme sync failed; run 'theme sync' later" >&2
+if with_heartbeat run "$REPO/bin/.local/bin/theme" sync; then
+  finish "Theme files generated"
+else
+  echo "Warning: theme sync failed; run 'theme sync' later" >&2
+  finish "Theme files: sync failed"
+fi
 
 CLAUDE_SKIPPED=0 # 1 = exit non-zero at the end
-# Step 6: optional Claude config; its pull.sh pulls and installs it.
+# Step 9: optional Claude config; its pull.sh pulls and installs it.
 if [[ $WITH_CLAUDE -eq 1 ]]; then
-  echo "==> Setting up Claude config in $CLAUDE_DIR"
+  step "Setting up Claude config in $CLAUDE_DIR"
   if [[ ! -e "$CLAUDE_DIR" ]]; then
     run git clone "$CLAUDE_REPO_URL" "$CLAUDE_DIR" || {
       CLAUDE_SKIPPED=1
@@ -272,18 +320,28 @@ if [[ $WITH_CLAUDE -eq 1 ]]; then
   fi
   if [[ $CLAUDE_SKIPPED -eq 0 ]]; then
     # a failed pull keeps the clone as it is; pull.sh still installs it
-    run "$CLAUDE_DIR/pull.sh" --install || echo "Warning: the Claude config pull or install failed (see above)" >&2
+    if run "$CLAUDE_DIR/pull.sh" --install; then
+      finish "Claude config installed"
+    else
+      echo "Warning: the Claude config pull or install failed (see above)" >&2
+      finish "Claude config: pull or install failed"
+    fi
+  else
+    finish "Skipped: Claude config not installed"
   fi
 fi
 
-# Make sure git has a commit identity (name and email from any config).
+# Step 10: make sure git has a commit identity (name and email from any config).
 ensure_git_identity() {
   local name email local_file="$HOME/.config/git/local"
+  step "Checking the git identity"
   name="$(git config --global --includes user.name 2>/dev/null || true)"
   email="$(git config --global --includes user.email 2>/dev/null || true)"
-  [[ -n "$name" && -n "$email" ]] && return 0
+  if [[ -n "$name" && -n "$email" ]]; then
+    finish "Git identity: $name <$email>"
+    return 0
+  fi
   if [[ -t 0 && $DRY -eq 0 ]]; then # only ask a person, never a pipe or a preview
-    echo
     if [[ -z "$name" ]]; then
       read -r -p "Name for git commits: " name
       [[ -n "$name" ]] && git config --file "$local_file" user.name "$name"
@@ -292,11 +350,12 @@ ensure_git_identity() {
       read -r -p "Email for git commits: " email
       [[ -n "$email" ]] && git config --file "$local_file" user.email "$email"
     fi
+    finish "Git identity saved in $local_file"
   else
-    echo
     echo "Git has no commit identity yet. Set it with:"
     echo "  git config --file ~/.config/git/local user.name \"Your Name\""
     echo "  git config --file ~/.config/git/local user.email you@example.com"
+    finish "Skipped: git identity not set"
   fi
   return 0
 }
@@ -309,7 +368,6 @@ else
 fi
 
 cat <<MSG
-
 Done. Next steps:
   1. $TMUX_STEP
   2. Open nvim once and let lazy.nvim install plugins (run :Mason to check LSP tools).

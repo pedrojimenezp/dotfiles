@@ -94,6 +94,8 @@ run_in() { # run_in <home> [flags]: a real install with that HOME
 }
 run_in "$bhome"
 check "first install: exit 0" test "$RC" -eq 0
+check "step lines: backup, link and plugins each end with a result" bash -c 'grep -qx "Backed up 3 files" <<<"$1" && grep -qE "^Linked [0-9]+ packages$" <<<"$1" && grep -qE "^zsh plugins installed or updated: 4, failed: 0$" <<<"$1"' _ "$OUT"
+check "every step line is followed by a result and a blank line" bash -c '[[ "$(grep -c "^==> " <<<"$1")" -eq "$(grep -c "^$" <<<"$1")" ]]' _ "$OUT"
 check "a real file is moved to .backup-<stamp>" bash -c 'cat "$1"/.zshrc.backup-* | grep -qx mine' _ "$bhome"
 check "the backup message names both paths" grep -qE "backup: .*/\.zshrc -> .*/\.zshrc\.backup-[0-9]{8}-[0-9]{6}" <<<"$OUT"
 check "the path is now a link into the repo" bash -c '[[ -L "$1/.zshrc" && "$(realpath "$1/.zshrc")" == "$2"/* ]]' _ "$bhome" "$(cd "$SRC" && pwd -P)"
@@ -105,6 +107,7 @@ sleep 1 # a new stamp would show as a new backup name
 run_in "$bhome"
 check "second install: exit 0" test "$RC" -eq 0
 check "existing repo links are left alone: no new backups" test "$before" = "$(ls -A "$bhome" | sort | tr '\n' ' ')"
+check "second run reports Backed up 0 files" grep -qx "Backed up 0 files" <<<"$OUT"
 check "no backup message on the second run" bash -c '! grep -q "^backup:" <<<"$1"' _ "$OUT"
 
 echo "== brew bundle failure does not stop the install"
@@ -134,6 +137,7 @@ FONT_OUT="$(
     set -euo pipefail
     DRY=0 NERD_FONT=Monaspace NERD_FONT_FAMILY=Monaspice
     run() { "$@"; }
+    source "$1/common.sh"
     source "$2"
     mkdir -p "$HOME/.local/share/fonts/MonaspaceNerdFont" # empty folder: not "installed", must be removed on failure
     install_font

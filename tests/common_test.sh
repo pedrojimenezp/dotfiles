@@ -36,4 +36,19 @@ printf '#!/bin/sh\n' >"$NOGHOSTTY/ghostty"
 chmod +x "$NOGHOSTTY/ghostty"
 check_eq "ghostty on PATH counts" "ghostty git zsh" "$(PATH="$PATH_NO" OSTYPE=linux-gnu packages_here | joined)"
 
+echo "== with_heartbeat"
+DRY=0
+out="$(HEARTBEAT_INTERVAL=1 with_heartbeat sleep 2.5)"
+check_eq "a silent step prints still running every interval" "still running (1s) still running (2s)" "$(joined <<<"$out")"
+out="$(HEARTBEAT_INTERVAL=1 with_heartbeat true)"
+check_eq "a quick step prints nothing" "" "$out"
+rc=0
+HEARTBEAT_INTERVAL=1 with_heartbeat bash -c 'exit 3' || rc=$?
+check_eq "the command's status is returned" "3" "$rc"
+
+echo "== step and finish"
+check_eq "step prints an arrow line" "==> Doing it" "$(step Doing it)"
+check_eq "finish prints the result and a blank line" "Done||" "$(finish Done | tr '\n' '|')"
+check_eq "finish marks a dry run" "[dry-run] Done||" "$(DRY=1 finish Done | tr '\n' '|')"
+
 summary
