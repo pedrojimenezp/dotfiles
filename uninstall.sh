@@ -35,9 +35,6 @@ run() {
   fi
 }
 
-step() { echo "==> $*"; }
-finish() { echo "$*"; echo; }
-
 # True if $1 is a path this script may delete: under $HOME, never $HOME itself, no ".." parts.
 path_ok() {
   local p="$1"
