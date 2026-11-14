@@ -62,6 +62,10 @@ Project missing? `tmux-sessionizer --list` prints `label<TAB>path` for every can
 - Pads never keep focus, resize with the window, and disappear when the last real pane closes. `prefix z` zoom still works.
 - Zen windows carry `@zen`; the `window-layout-changed` hook skips them, so they don't get pane labels.
 
+## Three columns (`prefix T`)
+
+`prefix T` adds a full-height shell pane on each side of the window, both in the current pane's folder; the center keeps `@zen_width` (same option as zen) and the sides share the rest. Focus stays where it was. A window narrower than `@zen_width` + 40 shows a message and is left alone. The new panes are ordinary panes: close one with `exit`, and `prefix Z` still works afterwards.
+
 ## Copying (iTerm2)
 
 tmux copies through OSC 52, so turn on iTerm2's "Applications in terminal may access clipboard" (Settings > General > Selection). Drag, double- or triple-click copies. `Option` + drag bypasses tmux, for example across split panes.

@@ -151,6 +151,42 @@ T split-window -t "$W" -h -d
 sleep 0.5
 check_eq "pane labels still turn on" "top" "$(T show-options -wv -t "$W" pane-border-status 2>/dev/null || echo none)"
 
+echo "== three columns"
+T new-window -d -t z: -c /tmp
+W3="$(T list-windows -t z -F '#{window_id}' | tail -1)"
+T resize-window -t "$W3" -x 150
+c3="$(active "$W3")"
+logged_before="$(grep -c ' tmux-zen$' "$zen_log")"
+zen columns "$W3"
+check_eq "150 columns: no panes added" "1" "$(panes "$W3" | wc -l | tr -d ' ')"
+check_eq "150 columns: message shown" "1" "$(T show-messages | grep -c 'three columns: window too narrow')"
+T resize-window -t "$W3" -x 240
+zen columns "$W3"
+check_eq "240 columns: three panes" "3" "$(panes "$W3" | wc -l | tr -d ' ')"
+# (240 - 120 - 2 borders) / 2 = 59 per side; the center is 240 - 118 - 2 = 120
+check_eq "sides and center widths" "0:59 60:120 181:59 " "$(widths "$W3")"
+check_eq "all panes full height" "1" "$(T list-panes -t "$W3" -F '#{pane_height}' | sort -u | wc -l | tr -d ' ')"
+check_eq "panes use the whole window height" "49" "$(T list-panes -t "$W3" -F '#{pane_height}' | sort -u | head -1)" # 50 rows minus the label row
+check_eq "focus unchanged" "$c3" "$(active "$W3")"
+tmpdir="$(cd /tmp && pwd -P)"
+check_eq "side panes start in the pane's folder" "$tmpdir $tmpdir " "$(for p in $(panes "$W3" | grep -vx "$c3"); do d="$(T display-message -p -t "$p" '#{pane_current_path}')"; (cd "$d" && pwd -P); done | tr '\n' ' ')"
+check_eq "window not marked zen" "" "$(opt "$W3" @zen)"
+check_eq "no pane is a pad" "0" "$(pads "$W3" | wc -l | tr -d ' ')"
+check_eq "each columns run is logged" "2" "$(($(grep -c ' tmux-zen$' "$zen_log") - logged_before))"
+check_eq "prefix T runs tmux-zen columns" "1" "$(T list-keys -T prefix | grep -c 'prefix  *T .*tmux-zen columns')"
+check_eq "prefix T has a note" "1" "$(T list-keys -N -T prefix | grep -c ' T ')"
+T kill-pane -t "$(panes "$W3" | grep -vx "$c3" | head -1)"
+check_eq "closing a side pane works like any pane" "2" "$(panes "$W3" | wc -l | tr -d ' ')"
+T kill-window -t "$W3"
+T new-window -d -t z: -c /tmp
+W4="$(T list-windows -t z -F '#{window_id}' | tail -1)"
+T resize-window -t "$W4" -x 240
+T set -g @zen_width 100
+zen columns "$W4"
+check_eq "@zen_width 100 honored" "0:69 70:100 171:69 " "$(widths "$W4")"
+T set -g @zen_width 120
+T kill-window -t "$W4"
+
 echo "== usage errors"
 rc=0
 zen bogus "$W" >/dev/null 2>&1 || rc=$?

@@ -5,11 +5,14 @@
 #        tmux-zen fit <window id>      resize the pads after the window size changed
 #        tmux-zen unpad <window id>    move focus out of a pad
 #        tmux-zen cleanup <window id>  close the window when only pads are left
+#        tmux-zen columns <window id>  (three columns: add a shell pane on each side of the current pane)
 # Option: @zen_width, the width of the centered column (default 120).
+# columns adds ordinary panes, not pads: nothing is marked and nothing needs undoing.
 set -euo pipefail
 
 pad_cmd="tail -f /dev/null" # macOS sleep has no "infinity"
 margin=20                   # below @zen_width + this, the window is too narrow for zen
+columns_margin=40           # same for columns: each side pane needs at least 20 columns
 
 # Print the pane ids of the window's pads, one per line.
 pads() {
@@ -52,6 +55,24 @@ enable() {
   tmux set -p -t "$right" @zen_pad 1 \; select-pane -d -t "$right"
   tmux select-pane -t "$active"
   fit "$win"
+}
+
+# Full-height shell panes on both sides, in the current pane's folder; the center keeps @zen_width.
+columns() {
+  local win="$1" w zw side dir left right
+  w="$(tmux display-message -p -t "$win" '#{window_width}')"
+  zw="$(zen_width "$win")"
+  if ((w < zw + columns_margin)); then
+    tmux display-message "three columns: window too narrow for 3 columns of $zw"
+    return 0
+  fi
+  side="$(pad_width "$win")"
+  dir="$(tmux display-message -p -t "$win" '#{pane_current_path}')"
+  # -d keeps the focus where it was
+  left="$(tmux split-window -P -F '#{pane_id}' -f -h -b -d -l "$side" -c "$dir" -t "$win")"
+  right="$(tmux split-window -P -F '#{pane_id}' -f -h -d -l "$side" -c "$dir" -t "$win")"
+  # the second full-width split shrinks every pane, the left one included
+  tmux resize-pane -t "$left" -x "$side" \; resize-pane -t "$right" -x "$side"
 }
 
 disable() {
@@ -100,7 +121,7 @@ cleanup() {
   ((real > 0)) || tmux kill-window -t "$win" 2>/dev/null || true
 }
 
-[[ $# -eq 2 ]] || { echo "usage: tmux-zen toggle|fit|unpad|cleanup <window id>" >&2; exit 2; }
+[[ $# -eq 2 ]] || { echo "usage: tmux-zen toggle|fit|unpad|cleanup|columns <window id>" >&2; exit 2; }
 case "$1" in
   toggle)
     "$(dirname "$0")/dotfiles-log" tmux-zen >/dev/null 2>&1 || true
@@ -108,5 +129,8 @@ case "$1" in
   fit) fit "$2" ;;
   unpad) unpad "$2" ;;
   cleanup) cleanup "$2" ;;
-  *) echo "usage: tmux-zen toggle|fit|unpad|cleanup <window id>" >&2; exit 2 ;;
+  columns)
+    "$(dirname "$0")/dotfiles-log" tmux-zen >/dev/null 2>&1 || true
+    columns "$2" ;;
+  *) echo "usage: tmux-zen toggle|fit|unpad|cleanup|columns <window id>" >&2; exit 2 ;;
 esac
