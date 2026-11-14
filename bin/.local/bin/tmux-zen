@@ -2,9 +2,9 @@
 # Zen mode: centers a window's content in a column by adding an empty pad pane on each side.
 # Pads are full-height panes at both edges, marked with the pane option @zen_pad; the window carries @zen.
 # Usage: tmux-zen toggle <window id>   (turn zen on or off)
-#        tmux-zen fit <window id>      (resize the pads after the window size changed)
-#        tmux-zen unpad <window id>    (move focus out of a pad)
-#        tmux-zen cleanup <window id>  (close the window when only pads are left)
+#        tmux-zen fit <window id>      resize the pads after the window size changed
+#        tmux-zen unpad <window id>    move focus out of a pad
+#        tmux-zen cleanup <window id>  close the window when only pads are left
 # Option: @zen_width, the width of the centered column (default 120).
 set -euo pipefail
 

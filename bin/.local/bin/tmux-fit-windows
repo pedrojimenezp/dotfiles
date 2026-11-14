@@ -2,6 +2,7 @@
 # Resizes every window to the most recently active client's window size, then lets each window follow its clients again.
 # A window in a session no client is attached to keeps the size of its saved layout, so this gives it the terminal size.
 # Does nothing when no client is attached: windows are resized when a client attaches.
+# Internal: not listed in dotfiles-help.
 # Usage: tmux-fit-windows
 set -euo pipefail
 

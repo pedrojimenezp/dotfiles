@@ -26,7 +26,7 @@ Each run appends one block to ~/Library/Logs/img-to-server.log: time, front app,
 target or reason, every command with its exit code and stderr tail, paste method and result.
 Clipboard and file contents are never logged. The file is cut to its last 200 KB past 1 MB.
 
-Usage: img-to-server [--dry-run]
+Usage: img-to-server [--dry-run]  (--dry-run only prints the plan)
   --dry-run  print the target, the commands and the log block; upload, paste and log nothing
 """
 

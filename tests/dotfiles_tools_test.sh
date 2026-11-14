@@ -26,6 +26,9 @@ mkdir -p "$FAKE/bin/.local/bin" "$FAKE/mise/.config/mise" "$FAKE/zsh" "$FAKE/tmu
 cp "$SRC/bin/.local/bin/dotfiles-log" "$SRC/bin/.local/bin/dotfiles-usage" "$SRC/bin/.local/bin/dotfiles-help" "$FAKE/bin/.local/bin/"
 printf '#!/usr/bin/env bash\n# mykey: a key-launched tool\n# Usage: mykey [x]  (does the thing)\n"$(dirname "$0")/dotfiles-log" mykey\n' >"$FAKE/bin/.local/bin/mykey"
 printf '#!/usr/bin/env bash\n# plain: no log call\n' >"$FAKE/bin/.local/bin/plain"
+printf '#!/usr/bin/env bash\n# multi: a tool with several forms\n# Usage: multi run  (public form)\n#        multi hidden  internal form, no parentheses\n' >"$FAKE/bin/.local/bin/multi"
+printf '#!/usr/bin/env bash\n# secret: plumbing\n# Internal: not listed in dotfiles-help.\n# Usage: secret go  (never shown)\n' >"$FAKE/bin/.local/bin/secret"
+printf '#!/usr/bin/env python3\n"""Does py things.\n\nUsage: pytool [-x]  (the flag)\n"""\n' >"$FAKE/bin/.local/bin/pytool"
 cat >"$FAKE/Brewfile" <<'B'
 brew "ripgrep"
 brew "pngpaste"
@@ -141,12 +144,19 @@ check "zsh: documented function" "1" "$(has $'zsh function\tmkcd dir\tmake a fol
 check "zsh: undocumented function not listed" "0" "$(grep -c undocumented <<<"$h")"
 check "command: line 2 description" "1" "$(has $'command\tmykey\ta key-launched tool\tbin/.local/bin/mykey')"
 check "command: Usage line with parentheses" "1" "$(has $'command\tmykey [x]\tdoes the thing\tbin/.local/bin/mykey')"
+real="$(bash "$SRC/bin/.local/bin/dotfiles-help" --list)"
+check "command: Usage line without parentheses not listed" "0" "$(grep -c 'multi hidden' <<<"$h")"
+check "command: Usage line with parentheses next to it" "1" "$(has $'command\tmulti run\tpublic form\tbin/.local/bin/multi')"
+check "command: # Internal script not listed at all" "0" "$(grep -c 'secret' <<<"$h")"
+check "command: docstring header has no quotes" "1" "$(has $'command\tpytool\tDoes py things.\tbin/.local/bin/pytool')"
+check "command: docstring Usage line" "1" "$(has $'command\tpytool [-x]\tthe flag\tbin/.local/bin/pytool')"
+check "real repo: no stray quote in a description" "0" "$(awk -F'\t' '$3 ~ /^"/' <<<"$real" | wc -l | tr -d ' ')"
+check "real repo: internal rows hidden" "0" "$(grep -cE $'^command\t(dotfiles-log|tmux-fit-windows|tmux-zen (fit|unpad|cleanup)|tmux-popup (cleanup|rescue|next))' <<<"$real")"
 check "cheatsheet: rows pass through, comments skipped" "1" "$(has $'tmux plugin\tprefix Ctrl+s\tsave\tdocs/tmux.md')"
 check "cheatsheet: header comment skipped" "0" "$(grep -c '^# header' <<<"$h")"
 rc=0
 bash "$FAKE/bin/.local/bin/dotfiles-help" --bogus >/dev/null 2>&1 || rc=$?
 check "unknown option: exit 2" "2" "$rc"
-real="$(bash "$SRC/bin/.local/bin/dotfiles-help" --list)"
 check "real repo: every row has 4 fields" "0" "$(awk -F'\t' 'NF != 4' <<<"$real" | wc -l | tr -d ' ')"
 
 echo

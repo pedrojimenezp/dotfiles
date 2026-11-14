@@ -3,7 +3,7 @@
 # Usage: dotfiles-help          (fzf list; tmux opens it in a popup with prefix + ?)
 #        dotfiles-help --list   (print the table as "area<TAB>keys<TAB>description<TAB>doc" and exit)
 # Everything is read from the repo at every run: bind -N notes in tmux.conf, end-of-line comments in .zshrc,
-# line 2 and "# Usage:" lines of bin/.local/bin/*, and docs/cheatsheet.tsv for plugin and terminal keys.
+# line 2 and "Usage:" lines of bin/.local/bin/*, and docs/cheatsheet.tsv for plugin and terminal keys.
 # tmux's own default keys are not listed: prefix + k shows them. Works with macOS bash 3.2.
 set -euo pipefail
 
@@ -45,14 +45,16 @@ zsh_rows() {
   ' "$ROOT/zsh/.zshrc"
 }
 
-# Script rows: the description on line 2 and "# Usage: cmd  (what it does)" lines.
+# Script rows: the description on line 2 and "Usage: cmd  (what it does)" lines. Only a Usage line with a
+# parenthetical description is listed; a script with an "# Internal:" line is skipped entirely.
 script_rows() {
   local f
   for f in "$ROOT"/bin/.local/bin/*; do
+    ! grep -q '^# Internal:' "$f" || continue
     awk -v name="${f##*/}" '
-      FNR == 2 { d = substr($0, 3); sub("^" name ": ", "", d); printf "command\t%s\t%s\tbin/.local/bin/%s\n", name, d, name }
-      /^# (Usage:| )/ && match($0, /  +\(.*\)$/) {
-        k = substr($0, 3, RSTART - 3); sub(/^(Usage:)? */, "", k)
+      FNR == 2 { d = $0; sub(/^(# |""")/, "", d); sub("^" name ": ", "", d); printf "command\t%s\t%s\tbin/.local/bin/%s\n", name, d, name }
+      /^(# (Usage:| )|Usage:)/ && match($0, /  +\(.*\)$/) {
+        k = substr($0, 1, RSTART - 1); sub(/^(# )?(Usage:)? */, "", k)
         d = substr($0, RSTART); sub(/^ *\(/, "", d); sub(/\)$/, "", d)   # text inside the parentheses
         if (k != name) printf "command\t%s\t%s\tbin/.local/bin/%s\n", k, d, name
       }' "$f"

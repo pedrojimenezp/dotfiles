@@ -2,9 +2,9 @@
 # Persistent tmux popups: a scratch shell or Claude Code that keeps running between opens.
 # Each popup is a hidden session "_popup_<kind>_<parent>" attached inside display-popup.
 # Usage: tmux-popup open <shell|claude> <client> <parent session id> <dir>
-#        tmux-popup cleanup           (kill popup sessions whose parent session is gone)
-#        tmux-popup rescue <client>   (move a normal client out of a popup session)
-#        tmux-popup next|prev <client>  (switch to the next/previous normal session, skipping popup sessions)
+#        tmux-popup cleanup           kill popup sessions whose parent session is gone
+#        tmux-popup rescue <client>   move a normal client out of a popup session
+#        tmux-popup next|prev <client>  switch to the next/previous normal session, skipping popup sessions
 # Env: TMUX_POPUP_CLAUDE_CMD replaces the command of the claude popup (e.g. for tests).
 set -euo pipefail
 
