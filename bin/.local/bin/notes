@@ -1,0 +1,131 @@
+#!/usr/bin/env bash
+# Plain Markdown notes in $NOTES_DIR (default ~/notes): fzf picker, content search and nvim without swap or undo files.
+# Usage: notes                 (pick a note by name; type a new name and Enter to create it; Esc quits)
+#        notes dir             (print the notes folder, creating it with mode 700)
+#        notes name <name>     (print the file name a typed name creates: .md added; "/" and ".." are refused)
+# In the picker: ctrl-g switches between name filter and ripgrep content search, ctrl-r reloads the list.
+# Enter on a content match opens nvim at that line. In a tmux session whose @popup_kind is notes, Esc detaches the client instead of quitting.
+# The picker calls list, grep <pattern> and preview <fzf line> on this script.
+set -euo pipefail
+
+self="$0"
+case "$self" in */*) ;; *) self="$(command -v "$self")" ;; esac # fzf runs this path again from another directory
+
+notes_dir() {
+  local dir="${NOTES_DIR:-$HOME/notes}"
+  (umask 077 && mkdir -p "$dir")
+  chmod 700 "$dir"
+  printf '%s\n' "$dir"
+}
+
+# Print the file name for a typed name, or an error and status 1.
+note_name() {
+  local n="$1"
+  n="${n#"${n%%[![:space:]]*}"}" n="${n%"${n##*[![:space:]]}"}" # trim
+  [[ -n "$n" ]] || { echo "empty name" >&2; return 1; }
+  case "$n" in */* | *..*) echo "a note name cannot contain / or .." >&2; return 1 ;; esac
+  [[ "$n" == *.md ]] || n="$n.md"
+  [[ "$n" != .md ]] || { echo "empty name" >&2; return 1; }
+  printf '%s\n' "$n"
+}
+
+# Notes, newest modified first.
+list_notes() {
+  ls -t -- *.md 2>/dev/null || true
+}
+
+grep_notes() {
+  [[ -n "${1:-}" ]] || return 0
+  # Explicit files: without a path rg reads stdin when it is not a terminal.
+  rg --line-number --no-heading --color=never --smart-case -e "$1" -- *.md 2>/dev/null || true
+}
+
+# A grep line is "file:line:text"; a list line is just the file.
+split_line() { # sets file and line from an fzf line
+  file="$1" line=""
+  if [[ "$1" =~ ^(.+\.md):([0-9]+): ]]; then file="${BASH_REMATCH[1]}" line="${BASH_REMATCH[2]}"; fi
+}
+
+preview() {
+  local file line
+  split_line "$1"
+  [[ -f "$file" ]] || return 0
+  if command -v bat >/dev/null 2>&1; then
+    bat --style=numbers --color=always ${line:+--highlight-line "$line"} -- "$file"
+  else
+    cat -- "$file"
+  fi
+}
+
+# nvim keeps no copy of the note outside the notes folder: no swap, undo or shada files.
+open_note() {
+  local file="$1" line="${2:-}"
+  nvim -n -i NONE -c 'set noundofile noswapfile nobackup nowritebackup' ${line:+"+$line"} -- "$file"
+}
+
+# Print the selected line, preceded by "new <name>" when Enter was pressed on a name that matches nothing.
+choose() {
+  local out rc=0 query sel
+  out="$(list_notes | fzf --print-query --no-sort --prompt 'name> ' \
+    --header 'enter open/create  ctrl-g content search  ctrl-r reload  esc hide' \
+    --preview "'$self' preview {}" --preview-window 'right:60%' \
+    --bind "start:unbind(change)" \
+    --bind "ctrl-r:reload('$self' list)" \
+    --bind "ctrl-g:transform:if [[ \$FZF_PROMPT == 'name> ' ]]; then
+      echo \"change-prompt(grep> )+disable-search+rebind(change)+change-header(enter open at line  ctrl-g name filter  esc hide)+clear-query+reload('$self' grep)\"
+    else
+      echo \"change-prompt(name> )+enable-search+unbind(change)+change-header(enter open/create  ctrl-g content search  ctrl-r reload  esc hide)+clear-query+reload('$self' list)\"
+    fi" \
+    --bind "change:reload('$self' grep {q})" \
+    --bind "enter:transform:[[ \$FZF_PROMPT == 'grep> ' ]] && echo accept-non-empty || echo accept")" || rc=$?
+  [[ $rc -eq 0 || $rc -eq 1 ]] || return "$rc" # 130: Esc
+  query="$(head -n1 <<<"$out")" sel="$(sed -n 2p <<<"$out")"
+  if [[ -n "$sel" ]]; then
+    printf '%s\n' "$sel"
+  elif [[ -n "$query" ]]; then
+    printf 'new %s\n' "$query"
+  else
+    return 1
+  fi
+}
+
+# True in a tmux session whose @popup_kind is notes.
+in_popup() {
+  [[ -n "${TMUX:-}" && "$(tmux display-message -p '#{@popup_kind}' 2>/dev/null)" == notes ]]
+}
+
+picker() {
+  command -v fzf >/dev/null 2>&1 || { echo "notes: fzf is not installed" >&2; exit 1; }
+  command -v nvim >/dev/null 2>&1 || { echo "notes: nvim is not installed" >&2; exit 1; }
+  command -v rg >/dev/null 2>&1 || echo "notes: ripgrep is not installed, content search will find nothing" >&2
+  cd "$(notes_dir)"
+  local rc pick file line
+  while true; do
+    rc=0
+    pick="$(choose)" || rc=$?
+    if [[ $rc -ne 0 ]]; then
+      in_popup || exit 0
+      tmux detach-client -s "$(tmux display-message -p '#{session_id}')"
+      continue
+    fi
+    if [[ "$pick" == "new "* ]]; then
+      if ! file="$(note_name "${pick#new }" 2>&1)"; then
+        echo "notes: $file"; read -r -n1 -p "press a key" _ || true; continue
+      fi
+      line=""
+    else
+      split_line "$pick"
+    fi
+    open_note "$file" "$line"
+  done
+}
+
+case "${1:-}" in
+  "") picker ;;
+  dir) notes_dir ;;
+  name) [[ $# -eq 2 ]] || { echo "usage: notes name <name>" >&2; exit 2; }; note_name "$2" ;;
+  list) list_notes ;;
+  grep) grep_notes "${2:-}" ;;
+  preview) preview "${2:-}" ;;
+  *) echo "usage: notes [dir|name <name>]" >&2; exit 2 ;;
+esac

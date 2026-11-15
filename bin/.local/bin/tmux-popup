@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
-# Persistent tmux popups: a scratch shell or Claude Code that keeps running between opens.
+# Persistent tmux popups: a scratch shell, Claude Code or the notes picker that keeps running between opens.
 # Each popup is a hidden session "_popup_<kind>_<parent>" attached inside display-popup.
-# Usage: tmux-popup open <shell|claude> <client> <parent session id> <dir>
+# Usage: tmux-popup open <shell|claude|notes> <client> <parent session id> <dir>
 #        tmux-popup cleanup           kill popup sessions whose parent session is gone
 #        tmux-popup rescue <client>   move a normal client out of a popup session
 #        tmux-popup next|prev <client>  switch to the next/previous normal session, skipping popup sessions
-# Env: TMUX_POPUP_CLAUDE_CMD replaces the command of the claude popup.
+# The notes popup ignores <dir> and starts in the notes folder.
+# Env: TMUX_POPUP_CLAUDE_CMD replaces the command of the claude popup; NOTES_DIR is the notes folder.
 set -euo pipefail
 
 prefix="_popup_" # every popup session name starts with this
@@ -18,10 +19,16 @@ popup_sessions() {
 
 # Create the popup session if missing, then show it in a popup on the client.
 open_popup() {
-  local kind="$1" client="$2" parent="$3" dir="$4" cmd=() name parent_name socket
+  local kind="$1" client="$2" parent="$3" dir="$4" cmd=() env=() name parent_name socket bin
   case "$kind" in
     shell) ;;
     claude) cmd=("${TMUX_POPUP_CLAUDE_CMD:-${SHELL:-sh} -ic claude}") ;; # interactive shell so a claude alias or function applies
+    notes) # the folder is fixed and passed on, since the server's environment may lack NOTES_DIR
+      bin="$(dirname "$0")/notes"
+      dir="$("$bin" dir)"
+      env=(-e "NOTES_DIR=$dir")
+      cmd=("$(printf '%q' "$bin")")
+      ;;
     *) echo "tmux-popup: unknown popup kind '$kind'" >&2; exit 2 ;;
   esac
   # Look up by parent id, not by name: the parent can be renamed.
@@ -32,7 +39,7 @@ open_popup() {
     if tmux has-session -t "=$name" 2>/dev/null; then name="$name-${parent#\$}"; fi # same name for another parent: add its id
     # One command so cleanup never sees the session without its parent mark; set without -t applies to the new session.
     # detach-on-destroy on: when the program exits, the popup closes instead of showing another session.
-    tmux new-session -d -s "$name" -c "$dir" ${cmd[@]+"${cmd[@]}"} \; \
+    tmux new-session -d -s "$name" -c "$dir" ${env[@]+"${env[@]}"} ${cmd[@]+"${cmd[@]}"} \; \
       set @popup_parent "$parent" \; \
       set @popup_kind "$kind" \; \
       set status off \; \
@@ -88,7 +95,7 @@ rescue() {
 
 [[ "${1:-}" == open ]] && { "$(dirname "$0")/dotfiles-log" tmux-popup >/dev/null 2>&1 || true; }
 case "${1:-}" in
-  open) [[ $# -eq 5 ]] || { echo "usage: tmux-popup open <shell|claude> <client> <parent id> <dir>" >&2; exit 2; }; open_popup "$2" "$3" "$4" "$5" ;;
+  open) [[ $# -eq 5 ]] || { echo "usage: tmux-popup open <shell|claude|notes> <client> <parent id> <dir>" >&2; exit 2; }; open_popup "$2" "$3" "$4" "$5" ;;
   cleanup) cleanup ;;
   rescue) [[ $# -eq 2 ]] || { echo "usage: tmux-popup rescue <client>" >&2; exit 2; }; rescue "$2" ;;
   next | prev) [[ $# -eq 2 ]] || { echo "usage: tmux-popup next|prev <client>" >&2; exit 2; }; step "$([[ $1 == next ]] && echo 1 || echo -1)" "$2" || true ;; # no other normal session: stay

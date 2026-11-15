@@ -42,7 +42,7 @@ Project missing? `tmux-sessionizer --list` prints `label<TAB>path` for every can
 
 ## Popups
 
-`bin/.local/bin/tmux-popup` runs them. The scratch shell (`` prefix ` ``) and Claude Code (`prefix A`) keep running: the same key hides them. Each is a hidden session `_popup_shell_<session>` / `_popup_claude_<session>`.
+`bin/.local/bin/tmux-popup` runs them. The scratch shell (`` prefix ` ``), Claude Code (`prefix A`) and notes (`prefix m`, see [Notes](#notes)) keep running: the same key hides them. Each is a hidden session `_popup_shell_<session>`, `_popup_claude_<session>` or `_popup_notes_<session>`.
 
 - `prefix s`, `prefix w`, `prefix (` and `prefix )` skip `_popup_*` sessions; `tmux ls` still shows them.
 - `prefix s` and `prefix w` list grouped sessions too (`choose-tree -G`); without it tmux 3.7 shows an empty list while a session group exists.
@@ -50,6 +50,19 @@ Project missing? `tmux-sessionizer --list` prints `label<TAB>path` for every can
 - They store their parent's session id (`@popup_parent`). `session-closed` and resurrect's post-restore hook run `tmux-popup cleanup` to kill orphans.
 - Claude runs as `$SHELL -ic claude`, so your `claude` function applies.
 - The border is set to rounded blue because tmux 3.8's solid grey reads badly on light themes.
+
+## Notes
+
+Plain Markdown files in `~/notes` (`$NOTES_DIR` overrides it). Local only: not a git repo, not synced. The scripts create the folder with mode 700 on first use. Notes can hold secrets, so keep them out of this repo.
+
+`prefix m` toggles the notes popup (`bin/.local/bin/notes`, a `notes` popup kind of `tmux-popup`). It always starts in the notes folder, and nvim keeps its buffer and cursor while the popup is hidden.
+
+- The picker lists notes newest first, with a preview (bat when installed, else cat). Typing filters by name.
+- `ctrl-g` switches to a ripgrep search of the contents and back; Enter opens nvim at the matching line. `ctrl-r` reloads the list.
+- A name that matches nothing plus Enter creates `<name>.md` (`/` and `..` are refused).
+- After nvim exits the picker returns. Esc hides the popup; it keeps running.
+- nvim runs with `-n -i NONE` and no undo or backup files, so nothing from a note lands in `~/.local/state`. Your nvim config is untouched.
+- `note "text"` or `pbpaste | note` appends the text to `inbox.md` under a `## YYYY-MM-DD HH:MM` heading from any shell and opens nothing.
 
 `prefix G` (`tmux-lazygit`) in a folder without `.git` that holds repos (a feature folder) opens the only repo, or asks which one.
 

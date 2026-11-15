@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Appends text to inbox.md in the notes folder under a timestamp heading, without opening anything.
+# Usage: note <text>          (save the words as one entry)
+#        pbpaste | note       (save stdin when there are no arguments)
+set -euo pipefail
+
+if [[ $# -gt 0 ]]; then
+  text="$*"
+elif [[ ! -t 0 ]]; then
+  text="$(cat)"
+else
+  echo "usage: note <text>   or   some-command | note" >&2
+  exit 2
+fi
+[[ -n "${text//[[:space:]]/}" ]] || { echo "note: nothing to save" >&2; exit 1; }
+
+dir="$("$(dirname "$0")/notes" dir)"
+(umask 077 && printf '## %s\n\n%s\n\n' "$(date '+%Y-%m-%d %H:%M')" "$text" >>"$dir/inbox.md")
+echo "saved to inbox.md"
