@@ -68,6 +68,15 @@ Plain Markdown files in `~/notes` (`$NOTES_DIR` overrides it). Local only: not a
 
 `prefix R` (`bin/.local/bin/review`) opens the folder's changes in nvim diffview, one window per repo; see [Reviewing in Neovim](git.md#reviewing-in-neovim).
 
+## Edit the clipboard (`prefix e`)
+
+`prefix e` opens the clipboard text in nvim in a popup (`bin/.local/bin/clipedit`, also a plain command). Edit it, then:
+
+- `:wq` copies the text back to the clipboard and closes; paste as usual. The final newline stays as it was.
+- `:q!` closes and leaves the clipboard as it was. `:cq` does the same.
+- `<leader>m` (space) in that buffer replaces common secrets with `***`: GitHub, `sk-`, Slack and AWS keys, JWTs, `Bearer` and `Authorization` values, `password`/`secret`/`token`/`api_key`/`access_key`/`private_key` pairs and PEM private key blocks. It keeps the name or prefix (`password=***`, `ghp_***`), reports how many lines changed and is one undo step (`u`). It never runs by itself. The patterns are in `bin/.local/share/clipedit/mask.pl`.
+- Nothing is left behind: the text lives in a mode 700 temp folder removed on exit, the popup is not a persistent session, and nvim runs with `-n -i NONE` and no undo or backup files. Your nvim config is untouched.
+
 ## Zen mode (`prefix Z`)
 
 `prefix Z` centers the window in a column: `bin/.local/bin/tmux-zen` adds an empty, input-less pad pane on each side and hides the pane borders. Press it again to remove the pads. The column is `@zen_width` wide (default 120; set it in `local.conf`); a window narrower than `@zen_width` + 20 is left alone.

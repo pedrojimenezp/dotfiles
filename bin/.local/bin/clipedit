@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# Edits the clipboard text in nvim before pasting: :wq copies it back, :q! leaves the clipboard unchanged.
+# In the buffer, <leader>m masks common secrets with *** (patterns in bin/.local/share/clipedit/mask.pl).
+# Nothing is kept: the text lives in a mode 700 temp folder removed on exit, and nvim writes no swap, undo or shada file.
+# Usage: clipedit
+set -euo pipefail
+
+for c in pbpaste pbcopy nvim; do
+  command -v "$c" >/dev/null 2>&1 || { echo "clipedit: $c is not installed" >&2; exit 1; }
+done
+
+self="$0"
+while [[ -L "$self" ]]; do # the command is a symlink into the repo
+  link="$(readlink "$self")"
+  case "$link" in /*) self="$link" ;; *) self="$(dirname "$self")/$link" ;; esac
+done
+share="$(cd "$(dirname "$self")/../share/clipedit" && pwd)"
+
+umask 077
+tmp="$(mktemp -d)"
+cleanup() { rm -rf "$tmp"; }
+trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+trap 'exit 129' HUP
+
+pbpaste >"$tmp/clipboard.txt"
+cp "$tmp/clipboard.txt" "$tmp/original"
+
+# nofixeol keeps the final newline as the text had it. :cq (non-zero exit) also cancels.
+if nvim -n -i NONE -c 'set noundofile noswapfile nobackup nowritebackup nofixeol' -c "luafile $share/clipedit.lua" -- "$tmp/clipboard.txt" && ! cmp -s "$tmp/original" "$tmp/clipboard.txt"; then
+  pbcopy <"$tmp/clipboard.txt"
+fi
