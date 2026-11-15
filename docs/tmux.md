@@ -42,12 +42,12 @@ Project missing? `tmux-sessionizer --list` prints `label<TAB>path` for every can
 
 ## Popups
 
-`bin/.local/bin/tmux-popup` runs them. The scratch shell (`` prefix ` ``), Claude Code (`prefix A`) and notes (`prefix m`, see [Notes](#notes)) keep running: the same key hides them. Each is a hidden session `_popup_shell_<session>`, `_popup_claude_<session>` or `_popup_notes_<session>`.
+`bin/.local/bin/tmux-popup` runs them. The scratch shell (`` prefix ` ``), Claude Code (`prefix A`) and notes (`prefix m`, see [Notes](#notes)) keep running: the same key hides them. Each is a hidden session `_popup_shell_<session>` or `_popup_claude_<session>`; notes is the one `_popup_notes` for every session.
 
 - `prefix s`, `prefix w`, `prefix (` and `prefix )` skip `_popup_*` sessions; `tmux ls` still shows them.
 - `prefix s` and `prefix w` list grouped sessions too (`choose-tree -G`); without it tmux 3.7 shows an empty list while a session group exists.
 - A `client-session-changed` hook moves you off a popup session you land in after a kill.
-- They store their parent's session id (`@popup_parent`). `session-closed` and resurrect's post-restore hook run `tmux-popup cleanup` to kill orphans.
+- They store their parent's session id (`@popup_parent`). `session-closed` and resurrect's post-restore hook run `tmux-popup cleanup` to kill orphans. `_popup_notes` has no parent and lives until the server exits; a copy restored by resurrect is killed.
 - Claude runs as `$SHELL -ic claude`, so your `claude` function applies.
 - The border is set to rounded blue because tmux 3.8's solid grey reads badly on light themes.
 
@@ -55,10 +55,10 @@ Project missing? `tmux-sessionizer --list` prints `label<TAB>path` for every can
 
 Plain Markdown files in `~/notes` (`$NOTES_DIR` overrides it). Local only: not a git repo, not synced. The scripts create the folder with mode 700 on first use. Notes can hold secrets, so keep them out of this repo.
 
-`prefix m` toggles the notes popup (`bin/.local/bin/notes`, a `notes` popup kind of `tmux-popup`). It always starts in the notes folder, and nvim keeps its buffer and cursor while the popup is hidden.
+`prefix m` toggles the notes popup (`bin/.local/bin/notes`, a `notes` popup kind of `tmux-popup`). It always starts in the notes folder, and nvim keeps its buffer and cursor while the popup is hidden. There is one popup for every tmux session, so only one nvim has the notes open (with no swap files, two would overwrite each other). Opening it from a second terminal takes it over: the first one is detached.
 
 - The picker lists notes newest first, with a preview (bat when installed, else cat). Typing filters by name.
-- `ctrl-g` switches to a ripgrep search of the contents and back; Enter opens nvim at the matching line. `ctrl-r` reloads the list.
+- `ctrl-g` switches to a ripgrep search of the contents and back; Enter opens nvim at the matching line. `ctrl-r` (or F5) reloads the list; opening the popup again does it for you, so notes saved by `note` show up. A content search keeps its results.
 - A name that matches nothing plus Enter creates `<name>.md` (`/` and `..` are refused).
 - After nvim exits the picker returns. Esc hides the popup; it keeps running.
 - nvim runs with `-n -i NONE` and no undo or backup files, so nothing from a note lands in `~/.local/state`. Your nvim config is untouched.

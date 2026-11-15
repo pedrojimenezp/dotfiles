@@ -3,7 +3,7 @@
 # Usage: notes                 (pick a note by name; type a new name and Enter to create it; Esc quits)
 #        notes dir             (print the notes folder, creating it with mode 700)
 #        notes name <name>     (print the file name a typed name creates: .md added; "/" and ".." are refused)
-# In the picker: ctrl-g switches between name filter and ripgrep content search, ctrl-r reloads the list.
+# In the picker: ctrl-g switches between name filter and ripgrep content search, ctrl-r (and F5) reloads the list.
 # Enter on a content match opens nvim at that line. In a tmux session whose @popup_kind is notes, Esc detaches the client instead of quitting.
 # The picker calls list, grep <pattern> and preview <fzf line> on this script.
 set -euo pipefail
@@ -65,12 +65,14 @@ open_note() {
 
 # Print the selected line, preceded by "new <name>" when Enter was pressed on a name that matches nothing.
 choose() {
-  local out rc=0 query sel
+  local out rc=0 query sel refresh
+  # F5 is also sent by tmux when the popup is attached again. A content search keeps its results.
+  refresh="[[ \$FZF_PROMPT == 'name> ' ]] && echo \"reload('$self' list)\" || echo ignore"
   out="$(list_notes | fzf --print-query --no-sort --prompt 'name> ' \
     --header 'enter open/create  ctrl-g content search  ctrl-r reload  esc hide' \
     --preview "'$self' preview {}" --preview-window 'right:60%' \
     --bind "start:unbind(change)" \
-    --bind "ctrl-r:reload('$self' list)" \
+    --bind "ctrl-r:transform:$refresh" --bind "f5:transform:$refresh" \
     --bind "ctrl-g:transform:if [[ \$FZF_PROMPT == 'name> ' ]]; then
       echo \"change-prompt(grep> )+disable-search+rebind(change)+change-header(enter open at line  ctrl-g name filter  esc hide)+clear-query+reload('$self' grep)\"
     else
@@ -94,6 +96,11 @@ in_popup() {
   [[ -n "${TMUX:-}" && "$(tmux display-message -p '#{@popup_kind}' 2>/dev/null)" == notes ]]
 }
 
+# Records what is on screen (picker or editor) in the session option @notes_view.
+set_view() {
+  ! in_popup || tmux set -q @notes_view "$1"
+}
+
 picker() {
   command -v fzf >/dev/null 2>&1 || { echo "notes: fzf is not installed" >&2; exit 1; }
   command -v nvim >/dev/null 2>&1 || { echo "notes: nvim is not installed" >&2; exit 1; }
@@ -102,6 +109,7 @@ picker() {
   local rc pick file line
   while true; do
     rc=0
+    set_view picker
     pick="$(choose)" || rc=$?
     if [[ $rc -ne 0 ]]; then
       in_popup || exit 0
@@ -116,6 +124,7 @@ picker() {
     else
       split_line "$pick"
     fi
+    set_view editor
     open_note "$file" "$line"
   done
 }

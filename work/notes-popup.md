@@ -9,7 +9,9 @@ Terminal notes workflow: `prefix m` popup with an fzf picker over `~/notes` (`$N
 3. Tests, docs in docs/tmux.md.
 
 ## Done
-- All three steps; tests/notes_test.sh passes; real fzf, nvim and tmux checked on private sockets.
+- notes picker, note capture, notes popup kind, tests, docs.
+- One global `_popup_notes` session (cleanup keeps it, a second open detaches the first with attach -d).
+- Picker refreshes on reattach: client-attached hook sends F5 only while @notes_view is picker.
 
 ## Where we stopped
 Ready for review. Not checked in a real tmux client with display-popup.
@@ -21,6 +23,6 @@ Review, then `/merge`. Remove this note before merging if the repo should not ke
 `bash tests/notes_test.sh`, `tests/run.sh`; by hand: `prefix m`, Esc, `prefix m` again.
 
 ## Open questions
-- Popup session is per parent session (like shell and claude), so each tmux session has its own notes nvim.
+- None.
 
 Updated: 2026-11-14 by personal@Pedros-MacBook-Pro-M4

@@ -29,6 +29,8 @@ unset TMUX
 args=("\$@")
 if [[ \${args[0]} == display-message && " \$* " == *" -c "* && \${args[*]} == *session_name* ]]; then
   cat "$CUR"
+elif [[ \${args[0]} == display-popup ]]; then
+  echo "\$*" >>"$ROOT/popup.log"
 elif [[ \${args[0]} == switch-client ]]; then
   t="\${args[*]}"; t="\${t##*-t =}"; echo "\$t" >"$CUR"
 else
@@ -63,6 +65,28 @@ T kill-session -t beta
 pop cleanup
 check_eq "cleanup: parent killed later takes nothing else" "1" "$(T list-sessions -F '#{session_name}' | grep -cx _popup_shell_alpha)"
 T new-session -d -s beta -c "$ROOT"
+
+echo "== notes popup"
+export NOTES_DIR="$ROOT/notes"
+pop open notes client "$alpha_id" "$ROOT"
+pop open notes client "$(T display-message -p -t =gamma: '#{session_id}')" "$ROOT"
+check_eq "open: one notes session for every parent" "1" "$(T list-sessions -F '#{session_name}' | grep -c '^_popup_notes')"
+check_eq "open: starts in the notes folder" "$NOTES_DIR" "$(T display-message -p -t =_popup_notes: '#{session_path}')"
+check_eq "open: folder created with mode 700" "700" "$(stat -f %Lp "$NOTES_DIR" 2>/dev/null || stat -c %a "$NOTES_DIR")"
+contains "open: attaches with -d so one client views it" "attach-session -d -t '=_popup_notes'" "$(tail -1 "$ROOT/popup.log")"
+contains "open: attach hook sends the refresh key to a picker only" "@notes_view" "$(T show-hooks -t =_popup_notes:)"
+pop cleanup
+check_eq "cleanup: notes popup stays without a parent" "1" "$(T list-sessions -F '#{session_name}' | grep -cx _popup_notes)"
+T kill-session -t gamma
+pop cleanup
+check_eq "cleanup: notes popup stays when a parent it was opened from is gone" "1" "$(T list-sessions -F '#{session_name}' | grep -cx _popup_notes)"
+T kill-session -t _popup_notes
+T new-session -d -s gamma -c "$ROOT"
+mk_popup _popup_notes
+pop cleanup
+check_eq "cleanup: a restored notes session (no marks) is killed" "0" "$(T list-sessions -F '#{session_name}' | grep -cx _popup_notes)"
+pop cleanup
+check_eq "cleanup: popup sessions for the other kinds still cleaned" "0" "$(T list-sessions -F '#{session_name}' | grep -c '^_popup_shell_orphan')"
 
 echo "== next and prev skip popup sessions"
 first="$(T list-sessions -F '#{session_name}' | grep -v '^_popup_' | head -1)"

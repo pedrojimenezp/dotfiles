@@ -19,7 +19,7 @@ popup_sessions() {
 
 # Create the popup session if missing, then show it in a popup on the client.
 open_popup() {
-  local kind="$1" client="$2" parent="$3" dir="$4" cmd=() env=() name parent_name socket bin
+  local kind="$1" client="$2" parent="$3" dir="$4" cmd=() env=() attach_flags=() name_new=1 name parent_name socket bin
   case "$kind" in
     shell) ;;
     claude) cmd=("${TMUX_POPUP_CLAUDE_CMD:-${SHELL:-sh} -ic claude}") ;; # interactive shell so a claude alias or function applies
@@ -31,32 +31,51 @@ open_popup() {
       ;;
     *) echo "tmux-popup: unknown popup kind '$kind'" >&2; exit 2 ;;
   esac
-  # Look up by parent id, not by name: the parent can be renamed.
-  name="$(popup_sessions | awk -F'\t' -v p="$parent" -v k="$kind" '$2 == p && $3 == k { print $1; exit }')"
-  if [[ -z "$name" ]]; then
-    parent_name="$(tmux display-message -p -t "$parent" '#{session_name}')"
-    name="${prefix}${kind}_$(printf '%s' "$parent_name" | tr -c 'A-Za-z0-9_-' '-')" # readable in tmux ls; no . or : for targets
-    if tmux has-session -t "=$name" 2>/dev/null; then name="$name-${parent#\$}"; fi # same name for another parent: add its id
-    # One command so cleanup never sees the session without its parent mark; set without -t applies to the new session.
+  if [[ "$kind" == notes ]]; then
+    # One for the whole server: two nvims on a note would overwrite each other, as there is no swap file to warn.
+    name="${prefix}notes"
+    attach_flags=(-d) # one view at a time: attaching detaches the other client
+    if tmux has-session -t "=$name" 2>/dev/null; then name_new=0; fi
+  else
+    # Look up by parent id, not by name: the parent can be renamed.
+    name="$(popup_sessions | awk -F'\t' -v p="$parent" -v k="$kind" '$2 == p && $3 == k { print $1; exit }')"
+    if [[ -n "$name" ]]; then name_new=0; fi
+  fi
+  if [[ "$name_new" == 1 ]]; then
+    if [[ "$kind" == notes ]]; then
+      parent="" # no parent session owns it: cleanup keeps it until the server exits
+    else
+      parent_name="$(tmux display-message -p -t "$parent" '#{session_name}')"
+      name="${prefix}${kind}_$(printf '%s' "$parent_name" | tr -c 'A-Za-z0-9_-' '-')" # readable in tmux ls; no . or : for targets
+      if tmux has-session -t "=$name" 2>/dev/null; then name="$name-${parent#\$}"; fi # same name for another parent: add its id
+    fi
+    # One command so cleanup never sees the session without its marks; set without -t applies to the new session.
     # detach-on-destroy on: when the program exits, the popup closes instead of showing another session.
     tmux new-session -d -s "$name" -c "$dir" ${env[@]+"${env[@]}"} ${cmd[@]+"${cmd[@]}"} \; \
       set @popup_parent "$parent" \; \
       set @popup_kind "$kind" \; \
       set status off \; \
       set detach-on-destroy on
+    if [[ "$kind" == notes ]]; then
+      # Attaching again refreshes the picker's list. Only a picker on screen (@notes_view) gets the key: in nvim it would be a command.
+      tmux set-hook -t "=$name:" client-attached "if-shell -F '#{==:#{@notes_view},picker}' 'send-keys F5'"
+    fi
   fi
   socket="$(tmux display-message -p '#{socket_path}')" # the inner client must reach this same server
   # TMUX= lets tmux attach from inside tmux; the popup closes when that client detaches (-E).
   tmux display-popup -c "$client" -E -w 85% -h 85% -T " ${kind} " \
-    "TMUX= tmux -S '$socket' attach-session -t '=$name'"
+    "TMUX= tmux -S '$socket' attach-session ${attach_flags[*]-} -t '=$name'"
 }
 
 # Kill popup sessions whose parent is gone; restored ones (resurrect) have no parent mark at all.
+# The notes popup has no parent: it is kept while its @popup_kind mark is there (a restored one has lost it).
 cleanup() {
   local name parent _kind live
   live="$(tmux list-sessions -F '#{session_id}' 2>/dev/null || true)"
   while IFS=$'\t' read -r name parent _kind; do
     [[ -n "$name" ]] || continue
+    # Asked per session: read would merge the empty parent field with the kind.
+    [[ "$(tmux display-message -p -t "=$name:" '#{@popup_kind}')" != notes ]] || continue
     if [[ -z "$parent" ]] || ! grep -qxF -- "$parent" <<<"$live"; then
       tmux kill-session -t "=$name" 2>/dev/null || true
     fi
