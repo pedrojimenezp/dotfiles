@@ -20,6 +20,11 @@ shell-integration = zsh
 # install the terminfo on servers instead.
 shell-integration-features = cursor,sudo,title,no-ssh-env,no-ssh-terminfo
 
+# Shells inside tmux don't get the integration's bar, and tmux's colour reset
+# falls back to the light theme's cursor colour.
+cursor-style = bar
+cursor-color = cell-foreground
+
 keybind = cmd+d=new_split:right
 keybind = cmd+shift+d=new_split:down
 keybind = cmd+shift+enter=toggle_split_zoom
