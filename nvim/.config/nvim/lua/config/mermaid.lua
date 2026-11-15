@@ -3,7 +3,7 @@ local M = {}
 local OPEN = "^%s*```+%s*mermaid%s*$"
 local CLOSE = "^%s*```+%s*$"
 
--- Returns the body lines of the ```mermaid block that contains `row` (1-based, fences included), or nil.
+-- Returns the body lines of the ```mermaid block containing `row` (1-based; a fence line counts), or nil.
 function M.find_block(lines, row)
   local start
   for i, line in ipairs(lines) do
