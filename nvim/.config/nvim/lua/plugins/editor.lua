@@ -33,6 +33,7 @@ return {
         { "<leader>h", group = "Hunks" },
         { "<leader>d", group = "Diagnostics" },
         { "<leader>u", group = "UI" },
+        { "<leader>m", group = "Markdown" },
       },
     },
   },

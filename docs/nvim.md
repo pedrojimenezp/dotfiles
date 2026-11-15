@@ -12,6 +12,7 @@ Needs Neovim 0.12+, `git` and network on the first start, the `tree-sitter` CLI 
 | `lua/config/options.lua`, `keymaps.lua`, `autocmds.lua` | Options, general keymaps, autocommands |
 | `lua/config/lazy.lua` | Bootstraps lazy.nvim, loads `lua/plugins/*.lua` |
 | `lua/config/theme.lua` | Colors that follow the dotfiles theme |
+| `lua/config/mermaid.lua` | Finds the Mermaid block under the cursor and shows it rendered by `mermaid-ascii` |
 | `lua/plugins/*.lua` | One file per topic |
 
 ## Decisions
@@ -29,6 +30,7 @@ Needs Neovim 0.12+, `git` and network on the first start, the `tree-sitter` CLI 
 - **Plugin update checks are off**: update with `:Lazy` then `U`.
 - **`zls`, `shfmt`, `shellcheck` and `golangci-lint` come from mise**, not Mason: `zls` must match `zig`. bashls has shellcheck off, since nvim-lint runs it.
 - **Resize**: when the terminal or tmux pane is resized, windows in every tab are rebalanced; `winfixwidth` windows (diffview file panel) keep their width.
+- **Mermaid**: `<leader>md` in a Markdown file renders the ` ```mermaid ` block under the cursor (fences included) in a float; `q` or `Esc` closes it. Same diagram types as [mermaid-ascii](tools.md).
 - **Theme**: `<leader>ut` runs the `theme` script, then nvim reads the pair from `~/.config/theme/config` ([theme.md](theme.md)).
 
 ## Add a plugin

@@ -8,5 +8,6 @@ return {
   opts = {},
   keys = {
     { "<leader>um", "<cmd>RenderMarkdown buf_toggle<CR>", ft = "markdown", desc = "Toggle Markdown rendering" },
+    { "<leader>md", function() require("config.mermaid").preview() end, ft = "markdown", desc = "Preview Mermaid diagram" },
   },
 }
