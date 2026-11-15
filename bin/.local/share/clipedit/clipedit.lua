@@ -3,6 +3,8 @@ local dir = debug.getinfo(1, "S").source:sub(2):match("^(.*)/[^/]*$")
 
 Clipedit = Clipedit or {}
 
+local diff = (vim.text and vim.text.diff) or vim.diff -- vim.diff is deprecated in newer nvim
+
 -- Masks the whole buffer in one undo step. Returns the number of lines changed.
 function Clipedit.mask()
   local buf = vim.api.nvim_get_current_buf()
@@ -22,7 +24,7 @@ function Clipedit.mask()
   local new = vim.split(out, "\n", { plain = true })
   if eol then table.remove(new) end
   local changed = 0
-  for _, h in ipairs(vim.diff(table.concat(lines, "\n") .. "\n", table.concat(new, "\n") .. "\n", { result_type = "indices" })) do
+  for _, h in ipairs(diff(table.concat(lines, "\n") .. "\n", table.concat(new, "\n") .. "\n", { result_type = "indices" })) do
     changed = changed + h[2]
   end
   local view = vim.fn.winsaveview()

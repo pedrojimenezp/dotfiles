@@ -34,11 +34,11 @@ for my $line (@lines) {
     $line =~ s/\b(xox[abprs]-)[A-Za-z0-9-]{10,}/$1***/g;
     $line =~ s/\beyJ[A-Za-z0-9_-]{5,}\.[A-Za-z0-9_-]{5,}\.[A-Za-z0-9_-]*/eyJ***/g;
 
-    # A quoted value is masked whole, keeping its quotes; an unquoted one up to the next space, quote, comma, semicolon or &.
-    $line =~ s{(\b$key["']?\s*[:=]\s*)("[^"]+"|'[^']+'|[^\s"',;&]+)}{
+    # A quoted value is masked whole, keeping its quotes; an unquoted one to the end of the line, keeping trailing whitespace.
+    $line =~ s{(\b$key["']?\s*[:=]\s*)("[^"]+"|'[^']+'|\S.*?(?=\s*\z))}{
         my ($head, $val) = ($1, $2);
         my $q = $val =~ /^(["'])/ ? $1 : '';
         $head . $q . '***' . $q;
-    }gie;
+    }gies;
 }
 print @lines;
