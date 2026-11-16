@@ -67,4 +67,19 @@ function M.preview()
   M.float(res.stdout)
 end
 
+-- Opens the mermaid block under the cursor in the browser with mermaid-open, or every block when the
+-- cursor is outside one. Uses the buffer text as it is, unsaved edits included.
+function M.open()
+  if vim.fn.executable("mermaid-open") ~= 1 then
+    vim.notify("mermaid-open is not installed (stow bin)", vim.log.levels.ERROR)
+    return
+  end
+  local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+  local text = M.find_block(lines, vim.api.nvim_win_get_cursor(0)[1]) or lines
+  local res = vim.system({ "mermaid-open", "-" }, { stdin = table.concat(text, "\n") .. "\n", text = true }):wait()
+  if res.code ~= 0 then
+    vim.notify(vim.trim(res.stderr ~= "" and res.stderr or "mermaid-open failed"), vim.log.levels.ERROR)
+  end
+end
+
 return M

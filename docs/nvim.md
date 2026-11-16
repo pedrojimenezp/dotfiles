@@ -12,7 +12,7 @@ Needs Neovim 0.12+, `git` and network on the first start, the `tree-sitter` CLI 
 | `lua/config/options.lua`, `keymaps.lua`, `autocmds.lua` | Options, general keymaps, autocommands |
 | `lua/config/lazy.lua` | Bootstraps lazy.nvim, loads `lua/plugins/*.lua` |
 | `lua/config/theme.lua` | Colors that follow the dotfiles theme |
-| `lua/config/mermaid.lua` | Finds the Mermaid block under the cursor and shows it rendered by `mermaid-ascii` |
+| `lua/config/mermaid.lua` | Finds the Mermaid block under the cursor; shows it rendered by `mermaid-ascii` or opens it with `mermaid-open` |
 | `lua/plugins/*.lua` | One file per topic |
 
 ## Decisions
@@ -31,6 +31,7 @@ Needs Neovim 0.12+, `git` and network on the first start, the `tree-sitter` CLI 
 - **`zls`, `shfmt`, `shellcheck` and `golangci-lint` come from mise**, not Mason: `zls` must match `zig`. bashls has shellcheck off, since nvim-lint runs it.
 - **Resize**: when the terminal or tmux pane is resized, windows in every tab are rebalanced; `winfixwidth` windows (diffview file panel) keep their width.
 - **Mermaid**: `<leader>md` in a Markdown file renders the ` ```mermaid ` block under the cursor (fences included) in a float; `q` or `Esc` closes it. Same diagram types as [mermaid-ascii](tools.md).
+- **Mermaid in the browser**: `<leader>mo` runs `mermaid-open` on the buffer's current text (unsaved edits included): only the block under the cursor, or every block when the cursor is outside one. `mermaid-open [file]` also works in a shell on a `.md` file (every block), a `.mmd` or `.mermaid` file (one diagram) or stdin. It writes one page to a private temp folder, opens it with `open` (macOS) or `xdg-open` (Linux) and deletes its own pages older than a day. The page works offline (mermaid.js is vendored, see `bin/.local/share/mermaid-open/README`), follows the system light/dark setting and shows the error text of a diagram that fails.
 - **Theme**: `<leader>ut` runs the `theme` script, then nvim reads the pair from `~/.config/theme/config` ([theme.md](theme.md)).
 
 ## Add a plugin

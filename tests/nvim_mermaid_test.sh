@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Tests nvim's config/mermaid.lua: block lookup (cursor inside, on either fence, outside, two blocks)
-# and the float with the mermaid-ascii output. Offline, no plugins.
+# the float with the mermaid-ascii output, and open() (block under the cursor vs the whole buffer, with a
+# stub mermaid-open on PATH that records its stdin). Offline, no plugins.
 # Run: bash tests/nvim_mermaid_test.sh
 set -euo pipefail
 
@@ -53,13 +54,46 @@ if vim.fn.executable("mermaid-ascii") == 1 then
   check("q closes", vim.api.nvim_get_current_buf() ~= buf)
   check("file untouched", vim.deep_equal(before, vim.api.nvim_buf_get_lines(0, 0, -1, false)))
 end
+
+local rec = vim.env.MO_STUB_OUT
+vim.cmd("enew")
+vim.bo.filetype = "markdown"
+vim.api.nvim_buf_set_lines(0, 0, -1, false, lines)
+local function opened(row)
+  vim.fn.delete(rec)
+  vim.api.nvim_win_set_cursor(0, { row, 0 })
+  m.open()
+  return vim.fn.filereadable(rec) == 1 and table.concat(vim.fn.readfile(rec), "|") or nil
+end
+check("open: cursor in block sends only it", opened(4) == "graph LR|A --> B")
+check("open: second block", opened(12) == "graph TD|C --> D")
+check("open: outside sends the buffer", opened(6) == table.concat(lines, "|"))
+check("open: other fence sends the buffer", opened(8) == table.concat(lines, "|"))
+vim.api.nvim_buf_set_lines(0, 3, 4, false, { "A --> Z" })
+check("open: unsaved edit is sent", opened(3) == "graph LR|A --> Z")
+local seen
+vim.notify = function(msg, level) seen = level end
+vim.env.MO_STUB_FAIL = "1"
+opened(4)
+check("open: failure is reported", seen == vim.log.levels.ERROR)
 io.stdout:write(#problems == 0 and "ok" or table.concat(problems, "; "))
 '
+
+STUB="$(mktemp -d)"
+trap 'rm -rf "$STUB"' EXIT
+cat >"$STUB/mermaid-open" <<'EOS'
+#!/bin/sh
+[ -n "${MO_STUB_FAIL:-}" ] && { echo "boom" >&2; exit 1; }
+cat >"$MO_STUB_OUT"
+EOS
+chmod +x "$STUB/mermaid-open"
+export MO_STUB_OUT="$STUB/stdin"
+PATH="$STUB:$PATH"
 
 out="$(nvim --headless -u NONE -i NONE --cmd "set rtp^=$SRC/nvim/.config/nvim" \
   -c "lua $LUA" -c "qa!" 2>&1 | tr -d '\r' | tail -n 1)"
 if [[ "$out" == ok ]]; then
-  echo "  ok   mermaid block lookup and float"
+  echo "  ok   mermaid block lookup, float and open"
 else
   echo "  FAIL $out"
   exit 1

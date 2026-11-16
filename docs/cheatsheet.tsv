@@ -19,6 +19,7 @@ nvim	gd (right side of a diffview)	go to definition with the language server; Ct
 nvim	<leader>ut	toggle light/dark	docs/nvim.md
 nvim	<leader>um	toggle Markdown rendering (render-markdown.nvim)	docs/nvim.md
 nvim	<leader>md	preview the Mermaid block under the cursor as text in a float (Markdown files; q or Esc closes)	docs/nvim.md
+nvim	<leader>mo	open the Mermaid block under the cursor (or every block) in the browser, offline; same as mermaid-open (Markdown files)	docs/nvim.md
 command	theme toggle / pick / dark / light / auto	light/dark theme; theme set nvim-light|nvim-dark <name> picks Neovim's own; theme help lists every subcommand	docs/theme.md
 git tool	n / N, q (in delta)	next / previous file, quit	docs/git.md
 git tool	lazygit: space	stage or unstage a file	docs/git.md

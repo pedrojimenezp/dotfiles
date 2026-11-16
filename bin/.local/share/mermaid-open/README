@@ -1,0 +1,8 @@
+mermaid.min.js: mermaid 12.3.0, dist/mermaid.min.js from the npm tarball (a single IIFE bundle, MIT, LICENSE here).
+Tarball integrity (sha512): 4113TdXeLAsMruJ79OpFL5O8+LTFXhQqZ260rF3tgUmiNAtRm4Uume04I+65PRN6yZ69J4f8rVYWW8zRk65UYw==
+The release has npm provenance (dist.attestations, SLSA v1).
+
+Update: in a new empty temp folder run `npm pack mermaid@<version> --ignore-scripts` (no npm install), compare
+`openssl dgst -sha512 -binary <tgz> | base64` with `npm view mermaid@<version> dist.integrity`, check
+`npm view mermaid@<version> dist.attestations`, extract package/dist/mermaid.min.js and package/LICENSE here,
+and change the version and hash above.
