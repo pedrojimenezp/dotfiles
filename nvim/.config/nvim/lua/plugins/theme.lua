@@ -25,6 +25,17 @@ return {
     "rose-pine/neovim",
     name = "rose-pine",
     lazy = true,
+    -- The default styles.italic also italicizes variables, parameters and properties.
+    -- Keep italics for comments and emphasis.
+    opts = {
+      styles = { italic = false },
+      highlight_groups = {
+        Comment = { italic = true },
+        ["@markup.italic"] = { italic = true },
+        ["@text.emphasis"] = { italic = true },
+        htmlItalic = { italic = true },
+      },
+    },
   },
   {
     "catppuccin/nvim",
