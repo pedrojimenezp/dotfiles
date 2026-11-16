@@ -46,7 +46,7 @@ done
 
 # Runs config.theme.load() twice for a name with the config in both slots: first in `bg`, then in
 # the other background. Prints "ok" or the problem. A scheme that forces 'background' is checked
-# against its listed brightness.
+# against its listed brightness. No group may be italic, except italic document text.
 LUA_LOAD='
 local want, bg = vim.env.WANT_SCHEME, vim.env.WANT_BG
 want = want:match("^onedark%-") and "onedark" or want:match("^nova%-") and "nova" or want -- one colorscheme, many styles
@@ -57,12 +57,22 @@ local function normal() return vim.api.nvim_get_hl(0, { name = "Normal" }).bg en
 vim.o.background = bg
 theme.load()
 local first = normal()
+local italic = {} -- groups with italics other than italic document text
+for name, hl in pairs(vim.api.nvim_get_hl(0, {})) do
+  local l = name:lower()
+  if not hl.link and not l:find("italic", 1, true) and not l:find("emphasis", 1, true)
+      and (hl.italic or (hl.cterm and hl.cterm.italic)) then
+    italic[#italic + 1] = name
+  end
+end
+table.sort(italic)
 local bg_after = vim.o.background
 vim.o.background = bg == "light" and "dark" or "light"
 theme.load()
 local problems = {}
 if seen[1] ~= want then table.insert(problems, "loaded " .. tostring(seen[1])) end
 if bg_after ~= bg then table.insert(problems, "background became " .. bg_after) end
+if #italic > 0 then table.insert(problems, "italic groups: " .. table.concat(italic, ", ")) end
 if normal() ~= first then table.insert(problems, "variant changed with the other background") end
 io.stdout:write(#problems == 0 and "ok" or table.concat(problems, "; "))
 '

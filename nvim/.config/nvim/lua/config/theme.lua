@@ -89,6 +89,20 @@ local function plugin_scheme(name)
   return theme.scheme
 end
 
+-- Italics are hard to read: turns them off in every group except italic document text
+-- (names with "italic" or "emphasis", like @markup.italic). Linked groups follow their target.
+local function no_italics()
+  for name, hl in pairs(vim.api.nvim_get_hl(0, {})) do
+    local lname = name:lower()
+    if not hl.link and not lname:find("italic", 1, true) and not lname:find("emphasis", 1, true)
+        and (hl.italic or (hl.cterm and hl.cterm.italic)) then
+      hl.italic = false
+      if hl.cterm then hl.cterm.italic = false end
+      vim.api.nvim_set_hl(0, name, hl)
+    end
+  end
+end
+
 function M.load()
   if loading then return end -- re-entered through a 'background' change
   loading = true
@@ -103,12 +117,18 @@ function M.load()
   M.applied_bg = bg -- a plugin scheme may force 'background' to the other value
   vim.g.dotfiles_theme = name
   vim.g.colors_name = nil -- see the header
+  no_italics() -- covers a scheme that fires no ColorScheme
   require("config.diff_colors").apply() -- covers a scheme that fires no ColorScheme
   loading = false
 end
 
 function M.setup()
   require("config.diff_colors").setup()
+  vim.api.nvim_create_autocmd("ColorScheme", {
+    group = vim.api.nvim_create_augroup("dotfiles_no_italics", { clear = true }),
+    desc = "No italics in any colorscheme",
+    callback = no_italics,
+  })
   local want = M.mode() -- nil = keep nvim's detected background
   if want then vim.o.background = want end
   M.load()
