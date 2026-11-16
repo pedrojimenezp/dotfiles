@@ -3,14 +3,15 @@ local M = {}
 local OPEN = "^%s*```+%s*mermaid%s*$"
 local CLOSE = "^%s*```+%s*$"
 
--- Returns the body lines of the ```mermaid block containing `row` (1-based; a fence line counts), or nil.
+-- Returns the body lines of the ```mermaid block containing `row` (1-based; a fence line counts) and the
+-- line of its opening fence, or nil.
 function M.find_block(lines, row)
   local start
   for i, line in ipairs(lines) do
     if not start then
       if line:match(OPEN) then start = i end
     elseif line:match(CLOSE) then
-      if row >= start and row <= i then return vim.list_slice(lines, start + 1, i - 1) end
+      if row >= start and row <= i then return vim.list_slice(lines, start + 1, i - 1), start end
       start = nil
     end
   end
@@ -67,18 +68,26 @@ function M.preview()
   M.float(res.stdout)
 end
 
--- Opens the mermaid block under the cursor in the browser with mermaid-open, or every block when the
--- cursor is outside one. Uses the buffer text as it is, unsaved edits included.
+-- Opens the buffer in the browser with md-open, from the buffer text as it is (unsaved edits included).
+-- With the cursor in a mermaid block, sends only that block as one diagram named <file>:<fence line>;
+-- otherwise sends the whole buffer as rendered Markdown, relative paths resolved from the buffer's folder.
 function M.open()
-  if vim.fn.executable("mermaid-open") ~= 1 then
-    vim.notify("mermaid-open is not installed (stow bin)", vim.log.levels.ERROR)
+  if vim.fn.executable("md-open") ~= 1 then
+    vim.notify("md-open is not installed (stow bin)", vim.log.levels.ERROR)
     return
   end
   local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
-  local text = M.find_block(lines, vim.api.nvim_win_get_cursor(0)[1]) or lines
-  local res = vim.system({ "mermaid-open", "-" }, { stdin = table.concat(text, "\n") .. "\n", text = true }):wait()
+  local file = vim.fn.expand("%:t")
+  if file == "" then file = "untitled.md" end
+  local cmd = { "md-open", "--name", file, "--dir", vim.fn.expand("%:p:h"), "-" }
+  local body, start = M.find_block(lines, vim.api.nvim_win_get_cursor(0)[1])
+  if body then
+    lines = body
+    cmd = { "md-open", "--name", file .. ":" .. start, "-" }
+  end
+  local res = vim.system(cmd, { stdin = table.concat(lines, "\n") .. "\n", text = true }):wait()
   if res.code ~= 0 then
-    vim.notify(vim.trim(res.stderr ~= "" and res.stderr or "mermaid-open failed"), vim.log.levels.ERROR)
+    vim.notify(vim.trim(res.stderr ~= "" and res.stderr or "md-open failed"), vim.log.levels.ERROR)
   end
 end
 

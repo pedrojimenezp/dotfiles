@@ -1,0 +1,27 @@
+Libraries for md-open, vendored so the page works offline. Each was fetched with `npm pack <pkg>@<version> --ignore-scripts`
+into a fresh empty folder (no npm install), and the tarball's sha512 matched the registry's dist.integrity.
+
+file                          package                        version  license       provenance (dist.attestations, SLSA v1)
+marked.umd.js                 marked                         18.2.0   MIT           yes
+purify.min.js                 dompurify                      3.4.18   Apache-2.0/MPL-2.0  no (published by cure53, the project's maintainer)
+highlight.min.js, github.min.css, github-dark.min.css
+                              @highlightjs/cdn-assets        11.12.0  BSD-3-Clause  yes
+github-markdown.css           github-markdown-css            5.9.0    MIT           no (published by sindresorhus, the project's maintainer)
+mermaid.min.js                mermaid                        12.3.0   MIT           yes
+
+Tarball integrity (sha512):
+marked 18.2.0                KaeL+tAbtvI930q7HE2PN5lYXYdT8EiSmxHlN6F3rsfb57wd5mp5W5TLazpdj4inTQBJdgjYwbs40W/0VUGU+Q==
+dompurify 3.4.18             ofe3wI/uNm68HInABYFJYqQxRw1EaKAjNdrFVKqjUY+UZurvNd2L/HuQe097s/4RivWiZyP6tT7aoT8atjfhwg==
+@highlightjs/cdn-assets 11.12.0  KvOKXODaiFmId9xaq3xc5xCL66wVLUuOngDbO9B/kewbFTqdGbn2nJxNhN3H5R1cgDTVj6R8vH0zgiNDEGjpDw==
+github-markdown-css 5.9.0    tmT5sY+zvg2302XLYEfH2mtkViIM1SWf2nvYoF5N1ZsO0V6B2qZTiw3GOzw4vpjLygK/KG35qRlPFweHqfzz5w==
+mermaid 12.3.0              4113TdXeLAsMruJ79OpFL5O8+LTFXhQqZ260rF3tgUmiNAtRm4Uume04I+65PRN6yZ69J4f8rVYWW8zRk65UYw==
+
+Where each file sits in its tarball: marked lib/marked.umd.js, dompurify dist/purify.min.js, cdn-assets highlight.min.js
+and styles/github{,-dark}.min.css (the highlight.js package itself has no browser build), github-markdown-css
+github-markdown.css, mermaid dist/mermaid.min.js. Each library's license file is next to it as LICENSE-<name>
+(dompurify also has LICENSE-MPL-dompurify).
+
+Update: in a new empty temp folder run `npm pack <pkg>@<version> --ignore-scripts`, compare
+`openssl dgst -sha512 -binary <tgz> | base64` with `npm view <pkg>@<version> dist.integrity`, check
+`npm view <pkg>@<version> dist.attestations`, extract the files above and the license, replace them here and change
+the table. Then run tests/md_open_test.sh (it renders a sample page in Chrome when one is installed).

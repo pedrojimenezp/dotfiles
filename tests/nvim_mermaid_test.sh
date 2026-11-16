@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Tests nvim's config/mermaid.lua: block lookup (cursor inside, on either fence, outside, two blocks)
 # the float with the mermaid-ascii output, and open() (block under the cursor vs the whole buffer, with a
-# stub mermaid-open on PATH that records its stdin). Offline, no plugins.
+# stub md-open on PATH that records its arguments and stdin). Offline, no plugins.
 # Run: bash tests/nvim_mermaid_test.sh
 set -euo pipefail
 
@@ -61,13 +61,19 @@ vim.bo.filetype = "markdown"
 vim.api.nvim_buf_set_lines(0, 0, -1, false, lines)
 local function opened(row)
   vim.fn.delete(rec)
+  vim.fn.delete(rec .. ".args")
   vim.api.nvim_win_set_cursor(0, { row, 0 })
   m.open()
   return vim.fn.filereadable(rec) == 1 and table.concat(vim.fn.readfile(rec), "|") or nil
 end
+local function args() return table.concat(vim.fn.readfile(rec .. ".args"), " ") end
+vim.api.nvim_buf_set_name(0, vim.fn.getcwd() .. "/sub/notes.md")
+local dir = vim.fn.expand("%:p:h")
 check("open: cursor in block sends only it", opened(4) == "graph LR|A --> B")
+check("open: block args", args() == "--name notes.md:2 -")
 check("open: second block", opened(12) == "graph TD|C --> D")
 check("open: outside sends the buffer", opened(6) == table.concat(lines, "|"))
+check("open: whole-buffer args", args() == "--name notes.md --dir " .. dir .. " -")
 check("open: other fence sends the buffer", opened(8) == table.concat(lines, "|"))
 vim.api.nvim_buf_set_lines(0, 3, 4, false, { "A --> Z" })
 check("open: unsaved edit is sent", opened(3) == "graph LR|A --> Z")
@@ -81,12 +87,13 @@ io.stdout:write(#problems == 0 and "ok" or table.concat(problems, "; "))
 
 STUB="$(mktemp -d)"
 trap 'rm -rf "$STUB"' EXIT
-cat >"$STUB/mermaid-open" <<'EOS'
+cat >"$STUB/md-open" <<'EOS'
 #!/bin/sh
 [ -n "${MO_STUB_FAIL:-}" ] && { echo "boom" >&2; exit 1; }
+printf '%s\n' "$*" >"$MO_STUB_OUT.args"
 cat >"$MO_STUB_OUT"
 EOS
-chmod +x "$STUB/mermaid-open"
+chmod +x "$STUB/md-open"
 export MO_STUB_OUT="$STUB/stdin"
 PATH="$STUB:$PATH"
 

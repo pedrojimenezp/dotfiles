@@ -1,0 +1,237 @@
+#!/usr/bin/env bash
+# Opens a Markdown file in the browser rendered like GitHub, offline, with ```mermaid blocks drawn as diagrams.
+# A .mmd or .mermaid file is one diagram. Stdin (no file, or -) is Markdown when --name ends in .md or
+# .markdown, a diagram when it ends in .mmd or .mermaid; otherwise Markdown if it has a ```mermaid fence, else a diagram.
+# The page is one HTML file in a private temp folder. It embeds the source, loads the vendored libraries by
+# absolute file:// path, resolves relative images and links against a file:// <base>, and a CSP blocks every
+# network request. Markdown HTML is sanitized with DOMPurify before insertion.
+# Usage: md-open [--name <name>] [--dir <dir>] [file]
+set -euo pipefail
+
+usage="Usage: md-open [--name <name>] [--dir <dir>] [file]   (.md: rendered page; .mmd/.mermaid: one diagram; no file or -: stdin)"
+name="" dir="" file=""
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -h | --help) echo "$usage"; exit 0 ;;
+    --name | --dir)
+      [[ $# -ge 2 ]] || { echo "md-open: $1 needs a value" >&2; exit 1; }
+      if [[ "$1" == --name ]]; then name="$2"; else dir="$2"; fi
+      shift 2
+      ;;
+    -) [[ -z "$file" ]] || { echo "$usage" >&2; exit 1; }; file=-; shift ;;
+    -*) echo "md-open: unknown option $1" >&2; echo "$usage" >&2; exit 1 ;;
+    *) [[ -z "$file" ]] || { echo "$usage" >&2; exit 1; }; file="$1"; shift ;;
+  esac
+done
+file="${file:--}"
+
+self="$0"
+while [[ -L "$self" ]]; do # the command is a symlink into the repo
+  link="$(readlink "$self")"
+  case "$link" in /*) self="$link" ;; *) self="$(dirname "$self")/$link" ;; esac
+done
+share="$(cd "$(dirname "$self")/../share/md-open" && pwd)"
+
+opener=xdg-open
+[[ "$(uname -s)" == Darwin ]] && opener=open
+command -v "$opener" >/dev/null 2>&1 || { echo "md-open: $opener is not installed" >&2; exit 1; }
+
+# Percent-encodes a path for a file:// URL; "/" and unreserved characters stay.
+urlpath() {
+  local LC_ALL=C s="$1" out="" c i
+  for ((i = 0; i < ${#s}; i++)); do
+    c="${s:i:1}"
+    case "$c" in [A-Za-z0-9/._~-]) out+="$c" ;; *) out+="$(printf '%%%02X' "'$c")" ;; esac
+  done
+  printf '%s' "$out"
+}
+esc() { sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g' -e 's/"/\&quot;/g'; }
+
+umask 077
+base="${TMPDIR:-/tmp}"
+base="${base%/}"
+find "$base" -maxdepth 1 -type d \( -name 'md-open.*' -o -name 'mermaid-open.*' \) -mmin +1440 -exec rm -rf {} + 2>/dev/null || true
+out="$(mktemp -d "$base/md-open.XXXXXX")"
+chmod 700 "$out"
+
+fence='^[[:space:]]*```+[[:space:]]*mermaid[[:space:]]*$'
+if [[ "$file" == - ]]; then
+  [[ -n "$name" ]] || name=stdin
+  [[ -n "$dir" ]] || dir="$PWD"
+  cat >"$out/input"
+  case "$name" in
+    *.md | *.markdown) mode=md ;;
+    *.mmd | *.mermaid) mode=diagram ;;
+    *) if grep -Eq "$fence" "$out/input"; then mode=md; else mode=diagram; fi ;;
+  esac
+else
+  [[ -f "$file" ]] || { rm -rf "$out"; echo "md-open: $file: no such file" >&2; exit 1; }
+  [[ -n "$name" ]] || name="$(basename "$file")"
+  [[ -n "$dir" ]] || dir="$(cd "$(dirname "$file")" && pwd)"
+  cp "$file" "$out/input"
+  case "$file" in *.mmd | *.mermaid) mode=diagram ;; *) mode=md ;; esac
+fi
+[[ -d "$dir" ]] || { rm -rf "$out"; echo "md-open: $dir: no such directory" >&2; exit 1; }
+dir="$(cd "$dir" && pwd)"
+
+if [[ "$mode" == diagram ]] && ! grep -q '[^[:space:]]' "$out/input"; then
+  rm -rf "$out"
+  echo "md-open: no diagram found in $name" >&2
+  exit 1
+fi
+
+u="file://$(urlpath "$share")"
+{
+  cat <<'HTML'
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src file: 'unsafe-inline'; style-src file: 'unsafe-inline'; img-src file: data:; font-src file: data:; connect-src 'none'; form-action 'none'">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+HTML
+  printf '<title>%s</title>\n<base href="file://%s/">\n' "$(printf '%s' "$name" | esc)" "$(urlpath "${dir%/}")"
+  printf '<link rel="stylesheet" href="%s/github-markdown.css">\n' "$u"
+  printf '<link rel="stylesheet" href="%s/github.min.css" media="(prefers-color-scheme: light)">\n' "$u"
+  printf '<link rel="stylesheet" href="%s/github-dark.min.css" media="(prefers-color-scheme: dark)">\n' "$u"
+  cat <<'HTML'
+<style>
+  :root { --bg: #fff; --fg: #1f2328; --muted: #656d76; --line: #d0d7de; --err: #cf222e; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0d1117; --fg: #e6edf3; --muted: #8b949e; --line: #30363d; --err: #ff7b72; }
+  }
+  body { margin: 0; background: var(--bg); color: var(--fg); }
+  .markdown-body { box-sizing: border-box; max-width: 980px; margin: 0 auto; padding: 45px; }
+  @media (max-width: 767px) { .markdown-body { padding: 15px; } }
+  .markdown-body pre code.hljs { padding: 0; background: transparent; }
+  .markdown-body .diagram { margin: 0 0 16px; overflow-x: auto; }
+  .diagram svg { display: block; max-width: none; margin: 0 auto; }
+  .err { margin: 0; color: var(--err); white-space: pre-wrap; font: 13px ui-monospace, monospace; }
+  .one { padding: 16px; font: 15px/1.4 system-ui, sans-serif; }
+  .one section { border: 1px solid var(--line); border-radius: 6px; }
+  .one h2 { margin: 0; padding: 6px 12px; border-bottom: 1px solid var(--line); font: 13px ui-monospace, monospace; color: var(--muted); }
+  .one .diagram { padding: 12px; overflow-x: auto; }
+</style>
+HTML
+  printf '<script src="%s/marked.umd.js"></script>\n<script src="%s/purify.min.js"></script>\n<script src="%s/highlight.min.js"></script>\n' "$u" "$u" "$u"
+  printf '</head>\n<body data-mode="%s" data-mermaid="%s/mermaid.min.js">\n<main id="page"></main>\n' "$mode" "$u"
+  printf '<textarea id="src" hidden>\n'
+  esc <"$out/input"
+  printf '</textarea>\n'
+  cat <<'HTML'
+<script>
+  var dark = window.matchMedia("(prefers-color-scheme: dark)");
+  var seq = 0;
+  var page = document.getElementById("page");
+  var mode = document.body.dataset.mode;
+
+  function loadScript(url) {
+    return new Promise(function (ok, fail) {
+      var s = document.createElement("script");
+      s.src = url;
+      s.onload = ok;
+      s.onerror = function () { fail(new Error("cannot load " + url)); };
+      document.head.appendChild(s);
+    });
+  }
+
+  function slug(text) {
+    return text.trim().toLowerCase().replace(/[^\p{L}\p{N}\s_-]/gu, "").replace(/\s/g, "-");
+  }
+
+  function buildMarkdown(src) {
+    page.className = "markdown-body";
+    page.innerHTML = DOMPurify.sanitize(marked.parse(src, { gfm: true }), { FORBID_TAGS: ["style"] });
+    var used = {};
+    page.querySelectorAll("h1,h2,h3,h4,h5,h6").forEach(function (h) {
+      var id = slug(h.textContent), n = used[id] = (used[id] || 0) + 1;
+      h.id = n > 1 ? id + "-" + (n - 1) : id;
+    });
+    page.querySelectorAll("li > input[type=checkbox]").forEach(function (box) {
+      box.parentNode.classList.add("task-list-item");
+      box.parentNode.parentNode.classList.add("contains-task-list");
+    });
+    page.querySelectorAll("pre > code").forEach(function (code) {
+      var m = /language-(\S+)/.exec(code.className);
+      var lang = m && m[1];
+      if (lang === "mermaid") {
+        var div = document.createElement("div");
+        div.className = "diagram";
+        div.dataset.src = code.textContent;
+        code.parentNode.replaceWith(div);
+      } else if (lang && hljs.getLanguage(lang)) {
+        hljs.highlightElement(code);
+      }
+    });
+    page.addEventListener("click", function (e) {
+      var a = e.target.closest && e.target.closest("a[href^='#']");
+      var target = a && document.getElementById(decodeURIComponent(a.getAttribute("href").slice(1)));
+      if (target) { e.preventDefault(); target.scrollIntoView(); }
+    });
+  }
+
+  function buildDiagram(src) {
+    document.body.className = "one";
+    var sec = document.createElement("section");
+    var h = document.createElement("h2");
+    h.textContent = document.title;
+    var div = document.createElement("div");
+    div.className = "diagram";
+    div.dataset.src = src;
+    sec.append(h, div);
+    page.appendChild(sec);
+  }
+
+  async function renderDiagrams() {
+    var boxes = document.querySelectorAll(".diagram");
+    if (!boxes.length) return;
+    try {
+      if (typeof mermaid === "undefined") await loadScript(document.body.dataset.mermaid);
+      mermaid.initialize({ startOnLoad: false, theme: dark.matches ? "dark" : "default", suppressErrorRendering: true });
+    } catch (e) {
+      boxes.forEach(function (box) { showError(box, e); });
+      return;
+    }
+    for (const box of boxes) {
+      box.textContent = "";
+      try {
+        const { svg } = await mermaid.render("m" + ++seq, box.dataset.src);
+        box.innerHTML = svg;
+        const el = box.querySelector("svg");
+        const vb = el.viewBox && el.viewBox.baseVal;
+        if (vb && vb.width) { el.style.width = vb.width + "px"; el.removeAttribute("height"); }
+        el.style.maxWidth = "none";
+      } catch (e) {
+        showError(box, e);
+      }
+      const stray = document.getElementById("dm" + seq);
+      if (stray) stray.remove();
+    }
+  }
+
+  function showError(box, e) {
+    var pre = document.createElement("pre");
+    pre.className = "err";
+    pre.textContent = String((e && e.message) || e);
+    box.textContent = "";
+    box.appendChild(pre);
+  }
+
+  try {
+    var src = document.getElementById("src").value;
+    if (mode === "md") buildMarkdown(src); else buildDiagram(src);
+  } catch (e) {
+    page.textContent = "md-open: " + ((e && e.message) || e);
+  }
+  renderDiagrams();
+  dark.addEventListener("change", renderDiagrams);
+</script>
+</body>
+</html>
+HTML
+} >"$out/index.html"
+rm -f "$out/input"
+
+echo "md-open: $out/index.html"
+"$opener" "$out/index.html" >/dev/null 2>&1 || { echo "md-open: $opener failed" >&2; exit 1; }
