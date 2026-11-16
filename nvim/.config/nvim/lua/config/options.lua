@@ -25,7 +25,7 @@ opt.tabstop = 2
 opt.shiftwidth = 2
 opt.mouse = "a"
 opt.list = true
-opt.listchars = { tab = "» ", trail = "·", nbsp = "␣" }
+opt.listchars = { tab = "  ", trail = "·", nbsp = "␣" }
 opt.confirm = true
 
 -- OSC 52 over SSH so yanks reach the local machine.
