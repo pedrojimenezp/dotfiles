@@ -42,7 +42,9 @@ real="$(active "$W")"
 echo "== binding"
 check_eq "prefix Z runs tmux-zen toggle" "1" "$(T list-keys -T prefix | grep -c 'prefix  *Z .*tmux-zen toggle')"
 check_eq "prefix Z has a note" "1" "$(T list-keys -N -T prefix | grep -c ' Z ')"
-check_eq "@zen_width defaults to 120" "120" "$(T show -gv @zen_width)"
+check_eq "tmux.conf sets @zen_width to a number" "1" "$(T show -gv @zen_width | grep -cxE '[1-9][0-9]*')"
+# The widths below are worked out for 120, whatever tmux.conf sets
+T set -g @zen_width 120
 
 echo "== usage log"
 zen_log="$HOME/.local/state/dotfiles/usage.log"

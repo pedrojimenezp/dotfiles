@@ -79,7 +79,7 @@ Plain Markdown files in `~/notes` (`$NOTES_DIR` overrides it). Local only: not a
 
 ## Zen mode (`prefix Z`)
 
-`prefix Z` centers the window in a column: `bin/.local/bin/tmux-zen` adds an empty, input-less pad pane on each side and hides the pane borders. Press it again to remove the pads. The column is `@zen_width` wide (default 120; set it in `local.conf`); a window narrower than `@zen_width` + 20 is left alone.
+`prefix Z` centers the window in a column: `bin/.local/bin/tmux-zen` adds an empty, input-less pad pane on each side and hides the pane borders. Press it again to remove the pads. The column is `@zen_width` wide (160 in `tmux.conf`; override it in `local.conf`); a window narrower than `@zen_width` + 20 is left alone.
 
 - Pads never keep focus, resize with the window, and disappear when the last real pane closes. `prefix z` zoom still works.
 - Zen windows carry `@zen`; the `window-layout-changed` hook skips them, so they don't get pane labels.
